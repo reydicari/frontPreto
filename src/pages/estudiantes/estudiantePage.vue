@@ -219,7 +219,7 @@ const statusOptions = [
   { label: 'Activo', value: true },
   { label: 'Inactivo', value: false }
 ]
-const typeOptions = ['estudiante', 'profesor', 'administrativo']
+const typeOptions = ['estudiante', 'Entrenador', 'Administrador']
 const categoryOptions = ref([])
 
 // Columnas de la tabla
@@ -306,16 +306,20 @@ function createEmptyPersona() {
     apellido_paterno: '',
     apellido_materno: '',
     categoria: '',
-    estado: 1,
+    estado: true,
     fotografia: null,
     telefono: '',
     fecha_nacimiento: '',
     biografia: '',
     experiencia: 0,
-    tipo_persona: ''
+    fecha_registro: new Date().toLocaleDateString(),
+    usuario_registro: nombreUsuario()
   }
 }
-
+function nombreUsuario() {
+  const current = JSON.parse(sessionStorage.getItem('user'))
+  return current ? current.usuario : 'desconocido'
+}
 // Obtener iniciales para avatar
 function getInitials(nombres, apellido) {
   // Verificar si los parámetros son válidos

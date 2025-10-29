@@ -81,10 +81,10 @@
                       ]" />
                     <q-select emit-value option-value="value" map-options option-label="label"
                       v-model="localPersona.genero" :options="generoOptions" label="Género" outlined dense
-                      class="col-md-4" />
+                      class="col-md-4 col-6" :rules="[rules.required]" />
                     <q-select v-model="localPersona.id_nivel" :options="nivelOptions" option-label="label"
                       option-value="value" emit-value label="Nivel" map-options outlined dense clearable
-                      class="col-md-3 q-ml-sm col-sm-6 col-xs-12" :rules="!!val || 'Debe seleccionar un nivel'" />
+                      class="col-6 col-md-3 q-ml-sm col-sm-6 col-xs-12" :rules="!!val || 'Debe seleccionar un nivel'" />
 
                   </div>
                 </div>
