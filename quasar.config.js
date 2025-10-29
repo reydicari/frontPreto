@@ -3,7 +3,7 @@
 
 import { defineConfig } from "#q-app/wrappers";
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -47,8 +47,10 @@ export default defineConfig((/* ctx */) => {
       // publicPath: '/',
       // analyze: true,
       env: {
-        // API_URL: "http://localhost:3001",
-        API_URL: "https://gtizda-ip-190-129-18-138.tunnelmole.net",
+        API_URL: ctx.dev
+          ? "http://localhost:3001"
+          : "https://backendv1-6u97.onrender.com",
+        // API_URL: "https://gtizda-ip-190-129-18-138.tunnelmole.net",
 
         GOOGLE_MAPS_API_KEY: "tu-api-key-aqui",
       },
