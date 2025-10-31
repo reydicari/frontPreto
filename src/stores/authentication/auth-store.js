@@ -9,7 +9,6 @@ export const loguear = async (dataform) => {
     return response.data;
   } catch (error) {
     console.log(error);
-
     console.log("error en el store", error.response.data.error);
     return error.response.data;
   }

@@ -43,7 +43,7 @@
 
           <!-- Lista -->
           <q-list v-if="!cargando" class="rounded-borders">
-            <q-item v-for="ubicacion in ubicaciones" :key="ubicacion.id" class="q-my-xs" clickable
+            <q-item v-for="ubicacion in ubicacionesPaginadas" :key="ubicacion.id" class="q-my-xs" clickable
               @click="centrarEnUbicacion(ubicacion)"
               :class="{ 'bg-blue-1': ubicacionSeleccionadaLista === ubicacion.id }">
               <q-item-section avatar>
@@ -83,13 +83,16 @@
                       {{ ubicacion.estado ? 'Desactivar' : 'Activar' }}
                     </q-tooltip>
                   </q-btn>
-                  <q-btn flat round icon="delete" color="negative" @click.stop="confirmarEliminacion(ubicacion)">
-                    <q-tooltip>Eliminar ubicación</q-tooltip>
-                  </q-btn>
+                  <!-- Botón de eliminar removido a petición del usuario -->
                 </div>
               </q-item-section>
             </q-item>
           </q-list>
+
+          <!-- Paginación: 5 items por página -->
+          <div v-if="!cargando && ubicaciones.length > itemsPorPagina" class="q-pa-sm flex flex-center">
+            <q-pagination v-model="paginaActual" :max="totalPages" max-pages="7" boundary-numbers />
+          </div>
 
           <!-- Estado vacío -->
           <div v-if="!cargando && ubicaciones.length === 0" class="text-center q-pa-lg">
@@ -151,44 +154,25 @@
       </q-card>
     </q-dialog>
 
-    <!-- Diálogo de confirmación para eliminar -->
-    <q-dialog v-model="mostrarConfirmacionEliminar">
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="warning" text-color="white" />
-          <span class="q-ml-sm">¿Estás seguro de eliminar esta ubicación?</span>
-        </q-card-section>
-
-        <q-card-section>
-          <div class="text-weight-medium">"{{ ubicacionAEliminar?.nombre }}"</div>
-          <div class="text-caption text-grey">Esta acción no se puede deshacer</div>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="grey" v-close-popup />
-          <q-btn flat label="Eliminar" color="negative" @click="eliminarUbicacion" :loading="eliminando" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <!-- Eliminación por UI removida -->
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useQuasar } from 'quasar'
 
 // Instalar Leaflet primero: npm install leaflet
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { agregarUbicacion, listarUbicaciones } from 'src/stores/ubicacion-store'
 
 const $q = useQuasar()
 
 // Estado reactivo
 const cargando = ref(false)
 const guardando = ref(false)
-const eliminando = ref(false)
 const mostrarDialogo = ref(false)
-const mostrarConfirmacionEliminar = ref(false)
 const esEdicion = ref(false)
 const ubicacionSeleccionada = ref(false)
 const ubicacionSeleccionadaLista = ref(null)
@@ -202,7 +186,13 @@ let selectedMarker = null
 // Datos
 const ubicaciones = ref([])
 const ubicacionEditando = ref(null)
-const ubicacionAEliminar = ref(null)
+const paginaActual = ref(1)
+const itemsPorPagina = 5
+const totalPages = computed(() => Math.max(1, Math.ceil(ubicaciones.value.length / itemsPorPagina)))
+const ubicacionesPaginadas = computed(() => {
+  const start = (paginaActual.value - 1) * itemsPorPagina
+  return ubicaciones.value.slice(start, start + itemsPorPagina)
+})
 
 // Formulario
 const formulario = reactive({
@@ -285,41 +275,16 @@ const cargarUbicaciones = async () => {
   cargando.value = true
   try {
     // Simular llamada a API - reemplaza con tu endpoint real
-    const response = await simularApiCall([
-      {
-        id: 1,
-        nombre: 'Cancha Central',
-        descripcion: 'Cancha principal de fútbol con césped natural',
-        capacidad: 50,
-        equipado: true,
-        estado: true,
-        latitud: -12.046374,
-        longitud: -77.042793
-      },
-      {
-        id: 2,
-        nombre: 'Gimnasio Polideportivo',
-        descripcion: 'Gimnasio para múltiples deportes indoor',
-        capacidad: 100,
-        equipado: true,
-        estado: true,
-        latitud: -12.056374,
-        longitud: -77.032793
-      },
-      {
-        id: 3,
-        nombre: 'Piscina Olímpica',
-        descripcion: 'Piscina semiolímpica para entrenamiento',
-        capacidad: 30,
-        equipado: false,
-        estado: false,
-        latitud: -12.036374,
-        longitud: -77.052793
-      }
-    ])
-
-    ubicaciones.value = response.data
+    const response = await listarUbicaciones()
+    ubicaciones.value = response
+    // Ajustar página actual si es necesario
+    paginaActual.value = Math.min(paginaActual.value, totalPages.value)
     marcarUbicacionesEnMapa()
+    // Centrar mapa en la primera ubicación con coordenadas y acercar un poco
+    const primera = ubicaciones.value.find(u => u.latitud && u.longitud)
+    if (map && primera) {
+      map.setView([primera.latitud, primera.longitud], 15)
+    }
   } catch (error) {
     console.error('Error cargando ubicaciones:', error)
     $q.notify({
@@ -402,7 +367,7 @@ const mostrarDialogoNuevo = () => {
   Object.assign(formulario, {
     nombre: '',
     descripcion: '',
-    capacidad: 1,
+    capacidad: 50,
     equipado: false,
     estado: true
     // latitud y longitud ya están establecidas desde el mapa
@@ -419,8 +384,8 @@ const editarUbicacion = (ubicacion) => {
     capacidad: ubicacion.capacidad,
     equipado: ubicacion.equipado,
     estado: ubicacion.estado,
-    latitud: ubicacion.latitud,
-    longitud: ubicacion.longitud
+    latitud: ubicacion.latitud != null ? Number(ubicacion.latitud) : null,
+    longitud: ubicacion.longitud != null ? Number(ubicacion.longitud) : null
   })
 
   // Centrar en la ubicación editada
@@ -446,13 +411,7 @@ const guardarUbicacion = async () => {
       })
     } else {
       // Crear nueva ubicación
-      await simularApiCall({ ...formulario, id: Date.now() })
-      $q.notify({
-        type: 'positive',
-        message: 'Ubicación creada correctamente',
-        position: 'top'
-      })
-
+      await agregarUbicacion({ ...formulario })
       // Limpiar selección del mapa
       if (selectedMarker) {
         map.removeLayer(selectedMarker)
@@ -475,38 +434,16 @@ const guardarUbicacion = async () => {
   }
 }
 
-const confirmarEliminacion = (ubicacion) => {
-  ubicacionAEliminar.value = ubicacion
-  mostrarConfirmacionEliminar.value = true
-}
-
-const eliminarUbicacion = async () => {
-  eliminando.value = true
-  try {
-    await simularApiCall(null)
-    $q.notify({
-      type: 'positive',
-      message: 'Ubicación eliminada correctamente',
-      position: 'top'
-    })
-    mostrarConfirmacionEliminar.value = false
-    await cargarUbicaciones() // Recargar para actualizar marcadores
-  } catch (error) {
-    console.error('Error eliminando ubicación:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error al eliminar la ubicación',
-      position: 'top'
-    })
-  } finally {
-    eliminando.value = false
-    ubicacionAEliminar.value = null
-  }
-}
+// Nota: la funcionalidad de eliminación y su confirmación se han removido del UI según la petición.
 
 const toggleEstado = async (ubicacion) => {
+  // Actualización optimista: cambiar visualmente primero
+  const previo = ubicacion.estado
+  const nuevoEstado = !previo
   try {
-    const nuevoEstado = !ubicacion.estado
+    ubicacion.estado = nuevoEstado
+    console.log('toggleEstado -> nuevo estado:', nuevoEstado)
+
     await simularApiCall({ estado: nuevoEstado })
 
     $q.notify({
@@ -515,8 +452,11 @@ const toggleEstado = async (ubicacion) => {
       position: 'top'
     })
 
-    await cargarUbicaciones() // Recargar para actualizar marcadores
+    // Refrescar marcadores/lista para sincronizar con el servidor
+    await cargarUbicaciones()
   } catch (error) {
+    // Revertir en caso de error
+    ubicacion.estado = previo
     console.error('Error cambiando estado:', error)
     $q.notify({
       type: 'negative',

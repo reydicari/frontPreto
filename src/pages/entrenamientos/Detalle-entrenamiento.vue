@@ -21,13 +21,7 @@
         <div class="col-md-6">
           <div class="text-weight-bold">Días:</div>
           <div>
-            <q-chip
-              v-for="dia in training.dias.split(',')"
-              :key="dia"
-              size="sm"
-              color="primary"
-              text-color="white"
-            >
+            <q-chip v-for="dia in training.dias.split(',')" :key="dia" size="sm" color="primary" text-color="white">
               {{ dia }}
             </q-chip>
           </div>
@@ -51,10 +45,7 @@
         <div class="col-md-6">
           <div class="text-weight-bold">Estado:</div>
           <div>
-            <q-badge
-              :color="getStatusColor(training.estado)"
-              :label="getStatusLabel(training.estado)"
-            />
+            <q-badge :color="getStatusColor(training.estado)" :label="getStatusLabel(training.estado)" />
           </div>
         </div>
 
@@ -66,10 +57,7 @@
         <div class="col-12 q-mt-md">
           <div class="text-h6 q-mb-sm">Entrenadores Asignados</div>
           <q-list bordered separator>
-            <q-item
-              v-for="coach in training.entrenadores"
-              :key="coach.id"
-            >
+            <q-item v-for="coach in training.entrenadores" :key="coach.id">
               <q-item-section avatar>
                 <q-avatar color="primary" text-color="white">
                   {{ coach.nombre.charAt(0) }}
@@ -86,6 +74,8 @@
     </q-card-section>
 
     <q-card-actions align="right">
+      <q-btn flat label="Tomar asistencia" color="primary" @click.prevent />
+      <q-btn flat label="Evaluar" color="secondary" @click.prevent />
       <q-btn flat label="Cerrar" color="primary" v-close-popup />
     </q-card-actions>
   </q-card>
@@ -93,24 +83,6 @@
 
 <script setup>
 import { defineProps } from 'vue'
-import { defineEmits } from 'vue'
-
-// 1. Declaro el evento que voy a emitir
-const emit = defineEmits(['completed'])
-
-// 2. Función async que hace el trabajo y al final emite
-async function handleProcess() {
-  // … aquí haces tu proceso …
-  const resultado = await doSomeHeavyWork()
-  // cuando terminas, le devuelvo el payload al padre
-  emit('completed', resultado)
-}
-
-async function doSomeHeavyWork() {
-  // ejemplo: valida campos, calcula algo, formatea datos...
-  await new Promise(r => setTimeout(r, 500))
-  return { foo: 42, bar: 'ok' }
-}
 
 // 1. Declara la prop “training” y su tipo
 const { training } = defineProps({
@@ -120,31 +92,31 @@ const { training } = defineProps({
   }
 })
 
-    // Formatear fecha
-    const formatDate = (dateString) => {
-      if (!dateString) return ''
-      const options = { year: 'numeric', month: 'long', day: 'numeric' }
-      return new Date(dateString).toLocaleDateString('es-ES', options)
-    }
+// Formatear fecha
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString('es-ES', options)
+}
 
-    // Obtener color para el estado
-    const getStatusColor = (status) => {
-      const colors = {
-        0: 'negative', // Inactivo
-        1: 'positive', // Activo
-        2: 'info'      // Completado
-      }
-      return colors[status] || 'grey'
-    }
+// Obtener color para el estado (0: terminado, 1: en marcha, 2: sin comenzar)
+const getStatusColor = (status) => {
+  const colors = {
+    0: 'grey',    // Terminada
+    1: 'positive', // En marcha
+    2: 'warning'   // Sin comenzar
+  }
+  return colors[status] || 'grey'
+}
 
-    // Obtener texto para el estado
-    const getStatusLabel = (status) => {
-      const labels = {
-        0: 'Inactivo',
-        1: 'Activo',
-        2: 'Completado'
-      }
-      return labels[status] || 'Desconocido'
-    }
+// Obtener texto para el estado
+const getStatusLabel = (status) => {
+  const labels = {
+    0: 'Terminada',
+    1: 'En marcha',
+    2: 'Sin comenzar'
+  }
+  return labels[status] || 'Desconocido'
+}
 
 </script>

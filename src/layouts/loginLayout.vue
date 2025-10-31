@@ -23,44 +23,19 @@
           <q-form @submit="onSubmit">
             <div class="form-group">
               <div class="input-with-icon">
-                <q-input
-                  class="full-width input-field"
-                  filled
-                  label="Usuario"
-                  hint="No se olvide de las mayusculas o signos"
-                  id="username"
-                  v-model="form.usuario"
-                  outlined
-                  hide-hint
-                  dense
-                  :rules="[rules.required]"
-                />
+                <q-input class="full-width input-field" filled label="Usuario"
+                  hint="No se olvide de las mayusculas o signos" id="username" v-model="form.usuario" outlined hide-hint
+                  dense :rules="[rules.required]" />
               </div>
             </div>
 
             <div class="form-group">
               <div class=" q-gutter-y-md">
                 <div class="password-input">
-                  <q-input
-                    class="full-width input-field"
-                    id="password"
-                    v-model="form.clave"
-                    :type="showPassword ? 'text' : 'password'"
-                    filled
-                    label="Contraseña"
-                    outlined
-
-                    hint="No se olvide de las mayusculas o signos"
-                    bottom-slots
-                    dense
-                    :rules="[rules.required]"
-
-                  >
-                    <i
-                      size="lg"
-                      class="material-icons cursor-pointer"
-                      @click="showPassword = !showPassword"
-                      style="
+                  <q-input class="full-width input-field" id="password" v-model="form.clave"
+                    :type="showPassword ? 'text' : 'password'" filled label="Contraseña" outlined
+                    hint="No se olvide de las mayusculas o signos" bottom-slots dense :rules="[rules.required]">
+                    <i size="lg" class="material-icons cursor-pointer" @click="showPassword = !showPassword" style="
       position: absolute;
       right: 10px;
       top: 50%;
@@ -69,8 +44,7 @@
       cursor: pointer;
       color: #666;
 
-    "
-                    >
+    ">
                       {{ showPassword ? 'visibility_off' : 'visibility' }}
                     </i>
                   </q-input>
@@ -81,15 +55,10 @@
 
             <div class="alert alert-warning" v-if="fallaUsu">
               <q-icon name="bi-exclamation-triangle-fill" />
-              {{mensaje}}
+              {{ mensaje }}
             </div>
 
-            <q-btn
-              type="submit"
-              class="btn-login"
-              :label="entrando?'Espere':'Iniciar sesión'"
-              :loading="entrando"
-            >
+            <q-btn type="submit" class="btn-login" :label="entrando ? 'Espere' : 'Iniciar sesión'" :loading="entrando">
             </q-btn>
 
             <div class="additional-options">
@@ -116,24 +85,24 @@ import { useValidation } from 'src/composables/useValidation.js'
 import { loguear } from 'src/stores/authentication/auth-store.js';
 
 const $q = useQuasar();
-const  rules  = useValidation();
+const rules = useValidation();
 const router = useRouter(); // Obtiene la instancia de Vue Routers
 
-    const form = ref({
-      usuario: 'angel1',
-      clave: 'looneytunes'
-    });
-    const showPassword = ref(false);
-    const entrando = ref(false);
-    const fallaUsu = ref(false);
-    const mensaje = ref('');
+const form = ref({
+  usuario: 'angel1',
+  clave: 'looneytunes'
+});
+const showPassword = ref(false);
+const entrando = ref(false);
+const fallaUsu = ref(false);
+const mensaje = ref('');
 
 const onSubmit = async () => {
   try {
     entrando.value = true
     const data = await loguear(form.value)
     setTimeout(() => {
-      if(data.token){
+      if (data.token) {
         sessionStorage.setItem('token', data.token);
         sessionStorage.setItem('user', JSON.stringify(data.user));
         $q.notify({
@@ -141,28 +110,28 @@ const onSubmit = async () => {
           message: data.mensaje,
           position: 'top',
         })
-         router.push('/main');
-      }else {
+        router.push('/main');
+      } else {
         entrando.value = false
         $q.notify({
           type: 'negative',
-          message: data.error,
+          message: 'Usuario y contraseña incorrectos',//data.error,
           position: 'top',
         })
       }
     }, 500)
   } catch (error) {
     console.log(error)
- //   showErrorDialog({
-   //   title: 'Acceso Denegado',
-     // message: "Usuario o contraseña incorrectos. Por favor, intente de nuevo."
+    //   showErrorDialog({
+    //   title: 'Acceso Denegado',
+    // message: "Usuario o contraseña incorrectos. Por favor, intente de nuevo."
     //});
   }
   //finally {
-    //$q.notify({
-      //type: 'negative',
-      //message: 'Error al iniciar sesión. Verifica tus credenciales.'
-    //});
+  //$q.notify({
+  //type: 'negative',
+  //message: 'Error al iniciar sesión. Verifica tus credenciales.'
+  //});
   //}
 };
 
@@ -375,9 +344,11 @@ const onSubmit = async () => {
   0% {
     transform: translateX(-25%) rotate(0deg);
   }
+
   50% {
     transform: translateX(25%) rotate(180deg);
   }
+
   100% {
     transform: translateX(-25%) rotate(360deg);
   }
