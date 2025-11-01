@@ -20,7 +20,7 @@ export const crearEntrenamiento = async (data) => {
     const response = await api.post(URL_PART + "/agregar", data);
     Notify.create({
       type: "info",
-      message: "Inscripcion creada con éxito",
+      message: "Entrenamiento creado con éxito",
       position: "bottom",
     });
     return response.data;
@@ -28,7 +28,7 @@ export const crearEntrenamiento = async (data) => {
     console.log("error en el store", error);
     Notify.create({
       type: "negative",
-      message: "Error al crear la inscripción",
+      message: "Error al crear entrenamiento",
       position: "bottom",
     });
     return error.response.data;

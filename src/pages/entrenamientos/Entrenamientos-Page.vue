@@ -43,6 +43,13 @@
       <q-table :rows="filteredTrainings" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
         :rows-per-page-options="[5, 10, 20, 50]">
 
+        <!-- Columna de índice -->
+        <template v-slot:body-cell-index="props">
+          <q-td :props="props">
+            {{ props.rowIndex + 1 }}
+          </q-td>
+        </template>
+
         <!-- Columna de estado -->
         <template v-slot:body-cell-estado="props">
           <q-td :props="props">
@@ -100,7 +107,7 @@
 
     <!-- Diálogo para crear/editar entrenamiento (componente separado) -->
     <NuevoEntrenamientoDialog v-model:modelValue="trainingDialog" :training="editMode ? currentTraining : {}"
-      :paquetes="paqueteOptions" :ubicaciones="ubicacionesOptions" @save="onDialogSave"
+      :edit-mode="editMode" :paquetes="paqueteOptions" :ubicaciones="ubicacionesOptions" @save="onDialogSave"
       @cancel="() => trainingDialog = false" />
 
     <!-- Diálogo de detalles -->
@@ -116,7 +123,7 @@ import { useQuasar } from 'quasar'
 import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
-import { listarEntrenamientos } from "stores/entrenamientos-store.js";
+import { crearEntrenamiento, listarEntrenamientos } from "stores/entrenamientos-store.js";
 
 // Mock data para coaches (se carga dinámicamente)
 const mockCoaches = []
@@ -144,7 +151,6 @@ const filterDateTo = ref(null)
 const trainingDialog = ref(false)
 const detailsDialog = ref(false)
 const editMode = ref(false)
-const step = ref('first')
 // helper for coach search removed (handled inside dialog)
 const selectedTraining = ref(null)
 
@@ -178,11 +184,11 @@ const statusOptions = [
 // Columnas de la tabla
 const columns = [
   {
-    name: 'id',
-    label: 'ID',
-    field: 'id',
-    align: 'left',
-    sortable: true
+    name: 'index',
+    label: '#',
+    field: (row, index) => index + 1,
+    align: 'center',
+    sortable: false
   },
   {
     name: 'nombre',
@@ -313,18 +319,16 @@ const showTrainingDialog = () => {
   currentTraining.value = {
     id: null,
     nombre: '',
-    disciplina: '',
-    dias: [],
-    estado: 1,
-    hora_inicio: '16:00',
-    horas: 2,
+    estado: 2, // Sin comenzar por defecto
     fecha_inicio: '',
     fecha_fin: '',
     observacion: '',
-    duracion_meses: 3,
-    entrenadores: []
+    dias: [],
+    entrenadores: [],
+    id_paquete: null,
+    id_ubicacion: null,
+    id_disciplina: null
   }
-  step.value = 'first'
   trainingDialog.value = true
 }
 
@@ -333,16 +337,19 @@ const editTraining = (training) => {
   editMode.value = true
   currentTraining.value = {
     ...training,
-    dias: training.dias.split(','),
-    // En una app real, los entrenadores podrían venir como objetos completos
-    entrenadores: training.entrenadores || []
+    // Adaptar los datos si vienen en formato diferente
+    dias: Array.isArray(training.dias) ? training.dias : (training.dias ? training.dias.split(',') : []),
+    entrenadores: training.entrenadores || [],
+    // Asegurar que tenemos los campos necesarios para el formulario
+    id_paquete: training.paquete?.id || null,
+    id_ubicacion: training.ubicacion?.id || null,
+    id_disciplina: training.paquete?.disciplina?.id || null
   }
-  step.value = 'first'
   trainingDialog.value = true
 }
 
 // Handler cuando el dialogo emite save
-const onDialogSave = (payload) => {
+const onDialogSave = async (payload) => {
   // adapt payload and reuse saveTraining behavior
   currentTraining.value = { ...payload }
   console.log(currentTraining.value);
@@ -350,7 +357,6 @@ const onDialogSave = (payload) => {
   // mimic saveTraining logic
   const trainingData = {
     ...currentTraining.value,
-    dias: Array.isArray(currentTraining.value.dias) ? currentTraining.value.dias.join(',') : (currentTraining.value.dias || ''),
     entrenadores: (currentTraining.value.entrenadores || []).map(c => c.id || c)
   }
 
@@ -359,9 +365,8 @@ const onDialogSave = (payload) => {
     if (index !== -1) trainings.value[index] = trainingData
     $q.notify({ type: 'positive', message: 'Entrenamiento actualizado correctamente' })
   } else {
-    const newId = trainings.value.length ? Math.max(...trainings.value.map(t => t.id || 0)) + 1 : 1
-    trainings.value.push({ ...trainingData, id: newId, estado: 1 })
-    $q.notify({ type: 'positive', message: 'Entrenamiento creado correctamente' })
+    await crearEntrenamiento(trainingData)
+    fetchTrainings()
   }
   trainingDialog.value = false
 }
