@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 600px">
+  <q-card style="min-width: 600px; max-width: 800px">
     <q-card-section>
       <div class="text-h6 q-ma-none">Detalles del Entrenamiento</div>
     </q-card-section>
@@ -10,20 +10,16 @@
       <div class="row q-col-gutter-y-md">
         <div class="col-12">
           <div class="text-h5">{{ training.nombre }}</div>
-          <div class="text-subtitle1 text-grey">{{ training.disciplina }}</div>
+          <div class="text-subtitle1 text-grey-10">
+            <q-icon size="lg" :name="training.paquete?.disciplina?.icono || 'sports'" class="q-mr-sm" />
+            {{ training.paquete?.disciplina?.nombre || 'Sin disciplina' }}
+          </div>
         </div>
 
         <div class="col-md-6">
-          <div class="text-weight-bold">Horario:</div>
-          <div>{{ training.hora_inicio }} ({{ training.horas }} horas)</div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="text-weight-bold">Días:</div>
+          <div class="text-weight-bold">Estado:</div>
           <div>
-            <q-chip v-for="dia in training.dias.split(',')" :key="dia" size="sm" color="primary" text-color="white">
-              {{ dia }}
-            </q-chip>
+            <q-badge :color="getStatusColor(training.estado)" :label="getStatusLabel(training.estado)" />
           </div>
         </div>
 
@@ -34,41 +30,71 @@
 
         <div class="col-md-6">
           <div class="text-weight-bold">Fecha Fin:</div>
-          <div>{{ formatDate(training.fecha_fin) }}</div>
+          <div v-if="training.fecha_fin">{{ formatDate(training.fecha_fin) }}</div>
+          <q-badge v-else color="info" label="Indefinido" />
         </div>
 
         <div class="col-md-6">
-          <div class="text-weight-bold">Duración:</div>
-          <div>{{ training.duracion_meses }} meses</div>
+          <div class="text-weight-bold">Paquete:</div>
+          <div>{{ training.paquete?.nombre || 'Sin paquete' }}</div>
         </div>
 
         <div class="col-md-6">
-          <div class="text-weight-bold">Estado:</div>
+          <div class="text-weight-bold">Nivel:</div>
+          <div>{{ training.paquete?.nivel?.nombre_nivel || 'Sin nivel' }}</div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="text-weight-bold">Materiales incluidos:</div>
           <div>
-            <q-badge :color="getStatusColor(training.estado)" :label="getStatusLabel(training.estado)" />
+            <q-badge :color="training.paquete?.materiales ? 'positive' : 'negative'"
+              :label="training.paquete?.materiales ? 'Sí' : 'No'" />
           </div>
+        </div>
+
+        <!-- Horarios del paquete -->
+        <div class="col-12" v-if="training.paquete?.horarios?.length">
+          <div class="text-weight-bold q-mb-sm">Horarios:</div>
+          <div class="row q-gutter-xs">
+            <q-chip v-for="horario in training.paquete.horarios" :key="horario.id" color="primary" text-color="white"
+              size="sm">
+              {{ obtenerNombreDia(horario.dia) }}: {{ horario.hora_inicio }} - {{ horario.hora_fin }}
+            </q-chip>
+          </div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="col-12">
+          <div class="text-weight-bold q-mb-sm">Ubicación:</div>
+          <q-card bordered class="q-pa-md">
+            <div class="text-subtitle1">{{ training.ubicacion?.nombre || 'Sin ubicación' }}</div>
+            <div v-if="training.ubicacion?.descripcion" class="text-body2 text-grey q-mt-xs">
+              {{ training.ubicacion.descripcion }}
+            </div>
+            <div class="row q-gutter-md q-mt-sm" v-if="training.ubicacion">
+              <div>
+                <q-badge :color="training.ubicacion.equipado ? 'positive' : 'negative'"
+                  :label="training.ubicacion.equipado ? 'Equipado' : 'No equipado'" />
+              </div>
+              <div>
+                <q-badge color="info" :label="`Capacidad: ${training.ubicacion.capacidad || 'N/A'}`" />
+              </div>
+            </div>
+          </q-card>
         </div>
 
         <div class="col-12" v-if="training.observacion">
           <div class="text-weight-bold">Observaciones:</div>
-          <div>{{ training.observacion }}</div>
+          <div class="q-pa-sm bg-grey-1 rounded-borders">{{ training.observacion }}</div>
         </div>
 
-        <div class="col-12 q-mt-md">
-          <div class="text-h6 q-mb-sm">Entrenadores Asignados</div>
-          <q-list bordered separator>
-            <q-item v-for="coach in training.entrenadores" :key="coach.id">
-              <q-item-section avatar>
-                <q-avatar color="primary" text-color="white">
-                  {{ coach.nombre.charAt(0) }}
-                </q-avatar>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ coach.nombre }}</q-item-label>
-                <q-item-label caption>{{ coach.especialidad }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+        <!-- Información de suspensión -->
+        <div class="col-12" v-if="training.estado === -1 && training.usuario_cancela">
+          <div class="text-weight-bold">Suspendido por:</div>
+          <div class="q-pa-sm bg-orange-1 rounded-borders">
+            <q-icon name="warning" color="orange" class="q-mr-sm" />
+            {{ training.usuario_cancela.nombre || 'Usuario desconocido' }}
+          </div>
         </div>
       </div>
     </q-card-section>
@@ -92,6 +118,21 @@ const { training } = defineProps({
   }
 })
 
+// Función para convertir número de día a nombre
+function obtenerNombreDia(numeroDia) {
+  const dias = {
+    1: 'Lunes',
+    2: 'Martes',
+    3: 'Miércoles',
+    4: 'Jueves',
+    5: 'Viernes',
+    6: 'Sábado',
+    7: 'Domingo',
+    0: 'Domingo' // Por si usan 0 para domingo
+  }
+  return dias[numeroDia] || `Día ${numeroDia}`
+}
+
 // Formatear fecha
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -99,12 +140,13 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('es-ES', options)
 }
 
-// Obtener color para el estado (0: terminado, 1: en marcha, 2: sin comenzar)
+// Obtener color para el estado (-1: suspendido, 0: terminado, 1: en marcha, 2: sin comenzar)
 const getStatusColor = (status) => {
   const colors = {
-    0: 'grey',    // Terminada
-    1: 'positive', // En marcha
-    2: 'warning'   // Sin comenzar
+    '-1': 'orange',   // Suspendido
+    0: 'grey',        // Terminado
+    1: 'positive',    // En marcha
+    2: 'warning'      // Sin comenzar
   }
   return colors[status] || 'grey'
 }
@@ -112,7 +154,8 @@ const getStatusColor = (status) => {
 // Obtener texto para el estado
 const getStatusLabel = (status) => {
   const labels = {
-    0: 'Terminada',
+    '-1': 'Suspendido',
+    0: 'Terminado',
     1: 'En marcha',
     2: 'Sin comenzar'
   }

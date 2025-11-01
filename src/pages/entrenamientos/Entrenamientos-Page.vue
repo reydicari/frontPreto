@@ -42,6 +42,7 @@
     <q-card>
       <q-table :rows="filteredTrainings" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
         :rows-per-page-options="[5, 10, 20, 50]">
+
         <!-- Columna de estado -->
         <template v-slot:body-cell-estado="props">
           <q-td :props="props">
@@ -49,21 +50,49 @@
           </q-td>
         </template>
 
-        <!-- Columna de días -->
-        <template v-slot:body-cell-dias="props">
+        <!-- Columna de fecha fin -->
+        <template v-slot:body-cell-fecha_fin="props">
           <q-td :props="props">
-            <q-chip v-for="dia in props.row.dias.split(',')" :key="dia" size="sm" color="primary" text-color="white">
-              {{ dia }}
-            </q-chip>
+            <span v-if="props.row.fecha_fin">{{ formatDate(props.row.fecha_fin) }}</span>
+            <q-badge v-else color="info" label="Indefinido" />
+          </q-td>
+        </template>
+
+        <!-- Columna de paquete -->
+        <template v-slot:body-cell-paquete="props">
+          <q-td :props="props">
+            <div class="row items-center q-gutter-xs">
+              <q-icon :name="props.row.paquete?.disciplina?.icono || 'sports'" />
+              <span>{{ props.row.paquete?.nombre || 'Sin paquete' }}</span>
+            </div>
+          </q-td>
+        </template>
+
+        <!-- Columna de ubicación -->
+        <template v-slot:body-cell-ubicacion="props">
+          <q-td :props="props">
+            {{ props.row.ubicacion?.nombre || 'Sin ubicación' }}
           </q-td>
         </template>
 
         <!-- Columna de acciones -->
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
-            <q-btn icon="edit" color="primary" flat dense @click="editTraining(props.row)" />
-            <q-btn icon="delete" color="negative" flat dense @click="confirmDeleteTraining(props.row)" />
-            <q-btn icon="visibility" color="info" flat dense @click="viewTrainingDetails(props.row)" />
+            <q-btn icon="edit" color="primary" flat dense @click="editTraining(props.row)"
+              :disable="props.row.estado === -1">
+              <q-tooltip>Editar</q-tooltip>
+            </q-btn>
+            <q-btn icon="pause" color="warning" flat dense @click="suspendTraining(props.row)"
+              v-if="props.row.estado === 1">
+              <q-tooltip>Suspender</q-tooltip>
+            </q-btn>
+            <q-btn icon="play_arrow" color="positive" flat dense @click="resumeTraining(props.row)"
+              v-if="props.row.estado === -1">
+              <q-tooltip>Reanudar</q-tooltip>
+            </q-btn>
+            <q-btn icon="visibility" color="info" flat dense @click="viewTrainingDetails(props.row)">
+              <q-tooltip>Ver detalles</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -76,7 +105,7 @@
 
     <!-- Diálogo de detalles -->
     <q-dialog v-model="detailsDialog">
-      <TrainingDetails :training="selectedTraining" @completed="onDetailsCompleted" />
+      <DetalleEntrenamiento :training="selectedTraining" />
     </q-dialog>
   </q-page>
 </template>
@@ -84,20 +113,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import TrainingDetails from './Detalle-entrenamiento.vue'
+import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
 import { listarEntrenamientos } from "stores/entrenamientos-store.js";
-import { listar } from "stores/persona-store.js";
-// 3. callback que recibe el payload del hijo
-async function onDetailsCompleted() {
-  detailsDialog.value = false    // cierro diálogo
-  // El hijo devolvió datos si fuera necesario; actualizaciones se gestionan aquí.
-}
 
-// Mock data - en una aplicación real esto vendría de una API
-const mockTrainings = []
-
+// Mock data para coaches (se carga dinámicamente)
 const mockCoaches = []
 const $q = useQuasar()
 
@@ -157,9 +178,9 @@ const statusOptions = [
 // Columnas de la tabla
 const columns = [
   {
-    name: 'index',
+    name: 'id',
     label: 'ID',
-    field: 'index',
+    field: 'id',
     align: 'left',
     sortable: true
   },
@@ -171,37 +192,36 @@ const columns = [
     sortable: true
   },
   {
-    name: 'disciplina',
-    label: 'Disciplina',
-    field: 'disciplina',
-    align: 'left',
-    sortable: true
-  },
-  {
-    name: 'dias',
-    label: 'Días',
-    field: 'dias',
-    align: 'left'
-  },
-  {
-    name: 'horario',
-    label: 'Horario',
-    field: row => `${row.hora_inicio} (${row.horas}h)`,
-    align: 'left',
-    sortable: true
+    name: 'estado',
+    label: 'Estado',
+    field: 'estado',
+    align: 'center'
   },
   {
     name: 'fecha_inicio',
     label: 'Fecha Inicio',
     field: 'fecha_inicio',
     align: 'left',
-    sortable: true
+    sortable: true,
+    format: val => formatDate(val)
   },
   {
-    name: 'estado',
-    label: 'Estado',
-    field: 'estado',
-    align: 'center'
+    name: 'fecha_fin',
+    label: 'Fecha Fin',
+    field: 'fecha_fin',
+    align: 'left'
+  },
+  {
+    name: 'paquete',
+    label: 'Paquete',
+    field: 'paquete',
+    align: 'left'
+  },
+  {
+    name: 'ubicacion',
+    label: 'Ubicación',
+    field: 'ubicacion',
+    align: 'left'
   },
   {
     name: 'actions',
@@ -219,15 +239,30 @@ const pagination = ref({
   rowsNumber: 0
 })
 
-// Obtener entrenamientos (simulando llamada API)
-const fetchTrainings = () => {
+// Obtener entrenamientos desde el store
+const fetchTrainings = async () => {
   loading.value = true
-  // Simulando retraso de red
-  setTimeout(() => {
-    trainings.value = mockTrainings
-    pagination.value.rowsNumber = mockTrainings.length
+  try {
+    const response = await listarEntrenamientos()
+    trainings.value = Array.isArray(response) ? response : (response?.data || [])
+    pagination.value.rowsNumber = trainings.value.length
+  } catch (error) {
+    console.error('Error cargando entrenamientos:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Error al cargar los entrenamientos',
+      position: 'top'
+    })
+  } finally {
     loading.value = false
-  }, 500)
+  }
+}
+
+// Formatear fecha
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const options = { year: 'numeric', month: 'short', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString('es-ES', options)
 }
 
 // Filtrar entrenamientos
@@ -310,6 +345,8 @@ const editTraining = (training) => {
 const onDialogSave = (payload) => {
   // adapt payload and reuse saveTraining behavior
   currentTraining.value = { ...payload }
+  console.log(currentTraining.value);
+
   // mimic saveTraining logic
   const trainingData = {
     ...currentTraining.value,
@@ -331,18 +368,43 @@ const onDialogSave = (payload) => {
 
 // stepper/coach helpers moved to dialog component
 
-// Confirmar eliminación de entrenamiento
-const confirmDeleteTraining = (training) => {
+// Suspender entrenamiento
+const suspendTraining = (training) => {
   $q.dialog({
-    title: 'Confirmar eliminación',
-    message: `¿Estás seguro de que quieres eliminar el entrenamiento "${training.nombre}"?`,
+    title: 'Confirmar suspensión',
+    message: `¿Estás seguro de que quieres suspender el entrenamiento "${training.nombre}"?`,
     cancel: true,
     persistent: true
   }).onOk(() => {
-    trainings.value = trainings.value.filter(t => t.id !== training.id)
+    // Aquí harías la llamada a la API para suspender
+    const index = trainings.value.findIndex(t => t.id === training.id)
+    if (index !== -1) {
+      trainings.value[index].estado = -1
+      // Aquí también podrías agregar usuario_cancela si es necesario
+    }
     $q.notify({
       type: 'positive',
-      message: 'Entrenamiento eliminado correctamente'
+      message: 'Entrenamiento suspendido correctamente'
+    })
+  })
+}
+
+// Reanudar entrenamiento
+const resumeTraining = (training) => {
+  $q.dialog({
+    title: 'Confirmar reanudación',
+    message: `¿Estás seguro de que quieres reanudar el entrenamiento "${training.nombre}"?`,
+    cancel: true,
+    persistent: true
+  }).onOk(() => {
+    // Aquí harías la llamada a la API para reanudar
+    const index = trainings.value.findIndex(t => t.id === training.id)
+    if (index !== -1) {
+      trainings.value[index].estado = 1
+    }
+    $q.notify({
+      type: 'positive',
+      message: 'Entrenamiento reanudado correctamente'
     })
   })
 }
@@ -365,12 +427,13 @@ const clearFilters = () => {
 
 // formatDate is not used in this page; details component handles formatting
 
-// Obtener color para el estado
+// Obtener color para el estado (-1: suspendido, 0: terminado, 1: en marcha, 2: sin comenzar)
 const getStatusColor = (status) => {
   const colors = {
-    0: 'negative', // Inactivo
-    1: 'positive', // Activo
-    2: 'info'      // Completado
+    '-1': 'orange',   // Suspendido
+    0: 'grey',        // Terminado
+    1: 'positive',    // En marcha
+    2: 'warning'      // Sin comenzar
   }
   return colors[status] || 'grey'
 }
@@ -378,23 +441,21 @@ const getStatusColor = (status) => {
 // Obtener texto para el estado
 const getStatusLabel = (status) => {
   const labels = {
-    0: 'Inactivo',
-    1: 'Activo',
-    2: 'Completado'
+    '-1': 'Suspendido',
+    0: 'Terminado',
+    1: 'En marcha',
+    2: 'Sin comenzar'
   }
   return labels[status] || 'Desconocido'
 }
 
 // Cargar datos iniciales
 onMounted(async () => {
-  mockTrainings.value = await listarEntrenamientos()
+  // Cargar disciplinas para filtros
   mockCoaches.value = await listarDisciplinas()
-  const entrenadores = await listar('entrenador')
-  entrenadores.value = entrenadores
   disciplineOptions.value = mockCoaches.value
-  console.log('entrenamientos: ', mockTrainings.value)
-  console.log('entrenadores: ', entrenadores.value)
 
+  // Cargar entrenamientos directamente en trainings
   fetchTrainings()
 })
 
