@@ -59,7 +59,7 @@
                     max-width="300px">
                     <div class="text-subtitle2 q-mb-sm">Horarios de {{ p.nombre }}</div>
                     <div v-for="h in p.horarios" :key="h.id" class="text-caption">
-                      {{ h.dia }}: {{ h.hora_inicio }} - {{ h.hora_fin }}
+                      {{ obtenerNombreDia(h.dia) }}: {{ h.hora_inicio }} - {{ h.hora_fin }}
                     </div>
                   </q-tooltip>
 
@@ -73,7 +73,7 @@
               <!-- Botón copiar fechas del paquete seleccionado -->
               <div v-if="local.id_paquete && selectedPaquete" class="q-mt-sm">
                 <q-btn flat icon="content_copy" label="Copiar fechas del paquete" color="white" class="bg-accent"
-                  size="sm" @click="copiarFechasPaquete" />
+                  @click="copiarFechasPaquete" />
               </div>
             </div>
 
@@ -82,7 +82,7 @@
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn flat label="Cancelar" @click="onCancel" />
+        <q-btn flat color="negative" label="Cancelar" @click="onCancel" />
         <q-btn color="primary" label="Guardar" @click="onSave" />
       </q-card-actions>
     </q-card>
@@ -260,6 +260,26 @@ onMounted(() => {
 function selectPaqueteCard(p) {
   local.value.id_paquete = p.id
   mostrarErrorPaquete.value = false // Limpiar error al seleccionar
+
+  // Si el nombre está vacío, copiar el nombre del paquete
+  if (!local.value.nombre || local.value.nombre.trim() === '') {
+    local.value.nombre = p.nombre
+  }
+}
+
+// Función para convertir número de día a nombre
+function obtenerNombreDia(numeroDia) {
+  const dias = {
+    1: 'Lunes',
+    2: 'Martes',
+    3: 'Miércoles',
+    4: 'Jueves',
+    5: 'Viernes',
+    6: 'Sábado',
+    7: 'Domingo',
+    0: 'Domingo' // Por si usan 0 para domingo
+  }
+  return dias[numeroDia] || `Día ${numeroDia}`
 }
 
 function validarObservacion(val) {
@@ -322,6 +342,16 @@ function computeEstado() {
 function onSave() {
   // Resetear errores visuales
   mostrarErrorPaquete.value = false
+
+  // Validar específicamente el campo nombre
+  if (!local.value.nombre || local.value.nombre.trim() === '') {
+    $q.notify({ type: 'negative', message: 'El nombre es requerido' })
+    // Forzar validación del campo nombre para mostrar error visual
+    if (nombreRef.value) {
+      nombreRef.value.validate()
+    }
+    return
+  }
 
   // Validar formulario primero
   const isFormValid = formRef.value?.validate()
