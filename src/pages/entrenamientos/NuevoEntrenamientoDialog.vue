@@ -38,7 +38,7 @@
 
             <div class="col-md-12">
               <q-input v-model="local.observacion" label="Observación" type="textarea" outlined dense
-                :rules="[validarObservacion]" counter maxlength="500" hint="Máximo 100 palabras" />
+                :rules="[validarObservacion]" counter maxlength="100" hint="Máximo 100 palabras" />
             </div>
 
 

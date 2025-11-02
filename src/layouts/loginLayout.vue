@@ -101,25 +101,23 @@ const onSubmit = async () => {
   try {
     entrando.value = true
     const data = await loguear(form.value)
-    setTimeout(() => {
-      if (data.token) {
-        sessionStorage.setItem('token', data.token);
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-        $q.notify({
-          type: 'positive',
-          message: data.mensaje,
-          position: 'top',
-        })
-        router.push('/main');
-      } else {
-        entrando.value = false
-        $q.notify({
-          type: 'negative',
-          message: 'Usuario y contraseña incorrectos',//data.error,
-          position: 'top',
-        })
-      }
-    }, 500)
+    if (data.token) {
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('user', JSON.stringify(data.user));
+      $q.notify({
+        type: 'positive',
+        message: data.mensaje,
+        position: 'top',
+      })
+      router.push('/main');
+    } else {
+      entrando.value = false
+      $q.notify({
+        type: 'negative',
+        message: 'Usuario y contraseña incorrectos',//data.error,
+        position: 'top',
+      })
+    }
   } catch (error) {
     console.log(error)
     //   showErrorDialog({

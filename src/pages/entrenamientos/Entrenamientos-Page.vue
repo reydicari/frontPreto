@@ -9,7 +9,6 @@
       <q-card-section>
         <div class="row items-center justify-between">
           <!-- Botón para agregar entrenamiento -->
-          <q-btn color="primary" icon="add" label="Nuevo Entrenamiento" @click="showTrainingDialog" />
 
           <!-- Buscador -->
           <q-input v-model="searchTerm" outlined dense placeholder="Buscar entrenamientos..." class="col-md-4">
@@ -17,15 +16,25 @@
               <q-icon name="search" />
             </template>
           </q-input>
+          <q-btn color="primary" icon="add" label="Nuevo Entrenamiento" @click="showTrainingDialog" />
+
         </div>
 
         <!-- Filtros avanzados -->
         <q-expansion-item v-model="filtersExpanded" label="Filtros avanzados" class="q-mt-sm">
           <div class="row q-col-gutter-md q-pt-md">
-            <q-select v-model="filterDiscipline" :options="disciplineOptions" option-value="id" option-label="nombre"
-              label="Disciplina" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
-            <q-select v-model="filterStatus" :options="statusOptions" label="Estado" outlined dense clearable
-              class="col-md-3 col-sm-6 col-xs-12" />
+            <q-select v-model="filterDiscipline" emit-value map-options :options="disciplineOptions" option-value="id"
+              option-label="nombre" label="Disciplina" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+
+            <q-select v-model="filterPaquete" emit-value map-options :options="paqueteOptions" option-value="id"
+              option-label="nombre" label="Paquete" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+
+            <q-select v-model="filterUbicacion" emit-value map-options :options="ubicacionesOptions" option-value="id"
+              option-label="nombre" label="Ubicación" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+
+            <q-select v-model="filterStatus" :options="statusOptions" emit-value option-value="value"
+              option-label="label" label="Estado" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+
             <q-input v-model="filterDateFrom" label="Fecha inicio desde" type="date" outlined dense
               class="col-md-3 col-sm-6 col-xs-12" />
             <q-input v-model="filterDateTo" label="Fecha inicio hasta" type="date" outlined dense
@@ -124,20 +133,16 @@ import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
 import { crearEntrenamiento, listarEntrenamientos } from "stores/entrenamientos-store.js";
+import { listarPaquetes } from "stores/paquete-store.js";
+import { listarUbicaciones } from "stores/ubicacion-store.js";
 
 // Mock data para coaches (se carga dinámicamente)
-const mockCoaches = []
+const mockCoaches = ref([])
 const $q = useQuasar()
 
 // Paquetes / ubicaciones demo (en la app real vendrían de la API)
-const paqueteOptions = ref([
-  { id: 1, nombre: 'Paquete A', max_estudiantes: 20, edad_minima: 6, edad_maxima: 12, horarios: [{ id: 1, dia: 1, hora_inicio: '08:00', hora_fin: '10:00' }] },
-  { id: 2, nombre: 'Paquete B', max_estudiantes: 15, edad_minima: 10, edad_maxima: 16, horarios: [] }
-])
-const ubicacionesOptions = ref([
-  { id: 1, nombre: 'Cancha Principal' },
-  { id: 2, nombre: 'Gimnasio' }
-])
+const paqueteOptions = ref([])
+const ubicacionesOptions = ref([])
 
 // Estado del componente
 const trainings = ref([])
@@ -175,10 +180,15 @@ const currentTraining = ref({
 // Opciones para filtros y selects
 const disciplineOptions = ref([])
 const statusOptions = [
-  { label: 'Activo', value: 1 },
-  { label: 'Inactivo', value: 0 },
-  { label: 'Completado', value: 2 }
+  { label: 'Suspendido', value: -1 },
+  { label: 'Terminado', value: 0 },
+  { label: 'En marcha', value: 1 },
+  { label: 'Sin comenzar', value: 2 }
 ]
+
+// Filtros adicionales
+const filterPaquete = ref(null)
+const filterUbicacion = ref(null)
 // days options are handled inside the dialog component
 
 // Columnas de la tabla
@@ -251,6 +261,8 @@ const fetchTrainings = async () => {
   try {
     const response = await listarEntrenamientos()
     trainings.value = Array.isArray(response) ? response : (response?.data || [])
+    // Normalizar entrenamientos (mapear ids a objetos de paquete/ubicacion si es necesario)
+    normalizeTrainings()
     pagination.value.rowsNumber = trainings.value.length
   } catch (error) {
     console.error('Error cargando entrenamientos:', error)
@@ -264,6 +276,31 @@ const fetchTrainings = async () => {
   }
 }
 
+// Normalizar trainings: si paquete/ubicacion vienen como ids, reemplazarlos
+const normalizeTrainings = () => {
+  if (!Array.isArray(trainings.value)) return
+  trainings.value = trainings.value.map(t => {
+    const copy = { ...t }
+
+    // Paquete puede venir como id o como objeto
+    if (copy.paquete && (typeof copy.paquete === 'number' || typeof copy.paquete === 'string')) {
+      copy.paquete = paqueteOptions.value.find(p => String(p.id) === String(copy.paquete)) || null
+    }
+
+    // Si paquete existe y su disciplina es id, mapearlo
+    if (copy.paquete && copy.paquete.disciplina && (typeof copy.paquete.disciplina === 'number' || typeof copy.paquete.disciplina === 'string')) {
+      copy.paquete.disciplina = disciplineOptions.value.find(d => String(d.id) === String(copy.paquete.disciplina)) || { id: copy.paquete.disciplina }
+    }
+
+    // Ubicación puede venir como id o como objeto
+    if (copy.ubicacion && (typeof copy.ubicacion === 'number' || typeof copy.ubicacion === 'string')) {
+      copy.ubicacion = ubicacionesOptions.value.find(u => String(u.id) === String(copy.ubicacion)) || null
+    }
+
+    return copy
+  })
+}
+
 // Formatear fecha
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -273,39 +310,58 @@ const formatDate = (dateString) => {
 
 // Filtrar entrenamientos
 const filteredTrainings = computed(() => {
-  let result = trainings.value
+  let result = trainings.value || []
 
-  // Filtro de búsqueda general
+  // Filtro de búsqueda general: nombre, paquete, disciplina, ubicacion, observación
   if (searchTerm.value) {
     const term = searchTerm.value.toLowerCase()
-    result = result.filter(
-      training =>
-        training.nombre.toLowerCase().includes(term) ||
-        training.disciplina.toLowerCase().includes(term) ||
-        training.observacion?.toLowerCase().includes(term)
-    )
+    result = result.filter(training => {
+      const nombre = String(training.nombre || '').toLowerCase()
+      const observ = String(training.observacion || '').toLowerCase()
+      const paqueteNombre = String(training.paquete?.nombre || '').toLowerCase()
+      const disciplinaNombre = String(training.paquete?.disciplina?.nombre || '').toLowerCase()
+      const ubicacionNombre = String(training.ubicacion?.nombre || '').toLowerCase()
+
+      return (
+        nombre.includes(term) ||
+        observ.includes(term) ||
+        paqueteNombre.includes(term) ||
+        disciplinaNombre.includes(term) ||
+        ubicacionNombre.includes(term)
+      )
+    })
   }
 
-  // Filtro por disciplina
+  // Filtro por disciplina (por id de disciplina)
   if (filterDiscipline.value) {
-    result = result.filter(training => training.disciplina === filterDiscipline.value)
+    result = result.filter(t => t.paquete?.disciplina?.id === filterDiscipline.value)
+  }
+
+  // Filtro por paquete
+  if (filterPaquete.value) {
+    result = result.filter(t => t.paquete?.id === filterPaquete.value)
+  }
+
+  // Filtro por ubicación
+  if (filterUbicacion.value) {
+    result = result.filter(t => t.ubicacion?.id === filterUbicacion.value)
   }
 
   // Filtro por estado
-  if (filterStatus.value !== null) {
+  if (filterStatus.value !== null && filterStatus.value !== undefined) {
     result = result.filter(training => training.estado === filterStatus.value)
   }
 
-  // Filtro por fecha
+  // Filtro por fecha de inicio
   if (filterDateFrom.value) {
     result = result.filter(
-      training => new Date(training.fecha_inicio) >= new Date(filterDateFrom.value)
+      training => training.fecha_inicio && new Date(training.fecha_inicio) >= new Date(filterDateFrom.value)
     )
   }
 
   if (filterDateTo.value) {
     result = result.filter(
-      training => new Date(training.fecha_inicio) <= new Date(filterDateTo.value)
+      training => training.fecha_inicio && new Date(training.fecha_inicio) <= new Date(filterDateTo.value)
     )
   }
 
@@ -425,6 +481,8 @@ const viewTrainingDetails = (training) => {
 const clearFilters = () => {
   searchTerm.value = ''
   filterDiscipline.value = null
+  filterPaquete.value = null
+  filterUbicacion.value = null
   filterStatus.value = null
   filterDateFrom.value = null
   filterDateTo.value = null
@@ -459,6 +517,20 @@ onMounted(async () => {
   // Cargar disciplinas para filtros
   mockCoaches.value = await listarDisciplinas()
   disciplineOptions.value = mockCoaches.value
+  // Cargar paquetes y ubicaciones para filtros
+  try {
+    const paquetesResp = await listarPaquetes()
+    paqueteOptions.value = Array.isArray(paquetesResp) ? paquetesResp : (paquetesResp?.data || [])
+  } catch (e) {
+    console.warn('No se pudieron cargar paquetes:', e)
+  }
+
+  try {
+    const ubicResp = await listarUbicaciones()
+    ubicacionesOptions.value = Array.isArray(ubicResp) ? ubicResp : (ubicResp?.data || [])
+  } catch (e) {
+    console.warn('No se pudieron cargar ubicaciones:', e)
+  }
 
   // Cargar entrenamientos directamente en trainings
   fetchTrainings()
