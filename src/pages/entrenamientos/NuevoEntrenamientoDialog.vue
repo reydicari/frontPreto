@@ -5,7 +5,7 @@
         <div class="text-h6">{{ isEdit ? 'Editar Entrenamiento' : 'Nuevo Entrenamiento' }}</div>
       </q-card-section>
 
-      <q-card-section>
+      <q-card-section v-if="currentStep === 1">
         <q-form @submit.prevent="onSave" class="q-gutter-md q-ml-xs" ref="formRef">
           <div class="row q-col-gutter-md">
             <q-input v-model="local.nombre" label="Nombre" outlined dense class="col-md-6"
@@ -81,9 +81,25 @@
         </q-form>
       </q-card-section>
 
+      <!-- Paso 2: selección de entrenadores -->
+      <q-card-section v-if="currentStep === 2">
+        <div class="text-subtitle1 q-mb-sm">Seleccionar Entrenadores</div>
+        <q-table :rows="entrenadoresList" :columns="coachColumns" row-key="id" selection="multiple"
+          v-model:selected="selectedCoaches" :loading="loadingCoaches">
+          <template v-slot:body-cell-edad="props">
+            <q-td :props="props">{{ calcularEdad(props.row.fecha_nacimiento) }}</q-td>
+          </template>
+        </q-table>
+      </q-card-section>
+
+      <!-- Stepper actions -->
       <q-card-actions align="right">
         <q-btn flat color="negative" label="Cancelar" @click="onCancel" />
-        <q-btn color="primary" label="Guardar" @click="onSave" />
+        <q-btn v-if="currentStep === 1" color="primary" label="Siguiente" @click="goToStep2" />
+        <div v-else>
+          <q-btn flat color="primary" label="Volver" @click="currentStep = 1" />
+          <q-btn color="primary" label="Guardar" @click="onSave" />
+        </div>
       </q-card-actions>
     </q-card>
 
@@ -112,6 +128,8 @@
     </q-dialog>
 
   </q-dialog>
+
+
 </template>
 
 <script setup>
@@ -119,6 +137,7 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { listarPaquetes } from 'src/stores/paquete-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
+import { listar } from 'src/stores/persona-store'
 
 const $q = useQuasar()
 
@@ -140,6 +159,20 @@ const fechaInicioRef = ref(null)
 const fechaFinRef = ref(null)
 const ubicacionRef = ref(null)
 const mostrarErrorPaquete = ref(false)
+// Stepper
+const currentStep = ref(1)
+
+// Entrenadores (paso 2)
+const entrenadoresList = ref([])
+const loadingCoaches = ref(false)
+const selectedCoaches = ref([])
+const coachColumns = [
+  { name: 'nombres', label: 'Nombres', field: row => `${row.nombres}` },
+  { name: 'apellido_paterno', label: 'Apellido Paterno', field: 'apellido_paterno' },
+  { name: 'apellido_materno', label: 'Apellido Materno', field: 'apellido_materno' },
+  { name: 'telefono', label: 'Teléfono', field: 'telefono' },
+  { name: 'edad', label: 'Edad', field: 'fecha_nacimiento' }
+]
 
 // Computed para formatear ubicaciones para el select
 const ubicacionesFormateadas = computed(() => {
@@ -253,7 +286,64 @@ async function loadUbicaciones() {
 onMounted(() => {
   loadPaquetes()
   loadUbicaciones()
+  // no cargamos entrenadores de inicio; se cargan al pasar al paso 2
 })
+
+// Cargar entrenadores
+async function loadEntrenadores() {
+  loadingCoaches.value = true
+  try {
+    // algunos lugares usan listar('entrenador') pasando un string
+    const res = await listar({ tipo_persona: 'entrenador' })
+    entrenadoresList.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (e) {
+    console.error('Error cargando entrenadores:', e)
+    entrenadoresList.value = []
+  } finally {
+    loadingCoaches.value = false
+  }
+}
+
+// Calcular edad desde fecha de nacimiento (YYYY-MM-DD o ISO)
+function calcularEdad(fechaNacimiento) {
+  if (!fechaNacimiento) return ''
+  const hoy = new Date()
+  const nacimiento = new Date(fechaNacimiento)
+  let edad = hoy.getFullYear() - nacimiento.getFullYear()
+  const m = hoy.getMonth() - nacimiento.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--
+  }
+  return edad
+}
+
+// Ir al paso 2 validando primero el paso 1
+async function goToStep2() {
+  mostrarErrorPaquete.value = false
+
+  // Validar nombre
+  if (!local.value.nombre || local.value.nombre.trim() === '') {
+    $q.notify({ type: 'negative', message: 'El nombre es requerido' })
+    if (nombreRef.value) nombreRef.value.validate()
+    return
+  }
+
+  const isFormValid = formRef.value?.validate()
+  if (!isFormValid) {
+    $q.notify({ type: 'negative', message: 'Por favor completa todos los campos requeridos' })
+    return
+  }
+
+  if (!local.value.id_paquete) {
+    mostrarErrorPaquete.value = true
+    $q.notify({ type: 'negative', message: 'El paquete es requerido' })
+    return
+  }
+
+  // cargar entrenadores y cambiar a paso 2
+  await loadEntrenadores()
+  currentStep.value = 2
+}
 
 
 
@@ -340,6 +430,12 @@ function computeEstado() {
 }
 
 function onSave() {
+  // Si estamos en el paso 1 y llaman a guardar, llevar al paso 2
+  if (currentStep.value === 1) {
+    goToStep2()
+    return
+  }
+
   // Resetear errores visuales
   mostrarErrorPaquete.value = false
 
@@ -373,10 +469,16 @@ function onSave() {
   local.value.estado = computeEstado()
   // no enviar usuario_cancela desde el diálogo (se gestionará automáticamente si corresponde)
   const payload = { ...local.value }
+  // Adjuntar entrenadores seleccionados (ids)
+  payload.entrenadores = (selectedCoaches.value || []).map(c => c.id || c)
   delete payload.usuario_cancela
   emit('save', payload)
   modelValue.value = false
-} function onCancel() {
+  // reset step
+  currentStep.value = 1
+}
+
+function onCancel() {
   emit('cancel')
   modelValue.value = false
 }
