@@ -436,13 +436,16 @@ const onDialogSave = async (payload) => {
   console.log(trainingData);
 
   if (editMode.value) {
+    console.log('modificando');
     await modificarEntrenamiento(trainingData)
-    fetchTrainings()
   } else {
+    console.log('creando');
+
     await crearEntrenamiento(trainingData)
-    fetchTrainings()
   }
   trainingDialog.value = false
+  fetchTrainings()
+
 }
 
 // stepper/coach helpers moved to dialog component
