@@ -34,3 +34,22 @@ export const crearEntrenamiento = async (data) => {
     return error.response.data;
   }
 };
+export const modificarEntrenamiento = async (data) => {
+  try {
+    const response = await api.put(URL_PART + "/modificar", data);
+    Notify.create({
+      type: "info",
+      message: "Entrenamiento modificado con éxito",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al modificar entrenamiento",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};

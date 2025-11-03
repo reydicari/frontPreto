@@ -132,12 +132,14 @@ import { useQuasar } from 'quasar'
 import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
-import { crearEntrenamiento, listarEntrenamientos } from "stores/entrenamientos-store.js";
+import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento } from "stores/entrenamientos-store.js";
+import { listar } from 'stores/persona-store.js'
 import { listarPaquetes } from "stores/paquete-store.js";
 import { listarUbicaciones } from "stores/ubicacion-store.js";
 
 // Mock data para coaches (se carga dinámicamente)
 const mockCoaches = ref([])
+const coachesList = ref([])
 const $q = useQuasar()
 
 // Paquetes / ubicaciones demo (en la app real vendrían de la API)
@@ -297,6 +299,19 @@ const normalizeTrainings = () => {
       copy.ubicacion = ubicacionesOptions.value.find(u => String(u.id) === String(copy.ubicacion)) || null
     }
 
+    // Entrenadores: puede venir como ids o como objetos. Mapear a objetos si tenemos la lista de coaches
+    if (Array.isArray(copy.entrenadores)) {
+      const mapped = copy.entrenadores.map(e => {
+        if (e && typeof e === 'object') return e
+        // buscar en coachesList
+        const found = coachesList.value.find(c => String(c.id) === String(e))
+        return found || (typeof e === 'object' ? e : { id: e })
+      })
+      copy.entrenadores = mapped
+    } else {
+      copy.entrenadores = []
+    }
+
     return copy
   })
 }
@@ -408,18 +423,21 @@ const editTraining = (training) => {
 const onDialogSave = async (payload) => {
   // adapt payload and reuse saveTraining behavior
   currentTraining.value = { ...payload }
-  console.log(currentTraining.value);
 
   // mimic saveTraining logic
   const trainingData = {
     ...currentTraining.value,
-    entrenadores: (currentTraining.value.entrenadores || []).map(c => c.id || c)
+    // Prefer full objects if the dialog provided them (entrenadores_obj),
+    // otherwise store ids. For local list we keep objects when available.
+    entrenadores: Array.isArray(payload?.entrenadores_obj) && payload.entrenadores_obj.length
+      ? payload.entrenadores_obj
+      : (currentTraining.value.entrenadores || []).map(c => (c && c.id) ? c : c)
   }
+  console.log(trainingData);
 
   if (editMode.value) {
-    const index = trainings.value.findIndex(t => t.id === trainingData.id)
-    if (index !== -1) trainings.value[index] = trainingData
-    $q.notify({ type: 'positive', message: 'Entrenamiento actualizado correctamente' })
+    await modificarEntrenamiento(trainingData)
+    fetchTrainings()
   } else {
     await crearEntrenamiento(trainingData)
     fetchTrainings()
@@ -530,6 +548,14 @@ onMounted(async () => {
     ubicacionesOptions.value = Array.isArray(ubicResp) ? ubicResp : (ubicResp?.data || [])
   } catch (e) {
     console.warn('No se pudieron cargar ubicaciones:', e)
+  }
+
+  // Cargar lista de entrenadores para normalizar entrenadores por id -> objeto
+  try {
+    const entrenadoresResp = await listar({ tipo_persona: 'entrenador' })
+    coachesList.value = Array.isArray(entrenadoresResp) ? entrenadoresResp : (entrenadoresResp?.data || [])
+  } catch (e) {
+    console.warn('No se pudieron cargar entrenadores:', e)
   }
 
   // Cargar entrenamientos directamente en trainings

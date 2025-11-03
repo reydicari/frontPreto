@@ -88,6 +88,21 @@
           <div class="q-pa-sm bg-grey-1 rounded-borders">{{ training.observacion }}</div>
         </div>
 
+        <!-- Entrenadores asignados -->
+        <div class="col-12" v-if="training.entrenadores && training.entrenadores.length">
+          <div class="text-weight-bold q-mb-sm">Entrenadores asignados:</div>
+          <q-list bordered>
+            <q-item v-for="coach in training.entrenadores" :key="coach.id">
+              <q-item-section>
+                <q-item-label>{{ coach.nombres || coach.nombre || '' }} {{ coach.apellido_paterno || '' }} {{ coach.apellido_materno || '' }}</q-item-label>
+                <q-item-label caption>
+                  Tel: {{ coach.telefono || 'N/A' }} • Edad: {{ calcularEdad(coach.fecha_nacimiento) || 'N/D' }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
+
         <!-- Información de suspensión -->
         <div class="col-12" v-if="training.estado === -1 && training.usuario_cancela">
           <div class="text-weight-bold">Suspendido por:</div>
@@ -160,6 +175,19 @@ const getStatusLabel = (status) => {
     2: 'Sin comenzar'
   }
   return labels[status] || 'Desconocido'
+}
+
+// Calcular edad desde fecha de nacimiento
+const calcularEdad = (fechaNacimiento) => {
+  if (!fechaNacimiento) return ''
+  const hoy = new Date()
+  const nacimiento = new Date(fechaNacimiento)
+  let edad = hoy.getFullYear() - nacimiento.getFullYear()
+  const m = hoy.getMonth() - nacimiento.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--
+  }
+  return edad
 }
 
 </script>

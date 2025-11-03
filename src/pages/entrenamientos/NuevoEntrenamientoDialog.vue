@@ -251,6 +251,31 @@ watch(() => props.training, (t) => {
   }
 }, { immediate: true })
 
+// Si vienen entrenadores en props.training, preseleccionarlos (acepta ids o objetos)
+watch(() => props.training, async (t) => {
+  if (t && Array.isArray(t.entrenadores) && t.entrenadores.length) {
+    // ensure coaches list is loaded
+    await loadEntrenadores()
+    const sel = []
+    for (const e of t.entrenadores) {
+      if (e && typeof e === 'object') {
+        const found = entrenadoresList.value.find(x => String(x.id) === String(e.id))
+        sel.push(found || e)
+      } else {
+        const found = entrenadoresList.value.find(x => String(x.id) === String(e))
+        if (found) sel.push(found)
+        else sel.push({ id: e })
+      }
+    }
+    selectedCoaches.value = sel
+    // also keep the local model in sync with full objects
+    local.value.entrenadores = sel
+  } else {
+    selectedCoaches.value = []
+    local.value.entrenadores = []
+  }
+}, { immediate: true })
+
 // Cargar paquetes desde el store y popular el carrusel
 async function loadPaquetes() {
   try {
@@ -436,46 +461,29 @@ function onSave() {
     return
   }
 
-  // Resetear errores visuales
+  // --- Estamos en el paso 2: finalizar sin volver a validar el formulario del paso 1 ---
+  // Resetear errores visuales (por si acaso)
   mostrarErrorPaquete.value = false
 
-  // Validar específicamente el campo nombre
-  if (!local.value.nombre || local.value.nombre.trim() === '') {
-    $q.notify({ type: 'negative', message: 'El nombre es requerido' })
-    // Forzar validación del campo nombre para mostrar error visual
-    if (nombreRef.value) {
-      nombreRef.value.validate()
-    }
-    return
-  }
-
-  // Validar formulario primero
-  const isFormValid = formRef.value?.validate()
-
-  // Validar paquete seleccionado
-  if (!local.value.id_paquete) {
-    mostrarErrorPaquete.value = true
-    $q.notify({ type: 'negative', message: 'El paquete es requerido' })
-    return
-  }
-
-  // Si el formulario no es válido, no continuar
-  if (!isFormValid) {
-    $q.notify({ type: 'negative', message: 'Por favor completa todos los campos requeridos' })
-    return
-  }
-
-  // calcular estado automáticamente antes de emitir
+  // Calcular estado automáticamente antes de emitir
   local.value.estado = computeEstado()
-  // no enviar usuario_cancela desde el diálogo (se gestionará automáticamente si corresponde)
+
+  // Preparar payload. Los entrenadores son opcionales — puede ser vacío.
+  // sincronizar local.entrenadores con la selección actual (objetos)
+  local.value.entrenadores = (selectedCoaches.value || []).map(c => ({ ...c }))
   const payload = { ...local.value }
-  // Adjuntar entrenadores seleccionados (ids)
+  // ids para backend
   payload.entrenadores = (selectedCoaches.value || []).map(c => c.id || c)
+  // incluir objetos completos para uso en la UI/lista local
+  payload.entrenadores_obj = (selectedCoaches.value || []).map(c => ({ ...c }))
   delete payload.usuario_cancela
+
   emit('save', payload)
   modelValue.value = false
-  // reset step
+
+  // resetear estado interno para la próxima apertura
   currentStep.value = 1
+  selectedCoaches.value = []
 }
 
 function onCancel() {
