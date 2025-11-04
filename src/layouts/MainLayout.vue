@@ -38,25 +38,25 @@
         </q-item-label>
 
         <q-list bordered>
-          <q-item clickable v-ripple v-if="tienePermiso(1)" @click="navegar('main')">
+          <q-item clickable v-ripple v-if="tienePermiso(0)" @click="navegar('main')">
             <q-item-section avatar>
               <q-icon color="primary" name="home" />
             </q-item-section>
             <q-item-section>Menu principal</q-item-section>
           </q-item>
-          <q-item clickable v-ripple v-if="tienePermiso(2)" @click="navegar('inicio')">
+          <q-item clickable v-ripple v-if="tienePermiso(1)" @click="navegar('inicio')">
             <q-item-section avatar>
               <q-icon color="primary" name="account_circle" />
             </q-item-section>
             <q-item-section>Area personal</q-item-section>
           </q-item>
 
-          <div v-if="tienePermiso(3)">
+          <div v-if="tieneAlguno([2, 3])">
             <q-list bordered>
               <q-expansion-item group="somegroup" icon="person" class="" label="Gestion de usuarios"
                 header-class="text-primary">
                 <q-list class="bg-grey-7">
-                  <q-item clickable v-close-popup v-if="tienePermiso(3)" @click="navegar('usuarios')">
+                  <q-item clickable v-close-popup v-if="tienePermiso(2)" @click="navegar('usuarios')">
                     <q-item-section>
                       <q-item-label class="secondary_item">
                         <q-icon name="keyboard_double_arrow_right" class="q-mr-sm" />Usuarios
@@ -64,7 +64,7 @@
                     </q-item-section>
                   </q-item>
 
-                  <q-item clickable v-close-popup v-if="tienePermiso(4)" @click="navegar('roles')">
+                  <q-item clickable v-close-popup v-if="tienePermiso(3)" @click="navegar('roles')">
                     <q-item-section>
                       <q-item-label class="secondary_item">
                         <q-icon name="keyboard_double_arrow_right" class="q-mr-sm" />Roles
@@ -76,21 +76,21 @@
             </q-list>
           </div>
 
-          <q-item clickable v-ripple v-if="tienePermiso(5)" @click="navegar('inscripciones')">
+          <q-item clickable v-ripple v-if="tienePermiso(4)" @click="navegar('inscripciones')">
             <q-item-section avatar>
               <q-icon color="primary" name="local_activity" />
             </q-item-section>
             <q-item-section>Inscripciones</q-item-section>
           </q-item>
 
-          <q-item clickable v-if="tienePermiso(11)" v-ripple @click="navegar('paquetes')">
+          <q-item clickable v-if="tienePermiso(5)" v-ripple @click="navegar('paquetes')">
             <q-item-section avatar>
               <q-icon color="primary" name="square" />
             </q-item-section>
             <q-item-section>Paquetes</q-item-section>
           </q-item>
 
-          <div v-if="tienePermiso(4)">
+          <div v-if="tieneAlguno([6, 7])">
             <q-list bordered>
               <q-expansion-item group="somegroup" icon="groups" class="" label="Miembros" header-class="text-primary">
                 <q-list class="bg-grey-7">
@@ -103,7 +103,7 @@
                     <q-item-section>Estudiantes</q-item-section>
                   </q-item>
 
-                  <q-item clickable v-if="tienePermiso(10)" v-ripple @click="navegar('entrenadores')">
+                  <q-item clickable v-if="tienePermiso(7)" v-ripple @click="navegar('entrenadores')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="hail" />
@@ -116,11 +116,11 @@
             </q-list>
           </div>
 
-          <div v-if="tienePermiso(4)">
+          <div v-if="tieneAlguno([8, 9])">
             <q-list bordered>
               <q-expansion-item group="somegroup" icon="groups" class="" label="Financiero" header-class="text-primary">
                 <q-list class="bg-grey-7">
-                  <q-item clickable v-if="tienePermiso(7)" v-ripple @click="navegar('gastos')">
+                  <q-item clickable v-if="tienePermiso(8)" v-ripple @click="navegar('gastos')">
                     <q-item-section avatar>
                       <q-icon color="primary" name="request_quote" />
                     </q-item-section>
@@ -133,20 +133,6 @@
                     </q-item-section>
                     <q-item-section>Pagos</q-item-section>
                   </q-item>
-
-                  <q-item clickable v-if="tienePermiso(7)" v-ripple @click="navegar('vista4')">
-                    <q-item-section avatar>
-                      <q-icon color="primary" name="request_quote" />
-                    </q-item-section>
-                    <q-item-section>Categorias de pago/gasto</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-if="tienePermiso(9)" v-ripple @click="navegar('pagos')">
-                    <q-item-section avatar>
-                      <q-icon color="primary" name="text_snippet" />
-                    </q-item-section>
-                    <q-item-section>Metodos de pago/gasto</q-item-section>
-                  </q-item>
                 </q-list>
               </q-expansion-item>
             </q-list>
@@ -154,11 +140,11 @@
 
 
 
-          <div v-if="tienePermiso(4)">
+          <div v-if="tieneAlguno([10, 11, 12, 13, 14])">
             <q-list bordered>
               <q-expansion-item group="somegroup" icon="person" class="" label="Deportivo" header-class="text-primary">
                 <q-list class="bg-grey-7">
-                  <q-item clickable v-if="tienePermiso(11)" v-ripple @click="navegar('disciplinas')">
+                  <q-item clickable v-if="tienePermiso(10)" v-ripple @click="navegar('disciplinas')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="menu_book" />
@@ -168,7 +154,7 @@
                   </q-item>
 
 
-                  <q-item clickable v-if="tienePermiso(8)" v-ripple @click="navegar('entrenamientos')">
+                  <q-item clickable v-if="tienePermiso(11)" v-ripple @click="navegar('entrenamientos')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="event_available" />
@@ -185,7 +171,7 @@
                     <q-item-section>Torneos</q-item-section>
                   </q-item>
 
-                  <q-item clickable v-if="tienePermiso(12)" v-ripple @click="navegar('niveles')">
+                  <q-item clickable v-if="tienePermiso(13)" v-ripple @click="navegar('niveles')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="emoji_events" />
@@ -193,7 +179,7 @@
                     </q-item-section>
                     <q-item-section>Niveles</q-item-section>
                   </q-item>
-                  <q-item clickable v-if="tienePermiso(12)" v-ripple @click="navegar('ubicaciones')">
+                  <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('ubicaciones')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="location_on" />
@@ -206,14 +192,14 @@
             </q-list>
           </div>
 
-          <q-item clickable v-if="tienePermiso(13)" v-ripple @click="navegar('reportes')">
+          <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reportes')">
             <q-item-section avatar>
               <q-icon color="primary" name="auto_stories" />
             </q-item-section>
             <q-item-section>Reportes</q-item-section>
           </q-item>
 
-          <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('paisaje')">
+          <q-item clickable v-if="tienePermiso(16)" v-ripple @click="navegar('paisaje')">
             <q-item-section avatar>
               <q-icon color="primary" name="settings" />
             </q-item-section>
@@ -234,6 +220,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { refrescarUsuario } from 'src/stores/usuario-store'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -269,13 +256,25 @@ const tienePermiso = (opcion) => {
   // Verificar si el permiso está en el array
   return permisosArray.includes(opcion.toString())
 }
+// Verificar si el rol actual tiene al menos uno de los permisos en el arreglo
+const tieneAlguno = (ids = []) => {
+  if (!Array.isArray(ids) || ids.length === 0) return false
+  return ids.some(id => tienePermiso(id))
+}
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
+}
+const refrescar = async (usu) => {
+  const res = await refrescarUsuario(usu)
+  userRoles.value = res.user.rols || []
+  console.log('usuario refrescado: ', res.user);
+  sessionStorage.setItem('user', JSON.stringify(res.user))
 }
 onMounted(() => {
   try {
     const current = JSON.parse(sessionStorage.getItem('user'))
     console.log('usuario actual: ', current)
+    refrescar(current.usuario)
     const token = sessionStorage.getItem('token')
     if (!token) router.replace('/login')
     currentUser.value = current.persona.nombres

@@ -249,7 +249,7 @@ import { ref, watch, onMounted } from 'vue'
 import { listarNiveles } from 'src/stores/nivel'
 import { useQuasar } from 'quasar'
 import { useValidation } from 'src/composables/useValidation'
-import { listarRoles } from 'src/stores/usuario-store'
+import { listarRoles } from 'src/stores/rol-store'
 const $q = useQuasar()
 const rules = useValidation()
 const props = defineProps({

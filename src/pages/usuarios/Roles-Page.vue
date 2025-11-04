@@ -1,20 +1,28 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center justify-between q-mb-md">
-      <div>
+      <div class="col-6">
         <h2 class="text-h5 q-ma-none">Gestión de Roles</h2>
         <div class="text-subtitle2 text-grey">Crea, edita y asigna permisos a los roles</div>
       </div>
-      <q-btn color="primary" icon="add" label="Nuevo Rol" @click="openDialog(null)" />
+      <div class="col-6 ">
+        <div class="row">
+          <q-select v-model="filterStatus" :options="statusOptions" emit-value map-options label="Filtrar por estado"
+            dense outlined clearable class="q-mr-xl col-6" />
+          <q-btn color="primary" icon="add" label="Nuevo Rol" @click="openDialog(null)" />
+        </div>
+      </div>
     </div>
 
     <q-card>
       <q-card-section>
-        <q-table :rows="rolesList" :columns="columns" row-key="id">
+        <q-table :rows="filteredRoles" :columns="columns" row-key="id">
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
               <q-btn flat dense icon="edit" color="primary" @click="openDialog(props.row)" />
-              <q-btn flat dense icon="delete" color="negative" @click="confirmDelete(props.row)" />
+              <!-- Toggle de estado en lugar de eliminar (con confirmación). No mostrar para roles 2,3,4 -->
+              <q-toggle dense v-if="props.row.id !== 2 && props.row.id !== 3 && props.row.id !== 4"
+                :model-value="!!props.row.estado" @update:model-value="val => confirmToggleRole(props.row, val)" />
             </q-td>
           </template>
           <template v-slot:body-cell-permisos="props">
@@ -94,24 +102,21 @@ const $q = useQuasar()
 const modules = [
   { id: 0, label: 'Menú principal', hint: 'Acceso al menú principal' },
   { id: 1, label: 'Área personal', hint: 'Ver y editar tu perfil' },
-  { id: 2, label: 'Módulo 2', hint: 'Función específica (personalizar)' },
-  { id: 3, label: 'Lista de usuarios', hint: 'Ver y buscar usuarios' },
-  { id: 4, label: 'Roles', hint: 'Gestionar roles y permisos' },
-  { id: 5, label: 'Inscripciones', hint: 'Gestionar inscripciones' },
-  { id: 6, label: 'Paquetes', hint: 'Administrar paquetes' },
-  { id: 7, label: 'Estudiantes', hint: 'Gestión de estudiantes' },
-  { id: 8, label: 'Entrenadores', hint: 'Gestión de entrenadores' },
-  { id: 9, label: 'Gastos', hint: 'Registrar y consultar gastos' },
-  { id: 10, label: 'Pagos', hint: 'Registrar y consultar pagos' },
-  { id: 11, label: 'Categorías pago/gasto', hint: 'Clasificar pagos y gastos' },
-  { id: 12, label: 'Métodos pago/gasto', hint: 'Definir métodos de pago y gasto' },
-  { id: 13, label: 'Disciplinas', hint: 'Gestionar disciplinas' },
-  { id: 14, label: 'Entrenamientos', hint: 'Programar entrenamientos' },
-  { id: 15, label: 'Torneos', hint: 'Administrar torneos' },
-  { id: 16, label: 'Niveles', hint: 'Gestionar niveles' },
-  { id: 17, label: 'Ubicaciones', hint: 'Administrar ubicaciones' },
-  { id: 18, label: 'Reportes', hint: 'Generar e inspeccionar reportes' },
-  { id: 19, label: 'Configuraciones', hint: 'Ajustes generales del sistema' }
+  { id: 2, label: 'Lista de usuarios', hint: 'Ver y buscar usuarios' },
+  { id: 3, label: 'Roles', hint: 'Gestionar roles y permisos' },
+  { id: 4, label: 'Inscripciones', hint: 'Gestionar inscripciones' },
+  { id: 5, label: 'Paquetes', hint: 'Administrar paquetes' },
+  { id: 6, label: 'Estudiantes', hint: 'Gestión de estudiantes' },
+  { id: 7, label: 'Entrenadores', hint: 'Gestión de entrenadores' },
+  { id: 8, label: 'Gastos', hint: 'Registrar y consultar gastos' },
+  { id: 9, label: 'Pagos', hint: 'Registrar y consultar pagos' },
+  { id: 10, label: 'Disciplinas', hint: 'Gestionar disciplinas' },
+  { id: 11, label: 'Entrenamientos', hint: 'Programar entrenamientos' },
+  { id: 12, label: 'Torneos', hint: 'Administrar torneos' },
+  { id: 13, label: 'Niveles', hint: 'Gestionar niveles' },
+  { id: 14, label: 'Ubicaciones', hint: 'Administrar ubicaciones' },
+  { id: 15, label: 'Reportes', hint: 'Generar e inspeccionar reportes' },
+  { id: 16, label: 'Configuraciones', hint: 'Ajustes generales del sistema' }
 ]
 
 // Lista de roles (mock). Cada rol: { id, nombre, permisos: '1,2,3' }
@@ -128,6 +133,8 @@ const dialogOpen = ref(false)
 const editMode = ref(false)
 const currentRole = ref({ id: null, nombre: '', permisos: '' })
 const roleForm = ref(null)
+const filterStatus = ref(null)
+const statusOptions = [{ label: 'Activo', value: true }, { label: 'Inactivo', value: false }]
 
 const openDialog = (role) => {
   if (role) {
@@ -162,7 +169,7 @@ const togglePerm = (id, enabled) => {
   currentRole.value.permisos = arr.sort((a, b) => a - b).join(',')
 }
 
-const saveRole = () => {
+const saveRole = async () => {
   // validar formulario
   if (roleForm.value) {
     const ok = roleForm.value.validate ? roleForm.value.validate() : true
@@ -171,15 +178,11 @@ const saveRole = () => {
   if (!currentRole.value.nombre) { $q.notify({ type: 'negative', message: 'El nombre del rol es requerido' }); return }
   // si edicion, actualizar
   if (editMode.value) {
-    const idx = rolesList.value.findIndex(r => r.id === currentRole.value.id)
-    if (idx !== -1) {
-      rolesList.value[idx] = { ...rolesList.value[idx], nombre: currentRole.value.nombre, permisos: currentRole.value.permisos }
-      $q.notify({ type: 'positive', message: 'Rol actualizado' })
-    }
+    await modificarRol(currentRole.value)
+    fetchRoles()
   } else {
-    const newRole = { id: Date.now(), nombre: currentRole.value.nombre, permisos: currentRole.value.permisos }
-    rolesList.value.push(newRole)
-    $q.notify({ type: 'positive', message: 'Rol creado' })
+    await agregarRol(currentRole.value)
+    fetchRoles()
   }
   dialogOpen.value = false
 }
@@ -189,19 +192,41 @@ const getModuleLabel = (id) => {
   return m ? m.label : `M${id}`
 }
 
-const confirmDelete = (role) => {
-  $q.dialog({ title: 'Confirmar eliminación', message: `¿Eliminar rol ${role.nombre}?`, cancel: true, persistent: true }).onOk(() => {
-    rolesList.value = rolesList.value.filter(r => r.id !== role.id)
-    $q.notify({ type: 'positive', message: 'Rol eliminado' })
+// Nota: Eliminación física no usada en UI; si se necesita activar, implementar llamada al backend.
+
+// Confirmar cambio de estado (toggle) para roles
+const confirmToggleRole = (role, nextVal) => {
+  $q.dialog({ title: 'Confirmar cambio de estado', message: `¿Cambiar estado de ${role.nombre} a ${nextVal ? 'Activo' : 'Inactivo'}?`, cancel: true, persistent: true }).onOk(() => {
+    const idx = rolesList.value.findIndex(r => r.id === role.id)
+    if (idx !== -1) {
+      rolesList.value[idx].estado = !!nextVal
+      $q.notify({ type: 'positive', message: `Estado de ${role.nombre} actualizado` })
+    }
+  }).onCancel(() => {
+    // si cancela, no hacer nada — el toggle volverá a su valor anterior porque no cambiamos el dato
   })
 }
 
 onMounted(async () => {
   // placeholder si se conectara al backend en el futuro
-  rolesList.value = await listarRoles()
+  fetchRoles()
+})
+const fetchRoles = async () => {
+  const res = await listarRoles()
+  // asegurar que cada rol tenga estado (por defecto true si no viene)
+  rolesList.value = (Array.isArray(res) ? res : []).map(r => ({ ...r, estado: r.estado === undefined ? true : r.estado }))
+}
+
+const filteredRoles = computed(() => {
+  let res = rolesList.value || []
+  if (filterStatus.value !== null) {
+    res = res.filter(r => (!!r.estado) === filterStatus.value)
+  }
+  return res
 })
 import { computed } from 'vue'
-import { listarRoles } from 'src/stores/usuario-store'
+import { listarRoles } from 'src/stores/rol-store'
+import { agregarRol, modificarRol } from 'src/stores/rol-store'
 
 const isCompact = computed(() => $q.screen.lt.lg) // true para pantallas small y medium
 

@@ -233,7 +233,8 @@ const parseDateValue = (val) => {
   return null
 }
 import { useQuasar } from 'quasar'
-import { listarUsuarios, listarRoles, registrarUsuario, modificarUsuario, cambiarEstadoUsuario } from 'src/stores/usuario-store.js'
+import { listarUsuarios, registrarUsuario, modificarUsuario, cambiarEstadoUsuario } from 'src/stores/usuario-store.js'
+import { listarRoles } from 'src/stores/rol-store.js'
 import { useValidation } from 'src/composables/useValidation.js'
 import { listar } from 'src/stores/persona-store'
 
@@ -484,7 +485,7 @@ const saveUser = async () => {
     }
     currentUser.value.rols = currentUser.value.roles
     console.log('UYSUARIO MODIFICADO', currentUser.value);
-    await modificarUsuario(currentUser.value)
+    await modificarUsuario(usuarioTemporal.value, currentUser.value)
     userDialog.value = false
   } else {
     // creación: validar contraseña

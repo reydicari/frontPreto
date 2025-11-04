@@ -11,15 +11,7 @@ export const listarUsuarios = async () => {
     return error.response.data;
   }
 };
-export const listarRoles = async () => {
-  try {
-    const response = await api.get(URL_PART + "/listarRoles");
-    return response.data;
-  } catch (error) {
-    console.log("error en el store", error.response);
-    return error.response.data;
-  }
-};
+
 export const registrarUsuario = async (dataform) => {
   try {
     const response = await api.post(URL_PART + "/crearUsuario", dataform);
@@ -42,12 +34,9 @@ export const usuarioDuplicado = async (users) => {
     return error.response;
   }
 };
-export const modificarUsuario = async (dataform) => {
+export const modificarUsuario = async (usu, dataform) => {
   try {
-    const response = await api.put(
-      URL_PART + "/modificar/" + dataform.usuario,
-      dataform,
-    );
+    const response = await api.put(URL_PART + "/modificar/" + usu, dataform);
     console.log("respuesta del servidor", response);
     //notidficacion de exito
     Notify.create({
@@ -80,6 +69,20 @@ export const cambiarEstadoUsuario = async (usu) => {
     Notify.create({
       type: "negative",
       message: "Error al cambiar el estado del usuario",
+      position: "bottom",
+    });
+    console.log("error en el store", error.response.data.error);
+    return error.response;
+  }
+};
+export const refrescarUsuario = async (usu) => {
+  try {
+    const response = await api.get(URL_PART + "/refrescar/" + usu);
+    return response.data;
+  } catch (error) {
+    Notify.create({
+      type: "negative",
+      message: "Error al refrescar el usuario",
       position: "bottom",
     });
     console.log("error en el store", error.response.data.error);
