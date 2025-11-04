@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { buscarCiRepetido } from "src/stores/persona-store.js";
+import { usuarioDuplicado } from "src/stores/usuario-store";
 dayjs.extend(customParseFormat);
 
 /**
@@ -234,15 +235,24 @@ export function useValidation() {
   const noSpaceInString = (val) => {
     return !/\s/.test(val) || "No se permiten espacios";
   };
-  const existUsername = async (val) => {
-    //validador si existe un usuarios con el mismo nombre deusuario
-    //const usuarioStore = useUsuarioStore()
+  const existUsername = async (usuAntes, val) => {
+    console.log("store de rules", val, "xd ", usuAntes);
+
     let response = false;
     if (val && val.length >= 5) {
-      //response = await usuarioStore.findUserWizardByUsername(val)
-      existUsername.value = response;
+      response = await usuarioDuplicado({
+        usuarioAntes: usuAntes,
+        usuarioDespues: val,
+      });
     }
-    return !response || "El nombre de usuario ya existe elija otro";
+    console.log("duplicadoooooooooooooooooooooo", response);
+    if (response) {
+      console.log("YA existe", response);
+      return "El nombre de usuario ya existe";
+    } else {
+      console.log("NO existe", response);
+      return true;
+    }
   };
   const existCi = async (val) => {
     //validador si existe un usuarios con el mismo carnet de identidad

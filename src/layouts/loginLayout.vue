@@ -88,9 +88,22 @@ const $q = useQuasar();
 const rules = useValidation();
 const router = useRouter(); // Obtiene la instancia de Vue Routers
 
+// Obtener la fecha/hora local como cadena ISO sin el sufijo 'Z' (evita desplazamientos al interpretar como UTC)
+const getLocalIsoWithoutZ = () => {
+  const d = new Date()
+  // aplicar offset para obtener la representación local en una ISO 'naive'
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  // devolver 'YYYY-MM-DD HH:mm:ss' (sin zona) — muchos backends esperan esto como local datetime
+  // reemplazamos la 'T' por un espacio para una representación más legible
+  return local.toISOString().slice(0, 19).replace('T', ' ')
+}
+
+// Alternativa: si prefieres enviar epoch (ms) usa Date.now() y el backend lo interpretará sin ambigüedad.
 const form = ref({
   usuario: 'angel1',
-  clave: 'looneytunes'
+  clave: 'looneytunes',
+  // usando string local para evitar que el servidor lo interprete como UTC y lo desplace
+  ultimo_ingreso: getLocalIsoWithoutZ()
 });
 const showPassword = ref(false);
 const entrando = ref(false);

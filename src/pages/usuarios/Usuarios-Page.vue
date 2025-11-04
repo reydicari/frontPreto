@@ -9,7 +9,7 @@
       <q-card-section>
         <div class="row items-center justify-between">
           <!-- Botón para agregar usuario -->
-          <q-btn color="primary" icon="person_add" label="Nuevo Usuario" @click="showUserDialog(null)" />
+          <!-- <q-btn color="primary" icon="person_add" label="Nuevo Usuario" @click="showUserDialog(null)" /> -->
 
 
           <!-- Buscador -->
@@ -34,8 +34,8 @@
             </q-select>
 
 
-            <q-select v-model="filterStatus" :options="statusOptions" label="Estado" outlined dense clearable
-              class="col-md-4 col-sm-6 col-xs-12" />
+            <q-select v-model="filterStatus" emit-value map-options :options="statusOptions" label="Estado" outlined
+              dense clearable class="col-md-4 col-sm-6 col-xs-12" />
 
             <q-input v-model="dateRangeLabel" label="Rango de fechas" outlined dense class="col-md-4 col-sm-6 col-xs-12"
               readonly>
@@ -113,9 +113,10 @@
                   rules.maxLength(15),
                   rules.minLength(5),
                   rules.letrasNumeros,
+                  // rules.existUsername(usuarioTemporal, currentUser.usuario),
                   val => !val.includes(' ') || 'Debe ser una sola palabra',
                   /* proteger caso donde users pueda contener elementos undefined */
-                  val => !users.some(user => user && user.usuario === val && user.id !== (currentUser.value?.id ?? currentUser.id)) || 'Este nombre de usuario ya existe'
+                  val => !users.some(user => user && user.usuario == val && val != usuarioTemporal) || 'Este nombre de usuario ya existe'
                 ]" />
 
               <q-input v-model="currentUser.clave" :label="editMode ? 'Nueva contraseña (opcional)' : 'Contraseña'"
@@ -156,27 +157,27 @@
               </q-select>
 
               <!-- Selección de persona (única) -->
-              <q-select v-model="currentUser.id_persona" :options="personaOptions" option-label="displayName" emit-value
-                option-value="id" label="Persona" map-options outlined dense use-input input-debounce="300"
-                class="col-12" @filter="filtrarPersonasSingle"
-                :rules="[val => !!val || 'Se requiere seleccionar una persona']">
-                <template v-slot:option="{ itemProps, opt }">
-                  <q-item v-bind="itemProps">
-                    <q-item-section>
-                      <q-item-label>{{ opt.nombres }} {{ opt.apellido_paterno }} {{ opt.apellido_materno
-                      }}</q-item-label>
-                      <q-item-label caption>{{ opt.ci }} {{ opt.complemento }}</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                </template>
-                <template v-slot:selected-item="{ opt }">
-                  <div>{{ getPersonaDisplay(opt) }}</div>
-                </template>
-              </q-select>
+              <!-- <q-select readonly v-model="currentUser.id_persona" :options="personaOptions" option-label="displayName"
+                  emit-value option-value="id" label="Persona" map-options outlined dense use-input input-debounce="300"
+                  class="col-12" @filter="filtrarPersonasSingle"
+                  :rules="[val => !!val || 'Se requiere seleccionar una persona']">
+                  <template v-slot:option="{ itemProps, opt }">
+                    <q-item v-bind="itemProps">
+                      <q-item-section>
+                        <q-item-label>{{ opt.nombres }} {{ opt.apellido_paterno }} {{ opt.apellido_materno
+                        }}</q-item-label>
+                        <q-item-label caption>{{ opt.ci }} {{ opt.complemento }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                  <template v-slot:selected-item="{ opt }">
+                    <div>{{ getPersonaDisplay(opt) }}</div>
+                  </template>
+                </q-select> -->
 
-              <div class="col-12 q-mt-sm" v-if="editMode">
-                <q-toggle v-model="currentUser.estado" label="Estado" true-value="true" false-value="false" />
-              </div>
+              <!-- <div class="col-12 q-mt-sm" v-if="editMode"> -->
+              <!-- <q-toggle v-model="currentUser.estado" label="Estado" true-value="true" false-value="false" /> -->
+              <!-- </div> -->
             </div>
           </q-form>
         </q-card-section>
@@ -191,9 +192,48 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+
+// Helper para parsear distintos formatos de fecha/hora que pueden venir del backend
+// Acepta: Date, timestamp (number), ISO con 'T' o con espacio 'YYYY-MM-DD HH:mm:ss', o ISO con Z
+const parseDateValue = (val) => {
+  if (!val && val !== 0) return null
+  if (val instanceof Date) return val
+  if (typeof val === 'number') return new Date(val)
+  if (typeof val === 'string') {
+    // Intentar detectar formatos comunes y parsear componentes numéricos para garantizar
+    // que la hora se respete (evitar ambigüedades de interpretación por Date.parse)
+    // Soporta: YYYY-MM-DD[ T]HH:mm:ss[.SSS][Z?]
+    const re = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?)?(Z?)$/
+    const m = val.match(re)
+    if (m) {
+      const year = Number(m[1])
+      const month = Number(m[2]) - 1
+      const day = Number(m[3])
+      const hour = m[4] ? Number(m[4]) : 0
+      const minute = m[5] ? Number(m[5]) : 0
+      const second = m[6] ? Number(m[6]) : 0
+      const ms = m[7] ? Number((m[7] + '00').slice(0, 3)) : 0
+      // Si el string incluye 'Z' al final, Date.UTC es apropiado; si no, construir en zona local
+      if (m[8] === 'Z') {
+        return new Date(Date.UTC(year, month, day, hour, minute, second, ms))
+      }
+      return new Date(year, month, day, hour, minute, second, ms)
+    }
+
+    // si no coincide con el patrón, intentar parseo más flexible
+    // reemplazar primer espacio por 'T' para intentar un parseo estándar
+    let s = val
+    if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T')
+    const d = new Date(s)
+    if (!isNaN(d)) return d
+    const alt = new Date(s.replace(/-/g, '/'))
+    return isNaN(alt) ? null : alt
+  }
+  return null
+}
 import { useQuasar } from 'quasar'
-import { listarUsuarios, listarRoles, registrarUsuario } from 'src/stores/usuario-store.js'
+import { listarUsuarios, listarRoles, registrarUsuario, modificarUsuario, cambiarEstadoUsuario } from 'src/stores/usuario-store.js'
 import { useValidation } from 'src/composables/useValidation.js'
 import { listar } from 'src/stores/persona-store'
 
@@ -216,10 +256,9 @@ const loading = ref(false)
 const searchTerm = ref('')
 const filtersExpanded = ref(false)
 const filterStatus = ref(null)
-const filterDateFrom = ref(null)
-const filterDateTo = ref(null)
 const userDialog = ref(false)
 const editMode = ref(false)
+const usuarioTemporal = ref('')
 
 const currentUser = ref({ id: null, usuario: '', clave: '', id_persona: null, estado: true, roles: [] })
 
@@ -279,6 +318,7 @@ const fetchUsers = async () => {
   setTimeout(async () => {
     loading.value = false
     users.value = await listarUsuarios()
+    console.log('Usuarios: ', users.value);
 
   }, 500)
 }
@@ -302,20 +342,57 @@ const filteredUsers = computed(() => {
   }
 
   // Filtro por fecha (usa dateRange.from / dateRange.to) sobre user.ultimo_ingreso
-  const from = dateRange.value && dateRange.value.from ? new Date(dateRange.value.from) : null
-  const to = dateRange.value && dateRange.value.to ? new Date(dateRange.value.to) : null
-  if (from) {
-    result = result.filter(user => user.ultimo_ingreso && new Date(user.ultimo_ingreso) >= from)
-  }
-  if (to) {
-    result = result.filter(user => user.ultimo_ingreso && new Date(user.ultimo_ingreso) <= to)
+  // Manejar tres casos: solo from, solo to, o ambos (inclusive en 'to' hasta 23:59:59.999)
+  if (dateRange.value && (dateRange.value.from || dateRange.value.to)) {
+    // Normalizar localmente: usar las cadenas originales pero parsearlas
+    let fromStr = dateRange.value.from
+    let toStr = dateRange.value.to
+
+    const parsedFrom = fromStr ? parseDateValue(fromStr) : null
+    const parsedTo = toStr ? parseDateValue(toStr) : null
+
+    // Si ambas existen y están invertidas, intercambiarlas para que from <= to
+    if (parsedFrom && parsedTo && parsedFrom > parsedTo) {
+      const tmp = fromStr
+      fromStr = toStr
+      toStr = tmp
+      // Actualizar la UI de forma segura en el siguiente tick para reflejar el orden correcto
+      nextTick(() => { dateRange.value = { from: fromStr, to: toStr } })
+    }
+
+    const from = fromStr ? new Date(fromStr) : null
+    const to = toStr ? new Date(toStr) : null
+    const toInclusive = to ? new Date(to) : null
+    if (toInclusive) toInclusive.setHours(23, 59, 59, 999)
+
+    if (from && toInclusive) {
+      // Ambos límites: filtrar por rango inclusivo en una sola pasada
+      result = result.filter(user => {
+        const d = parseDateValue(user.ultimo_ingreso)
+        if (!d) return false
+        return d >= from && d <= toInclusive
+      })
+    } else if (from) {
+      // Solo desde
+      result = result.filter(user => {
+        const d = parseDateValue(user.ultimo_ingreso)
+        return d && d >= from
+      })
+    } else if (toInclusive) {
+      // Solo hasta (inclusivo)
+      result = result.filter(user => {
+        const d = parseDateValue(user.ultimo_ingreso)
+        return d && d <= toInclusive
+      })
+    }
   }
 
   // Filtro por rol (si aplica)
-  if (filtroRol.value.length > 0) {
-    filtroRol.value.forEach(fr => {
-      result = result.filter(u => (u.rols || []).some(r => r.id === fr.id))
-    })
+  if (Array.isArray(filtroRol.value) && filtroRol.value.length > 0) {
+    // Obtener set de ids seleccionados (puede contener objetos de rol)
+    const selectedRoleIds = new Set(filtroRol.value.map(r => String(r.id ?? r)))
+    // Incluir usuarios que tengan al menos uno de los roles seleccionados
+    result = result.filter(u => (u.rols || []).some(r => selectedRoleIds.has(String(r.id))))
   }
 
   return result
@@ -340,6 +417,7 @@ const computeRowNumber = (props) => {
 const showUserDialog = async (user) => {
   // cargar personas y normalizar la respuesta (puede venir como array o como {data: [...]})
   try {
+    usuarioTemporal.value = user ? user.usuario : ''
     const res = await listar()
     const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
     personaCache.value = arr
@@ -406,8 +484,7 @@ const saveUser = async () => {
     }
     currentUser.value.rols = currentUser.value.roles
     console.log('UYSUARIO MODIFICADO', currentUser.value);
-
-    $q.notify({ type: 'positive', message: 'Usuario actualizado correctamente' })
+    await modificarUsuario(currentUser.value)
     userDialog.value = false
   } else {
     // creación: validar contraseña
@@ -437,8 +514,8 @@ const clearFilters = () => {
   searchTerm.value = ''
   filtroRol.value = []
   filterStatus.value = null
-  filterDateFrom.value = null
-  filterDateTo.value = null
+  // resetear el q-date range
+  dateRange.value = { from: null, to: null }
 }
 
 // Color para los roles
@@ -449,9 +526,15 @@ const onRequest = (props) => { pagination.value = props.pagination }
 
 // Confirm change of estado with a small dialog
 const confirmChangeEstado = (user, nextVal) => {
-  $q.dialog({ title: 'Confirmar cambio de estado', message: `¿Desea cambiar el estado de ${user.persona?.nombres || user.usuario} a ${nextVal ? 'Activo' : 'Inactivo'}?`, cancel: true, persistent: true }).onOk(() => {
-    const idx = users.value.findIndex(u => u.id === user.id)
-    if (idx !== -1) { users.value[idx].estado = !!nextVal; $q.notify({ type: 'positive', message: 'Estado actualizado' }) }
+  $q.dialog({ title: 'Confirmar cambio de estado', message: `¿Desea cambiar el estado de ${user.persona?.nombres || user.usuario} a ${nextVal ? 'Activo' : 'Inactivo'}?`, cancel: true, persistent: true }).onOk(async () => {
+    const idx = users.value.findIndex(u => u.usuario === user.usuario)
+    try {
+      await cambiarEstadoUsuario({ usuario: user.usuario, estado: nextVal })
+      if (idx !== -1) { users.value[idx].estado = !!nextVal; }
+    } catch (error) {
+      console.log(error);
+
+    }
   })
 }
 
