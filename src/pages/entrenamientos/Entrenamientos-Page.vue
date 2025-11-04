@@ -1,7 +1,7 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <div class="q-mb-md">
-      <h2 class="text-h4 q-ma-none">Gestión de Entrenamientos</h2>
+      <h2 class="text-h4 q-ma-none page-title">Gestión de Entrenamientos</h2>
     </div>
 
     <!-- Barra de herramientas -->
@@ -50,7 +50,7 @@
     <!-- Tabla de entrenamientos -->
     <q-card>
       <q-table :rows="filteredTrainings" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
-        :rows-per-page-options="[5, 10, 20, 50]">
+        :rows-per-page-options="[5, 10, 20, 50]" @row-click="onRowClick">
 
         <!-- Columna de índice -->
         <template v-slot:body-cell-index="props">
@@ -94,19 +94,19 @@
         <!-- Columna de acciones -->
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
-            <q-btn icon="edit" color="primary" flat dense @click="editTraining(props.row)"
+            <q-btn icon="edit" color="primary" flat dense @click.stop="editTraining(props.row)"
               :disable="props.row.estado === -1">
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
-            <q-btn icon="pause" color="warning" flat dense @click="suspendTraining(props.row)"
+            <q-btn icon="pause" color="warning" flat dense @click.stop="suspendTraining(props.row)"
               v-if="props.row.estado === 1">
               <q-tooltip>Suspender</q-tooltip>
             </q-btn>
-            <q-btn icon="play_arrow" color="positive" flat dense @click="resumeTraining(props.row)"
+            <q-btn icon="play_arrow" color="positive" flat dense @click.stop="resumeTraining(props.row)"
               v-if="props.row.estado === -1">
               <q-tooltip>Reanudar</q-tooltip>
             </q-btn>
-            <q-btn icon="visibility" color="info" flat dense @click="viewTrainingDetails(props.row)">
+            <q-btn icon="visibility" color="info" flat dense @click.stop="viewTrainingDetails(props.row)">
               <q-tooltip>Ver detalles</q-tooltip>
             </q-btn>
           </q-td>
@@ -498,6 +498,13 @@ const viewTrainingDetails = (training) => {
   detailsDialog.value = true
 }
 
+// Maneja click en la fila: abre el diálogo de detalles (mismo comportamiento que el ojito)
+const onRowClick = (evt, row) => {
+  // evt: evento del mouse, row: objeto de la fila
+  if (!row) return
+  viewTrainingDetails(row)
+}
+
 // Limpiar filtros
 const clearFilters = () => {
   searchTerm.value = ''
@@ -568,6 +575,17 @@ onMounted(async () => {
 
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $secondary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 /* Estilos personalizados si son necesarios */
 </style>

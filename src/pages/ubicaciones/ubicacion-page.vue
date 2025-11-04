@@ -1,9 +1,9 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Header -->
     <div class="row items-center justify-between q-mb-md">
       <div>
-        <h1 class="text-h4 text-primary q-ma-none">Gestión de Ubicaciones</h1>
+        <h1 class="text-h4 text-primary q-ma-none page-title">Gestión de Ubicaciones</h1>
         <p class="text-grey-6 q-mt-sm">Administra las ubicaciones deportivas</p>
       </div>
       <div class="row items-center q-gutter-sm">
@@ -77,12 +77,8 @@
                   <q-btn flat round icon="edit" color="primary" @click.stop="editarUbicacion(ubicacion)">
                     <q-tooltip>Editar ubicación</q-tooltip>
                   </q-btn>
-                  <q-btn flat round :icon="ubicacion.estado ? 'toggle_on' : 'toggle_off'"
-                    :color="ubicacion.estado ? 'positive' : 'grey'" @click.stop="toggleEstado(ubicacion)">
-                    <q-tooltip>
-                      {{ ubicacion.estado ? 'Desactivar' : 'Activar' }}
-                    </q-tooltip>
-                  </q-btn>
+                  <q-toggle dense :model-value="ubicacion.estado"
+                    @update:model-value="openConfirmToggle(ubicacion, $event)" @click.stop label="" />
                   <!-- Botón de eliminar removido a petición del usuario -->
                 </div>
               </q-item-section>
@@ -135,8 +131,10 @@
 
             <div class="row q-col-gutter-md">
               <div class="col-6">
-                <q-input v-model="formulario.capacidad" label="Capacidad máxima *" type="number" min="1"
-                  :rules="[val => val > 0 || 'La capacidad debe ser mayor a 0']" filled />
+                <q-input v-model="formulario.capacidad" label="Capacidad máxima *" type="number" min="1" :rules="[
+                  val => val > 0 || 'La capacidad debe ser mayor a 0',
+                  val => val <= 500 || 'La capacidad no debe exceder 500'
+                ]" filled />
               </div>
               <div class="col-6">
                 <q-toggle v-model="formulario.equipado" label="Equipado" color="positive" />
@@ -154,6 +152,27 @@
       </q-card>
     </q-dialog>
 
+    <!-- Diálogo de confirmación para cambiar estado -->
+    <q-dialog v-model="confirmToggleOpen">
+      <q-card style="min-width: 320px; max-width: 520px;">
+        <q-card-section class="row items-center">
+          <q-avatar size="56px" :class="confirmNewVal ? 'bg-positive text-white' : 'bg-negative text-white'">
+            <q-icon :name="confirmNewVal ? 'toggle_on' : 'toggle_off'" />
+          </q-avatar>
+          <div class="col q-pl-sm">
+            <div class="text-h6">{{ confirmNewVal ? 'Activar ubicación' : 'Desactivar ubicación' }}</div>
+            <div class="text-subtitle2 q-pt-xs">{{ confirmTarget ? confirmTarget.nombre : '' }}</div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" @click="confirmToggleOpen = false" />
+          <q-btn flat :label="confirmNewVal ? 'Activar' : 'Desactivar'" :color="confirmNewVal ? 'positive' : 'negative'"
+            @click="applyToggle" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Eliminación por UI removida -->
   </q-page>
 </template>
@@ -165,7 +184,7 @@ import { useQuasar } from 'quasar'
 // Instalar Leaflet primero: npm install leaflet
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { agregarUbicacion, listarUbicaciones } from 'src/stores/ubicacion-store'
+import { agregarUbicacion, cambiarEstadoUbicacion, listarUbicaciones, modificarUbicacion } from 'src/stores/ubicacion-store'
 
 const $q = useQuasar()
 
@@ -196,6 +215,7 @@ const ubicacionesPaginadas = computed(() => {
 
 // Formulario
 const formulario = reactive({
+  id: null,
   nombre: '',
   descripcion: '',
   capacidad: 1,
@@ -379,6 +399,7 @@ const editarUbicacion = (ubicacion) => {
   esEdicion.value = true
   ubicacionEditando.value = ubicacion
   Object.assign(formulario, {
+    id: ubicacion.id,
     nombre: ubicacion.nombre,
     descripcion: ubicacion.descripcion,
     capacidad: ubicacion.capacidad,
@@ -402,13 +423,7 @@ const guardarUbicacion = async () => {
     console.log('formulario de ubicacion', formulario);
 
     if (esEdicion.value) {
-      // Actualizar ubicación existente
-      await simularApiCall({ ...formulario, id: ubicacionEditando.value.id })
-      $q.notify({
-        type: 'positive',
-        message: 'Ubicación actualizada correctamente',
-        position: 'top'
-      })
+      await modificarUbicacion({ ...formulario })
     } else {
       // Crear nueva ubicación
       await agregarUbicacion({ ...formulario })
@@ -436,33 +451,38 @@ const guardarUbicacion = async () => {
 
 // Nota: la funcionalidad de eliminación y su confirmación se han removido del UI según la petición.
 
-const toggleEstado = async (ubicacion) => {
-  // Actualización optimista: cambiar visualmente primero
+// Abre el diálogo de confirmación para cambiar el estado
+const confirmToggleOpen = ref(false)
+const confirmTarget = ref(null)
+const confirmNewVal = ref(false)
+
+const openConfirmToggle = (ubicacion, newVal) => {
+  confirmTarget.value = ubicacion
+  confirmNewVal.value = Boolean(newVal)
+  confirmToggleOpen.value = true
+}
+
+// Aplica el cambio de estado (llamado desde el diálogo cuando el usuario confirma)
+const applyToggle = async () => {
+  if (!confirmTarget.value) return
+  const ubicacion = confirmTarget.value
   const previo = ubicacion.estado
-  const nuevoEstado = !previo
+  const nuevoEstado = confirmNewVal.value
+
   try {
+    // feedback inmediato
     ubicacion.estado = nuevoEstado
-    console.log('toggleEstado -> nuevo estado:', nuevoEstado)
-
-    await simularApiCall({ estado: nuevoEstado })
-
-    $q.notify({
-      type: 'positive',
-      message: `Ubicación ${nuevoEstado ? 'activada' : 'desactivada'} correctamente`,
-      position: 'top'
-    })
-
-    // Refrescar marcadores/lista para sincronizar con el servidor
+    await cambiarEstadoUbicacion({ id: ubicacion.id, nuevoEstado: nuevoEstado })
+    // refrescar datos y marcadores
     await cargarUbicaciones()
   } catch (error) {
-    // Revertir en caso de error
+    // revertir en caso de error
     ubicacion.estado = previo
     console.error('Error cambiando estado:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error al cambiar el estado',
-      position: 'top'
-    })
+    $q.notify({ type: 'negative', message: 'Error al cambiar el estado', position: 'top' })
+  } finally {
+    confirmToggleOpen.value = false
+    confirmTarget.value = null
   }
 }
 
@@ -487,7 +507,18 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $secondary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .map-container {
   height: 600px;
   width: 100%;

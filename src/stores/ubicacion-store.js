@@ -60,8 +60,8 @@ export const modificarUbicacion = async (ubicacionData) => {
 };
 export const cambiarEstadoUbicacion = async (ubicacionData) => {
   try {
-    const response = await api.post(
-      URL_PART + "/cambiar-estado/" + ubicacionData.id,
+    const response = await api.put(
+      URL_PART + "/cambiarEstado/" + ubicacionData.id,
       ubicacionData,
     );
     Notify.create({

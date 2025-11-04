@@ -1,16 +1,20 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <div class="row items-center justify-between q-mb-md">
       <div class="col-6">
-        <h2 class="text-h5 q-ma-none">Gestión de Roles</h2>
+        <h2 class="text-h5 q-ma-none page-title">Gestión de Roles</h2>
         <div class="text-subtitle2 text-grey">Crea, edita y asigna permisos a los roles</div>
       </div>
       <div class="col-6 ">
-        <div class="row">
-          <q-select v-model="filterStatus" :options="statusOptions" emit-value map-options label="Filtrar por estado"
-            dense outlined clearable class="q-mr-xl col-6" />
-          <q-btn color="primary" icon="add" label="Nuevo Rol" @click="openDialog(null)" />
-        </div>
+        <q-card class="q-mb-md">
+          <q-card-section>
+            <div class="row">
+              <q-select v-model="filterStatus" :options="statusOptions" emit-value map-options
+                label="Filtrar por estado" dense outlined clearable class="q-mr-xl col-6" />
+              <q-btn color="primary" icon="add" label="Nuevo Rol" @click="openDialog(null)" />
+            </div>
+          </q-card-section>
+        </q-card>
       </div>
     </div>
 
@@ -239,7 +243,7 @@ const dialogCardStyle = computed(() => {
 
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .module-card {
   height: 110px;
   /* tamaño uniforme */
@@ -259,5 +263,16 @@ const dialogCardStyle = computed(() => {
   align-items: center;
   justify-content: flex-end;
   min-width: 56px;
+}
+
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $primary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
 }
 </style>

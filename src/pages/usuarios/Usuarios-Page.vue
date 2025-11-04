@@ -1,7 +1,7 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <div class="q-mb-md">
-      <h2 class="text-h4 q-ma-none">Gestión de Usuarios</h2>
+      <h2 class="text-h4 q-ma-none page-title">Gestión de Usuarios</h2>
     </div>
 
     <!-- Barra de herramientas -->
@@ -541,6 +541,15 @@ const confirmChangeEstado = (user, nextVal) => {
 
 </script>
 
-<style scoped>
-/* Estilos personalizados si son necesarios */
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $primary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
 </style>

@@ -1,8 +1,8 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md " :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <div class="row items-center justify-between">
       <div>
-        <h4 class="text-primary q-mb-xs q-mt-none">Gestión de Paquetes</h4>
+        <h4 class="text-primary q-mb-xs q-mt-none page-title">Gestión de Paquetes</h4>
         <p class="text-grey-7">Crear y gestionar paquetes por disciplina y sus horarios</p>
       </div>
     </div>
@@ -177,7 +177,9 @@
                     <q-tooltip v-if="!canEditPackage(pkg)">No se puede editar: horarios con errores o duplicidad de
                       disciplina</q-tooltip>
                   </q-btn>
-                  <q-btn dense round flat icon="delete" color="negative" @click.stop.prevent="openDeleteDialog(pkg)" />
+                  <q-btn dense round flat :icon="pkg.estado ? 'delete_forever' : 'restore'"
+                    :color="pkg.estado ? 'negative' : 'positive'" :title="pkg.estado ? 'Eliminar' : 'Restaurar'"
+                    @click.stop.prevent="openDeleteDialog(pkg)" />
                 </div>
               </div>
 
@@ -203,23 +205,30 @@
     <HorarioDialog v-model:modelValue="horarioDialogOpen" :horario="editingHorario"
       :paquete-id="editingHorarioPaqueteId" :paquetes="paquetes" @save="onSaveHorario" @remove="onRemoveHorario" />
 
-    <!-- Confirmación de eliminación de paquete -->
+    <!-- Confirmación para eliminar / restaurar paquete -->
     <q-dialog v-model="deleteDialogOpen" persistent>
       <q-card style="min-width: 320px; max-width: 560px;">
         <q-card-section class="row items-center">
-          <q-avatar size="56px" class="bg-negative text-white">
-            <q-icon name="delete_forever" />
+          <q-avatar size="56px" :class="dialogIsDelete ? 'bg-negative text-white' : 'bg-positive text-white'">
+            <q-icon :name="dialogIsDelete ? 'delete_forever' : 'restore'" />
           </q-avatar>
           <div class="col q-pl-sm">
-            <div class="text-h6">Confirmar eliminación</div>
-            <div class="text-subtitle2 q-pt-xs">¿Deseas eliminar el paquete <strong>{{ paqueteToDelete ?
-              paqueteToDelete.nombre : '' }}</strong>?</div>
+            <div class="text-h6">{{ dialogIsDelete ? 'Confirmar eliminación' : 'Confirmar restauración' }}</div>
+            <div class="text-subtitle2 q-pt-xs">
+              <template v-if="dialogIsDelete">
+                ¿Deseas eliminar el paquete <strong>{{ paqueteToDelete ? paqueteToDelete.nombre : '' }}</strong>?
+              </template>
+              <template v-else>
+                ¿Deseas restaurar el paquete <strong>{{ paqueteToDelete ? paqueteToDelete.nombre : '' }}</strong>?
+              </template>
+            </div>
           </div>
         </q-card-section>
         <q-separator />
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="primary" @click="cancelDelete" />
-          <q-btn flat label="Eliminar" color="negative" @click="doConfirmDelete" />
+          <q-btn flat :label="dialogIsDelete ? 'Eliminar' : 'Restaurar'"
+            :color="dialogIsDelete ? 'negative' : 'positive'" @click="doConfirmDelete" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -231,8 +240,8 @@ import { listarDisciplinas } from 'src/stores/disciplina-store'
 import { listarNiveles } from 'src/stores/nivel'
 import { actualizarPaquete, crearPaquete, eliminarPaquete, listarPaquetes } from 'src/stores/paquete-store'
 import { onMounted, ref, watch, computed } from 'vue'
-// import { useQuasar } from 'quasar';
-// const $q = useQuasar();
+import { useQuasar } from 'quasar'
+const $q = useQuasar();
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -579,11 +588,24 @@ const cancelDelete = () => {
   paqueteToDelete.value = null
 }
 
+// computed to determine if current dialog is a delete (true) or restore (false)
+const dialogIsDelete = computed(() => {
+  return paqueteToDelete.value ? Boolean(paqueteToDelete.value.estado) : true
+})
+
 const doConfirmDelete = async () => {
-  if (paqueteToDelete.value) {
+  if (!paqueteToDelete.value) return
+
+  if (dialogIsDelete.value) {
+    // acción de eliminar
     await eliminarPaquete(paqueteToDelete.value.id)
+  } else {
+    // acción de restaurar: marcar estado = true y actualizar
+    const updated = { ...paqueteToDelete.value, estado: true }
+    await actualizarPaquete(updated)
   }
-  listar()
+
+  await listar()
   deleteDialogOpen.value = false
   paqueteToDelete.value = null
 }
@@ -654,7 +676,18 @@ const canSaveForm = computed(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $primary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .paquete-card {
   transition: transform 0.12s, box-shadow 0.12s;
 }

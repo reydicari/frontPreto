@@ -1,8 +1,8 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Encabezado y botón nuevo -->
     <div class="row items-center justify-between q-mb-md">
-      <h2 class="text-h4 q-ma-none">Gestión de Inscripciones</h2>
+      <h2 class="text-h4 q-ma-none page-title">Gestión de Inscripciones</h2>
       <q-btn color="primary" icon="add" label="Nueva Inscripción" @click="openDialog()" />
     </div>
 
@@ -308,3 +308,15 @@ function verPagos(inscripcion) {
 // Manejo de paginación
 
 </script>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $secondary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+</style>

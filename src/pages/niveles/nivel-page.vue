@@ -1,12 +1,21 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Header con título y botón de agregar -->
-    <div class="row items-center justify-between q-mb-md">
-      <div>
-        <h1 class="text-h4 text-primary q-ma-none">Gestión de Niveles Deportivos</h1>
+    <div class="row items-center q-mb-md">
+      <div class="col">
+        <h1 class="text-h4 text-primary q-ma-none page-title">Gestión de Niveles Deportivos</h1>
         <p class="text-grey-6 q-mt-sm">Administra los niveles deportivos del sistema</p>
       </div>
-      <q-btn color="primary" icon="add" label="Agregar Nivel" @click="mostrarDialogoNuevo" class="q-px-md" />
+
+      <div class="col">
+        <q-card>
+          <q-card-section>
+            <q-select label="Ver por estados" emit-value map-options dense outlined hide-dropdown-icon
+              v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
+              style="min-width:170px" />
+          </q-card-section>
+        </q-card>
+      </div>
     </div>
 
     <div class="row q-col-gutter-md">
@@ -26,8 +35,8 @@
 
             <div class="row justify-end q-gutter-sm q-mt-lg">
               <q-btn flat label="Limpiar" color="secondary" @click="resetForm" />
-              <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" color="primary" class="q-ml-sm" @click="guardarNivel"
-                :loading="guardando" />
+              <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" :color="esEdicion ? 'info' : 'primary'"
+                class="q-ml-sm" @click="guardarNivel" :loading="guardando" />
             </div>
           </q-card-section>
         </q-card>
@@ -43,8 +52,8 @@
           </q-inner-loading>
 
           <!-- Lista de niveles -->
-          <q-list v-if="!cargando && niveles.length > 0" class="rounded-borders">
-            <q-item v-for="(nivel, index) in niveles" :key="nivel.id" class="q-my-xs">
+          <q-list v-if="!cargando && filteredNiveles.length > 0" class="rounded-borders">
+            <q-item v-for="(nivel, index) in filteredNiveles" :key="nivel.id" class="q-my-xs">
               <q-item-section avatar>
                 <q-badge color="primary" class="q-pa-sm">
                   {{ index + 1 }}
@@ -54,6 +63,8 @@
               <q-item-section>
                 <q-item-label class="text-weight-medium">
                   {{ nivel.nombre_nivel }}
+                  <span class="text-caption text-grey q-ml-sm">Estudiantes: <strong>{{ countStudents(nivel)
+                  }}</strong></span>
                 </q-item-label>
                 <q-item-label caption>
                   <q-badge :color="nivel.estado ? 'positive' : 'grey'" text-color="white">
@@ -67,12 +78,8 @@
                   <q-btn flat round icon="edit" color="primary" @click="editarNivel(nivel)">
                     <q-tooltip>Editar nivel</q-tooltip>
                   </q-btn>
-                  <q-btn flat round :icon="nivel.estado ? 'toggle_on' : 'toggle_off'"
-                    :color="nivel.estado ? 'positive' : 'grey'" @click="toggleEstado(nivel)">
-                    <q-tooltip>
-                      {{ nivel.estado ? 'Desactivar' : 'Activar' }}
-                    </q-tooltip>
-                  </q-btn>
+                  <q-toggle dense :model-value="nivel.estado" @update:model-value="confirmToggle(nivel, $event)"
+                    @click.stop label="" />
 
                 </div>
               </q-item-section>
@@ -116,8 +123,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { agregarNivel, cambiarEstado, listarNiveles, modificarNivel } from 'src/stores/nivel'
 
 // Quasar utils
 const $q = useQuasar()
@@ -136,13 +144,14 @@ const nivelSeleccionado = ref(null)
 
 // Formulario
 const formulario = reactive({
+  id: null,
   nombre_nivel: '',
   estado: true
 })
 const qForm = ref(null)
 const attemptedSubmit = ref(false)
 
-const setQForm = (el) => { qForm.value = el }
+// (qForm ref is available if needed)
 
 // Simulación de API - Reemplaza con tu llamada real
 const simularApiCall = (data, delay = 1000) => {
@@ -158,37 +167,33 @@ const cargarNiveles = async () => {
   cargando.value = true
   try {
     // Reemplaza esto con tu llamada real a la API
-    const response = await simularApiCall([
-      { id: 1, nombre_nivel: 'Principiante', estado: true },
-      { id: 2, nombre_nivel: 'Intermedio', estado: true },
-      { id: 3, nombre_nivel: 'Avanzado', estado: false }
-    ])
-
-    niveles.value = response.data
+    const response = await listarNiveles()
+    niveles.value = response
   } catch (error) {
     console.error('Error cargando niveles:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error al cargar los niveles',
-      position: 'top'
-    })
   } finally {
     cargando.value = false
   }
 }
 
-// Mostrar form para nuevo nivel (ahora estático)
-const mostrarDialogoNuevo = () => {
-  esEdicion.value = false
-  nivelSeleccionado.value = null
-  attemptedSubmit.value = false
-  Object.assign(formulario, {
-    nombre_nivel: '',
-    estado: true
-  })
-  // scroll to top if needed
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
+// (opcional) cargar estudiantes para contar por nivel
+const estudiantes = ref([])
+
+
+
+// filtro de estado para niveles
+const filterStatus = ref(null)
+const statusOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Activos', value: true },
+  { label: 'Inactivos', value: false }
+]
+
+const filteredNiveles = computed(() => {
+  if (!niveles.value) return []
+  if (filterStatus.value === null) return niveles.value
+  return niveles.value.filter(n => Boolean(n.estado) === filterStatus.value)
+})
 
 // Editar nivel
 const editarNivel = (nivel) => {
@@ -196,6 +201,7 @@ const editarNivel = (nivel) => {
   nivelSeleccionado.value = nivel
   attemptedSubmit.value = false
   Object.assign(formulario, {
+    id: nivel.id,
     nombre_nivel: nivel.nombre_nivel,
     estado: nivel.estado
   })
@@ -225,21 +231,12 @@ const guardarNivel = async () => {
   guardando.value = true
   try {
     if (esEdicion.value) {
-      // Actualizar nivel existente
-      await simularApiCall({ ...formulario, id: nivelSeleccionado.value.id })
-      $q.notify({
-        type: 'positive',
-        message: 'Nivel actualizado correctamente',
-        position: 'top'
-      })
+      await modificarNivel({ ...formulario })
+      cargarNiveles()
+
     } else {
-      // Crear nuevo nivel
-      await simularApiCall({ ...formulario, id: Date.now() })
-      $q.notify({
-        type: 'positive',
-        message: 'Nivel creado correctamente',
-        position: 'top'
-      })
+      await agregarNivel({ ...formulario })
+      await cargarNiveles()
     }
 
     resetForm()
@@ -256,67 +253,64 @@ const guardarNivel = async () => {
   }
 }
 
-// Confirmar eliminación
-const confirmarEliminacion = (nivel) => {
-  nivelSeleccionado.value = nivel
-  mostrarConfirmacionEliminar.value = true
-}
-
-// Eliminar nivel
+// Eliminar nivel (mantengo la función pero se usa el diálogo existente)
 const eliminarNivel = async () => {
   eliminando.value = true
   try {
     await simularApiCall(null)
-    $q.notify({
-      type: 'positive',
-      message: 'Nivel eliminado correctamente',
-      position: 'top'
-    })
+    $q.notify({ type: 'positive', message: 'Nivel eliminado correctamente', position: 'top' })
     mostrarConfirmacionEliminar.value = false
-    await cargarNiveles() // Recargar la lista
+    await cargarNiveles()
   } catch (error) {
     console.error('Error eliminando nivel:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error al eliminar el nivel',
-      position: 'top'
-    })
+    $q.notify({ type: 'negative', message: 'Error al eliminar el nivel', position: 'top' })
   } finally {
     eliminando.value = false
     nivelSeleccionado.value = null
   }
 }
 
-// Cambiar estado del nivel
-const toggleEstado = async (nivel) => {
-  try {
-    const nuevoEstado = !nivel.estado
-    await simularApiCall({ estado: nuevoEstado })
+// Confirmación y cambio de estado (toggle) con diálogo
+const confirmToggle = (nivel, nuevoVal) => {
+  const title = nuevoVal ? 'Activar nivel' : 'Desactivar nivel'
+  const message = `${nuevoVal ? '¿Deseas activar' : '¿Deseas desactivar'} el nivel "${nivel.nombre_nivel}"?`
+  const d = $q.dialog({ title, message, cancel: true, persistent: true })
+  d.onOk(async () => {
+    try {
+      await cambiarEstado({ id: nivel.id, nuevoEstado: nuevoVal })
+      cargarNiveles()
+      // d.hide()
+    } catch (err) {
+      console.error('Error al cambiar estado:', err)
+    }
+  })
+}
 
-    $q.notify({
-      type: 'positive',
-      message: `Nivel ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`,
-      position: 'top'
-    })
-
-    await cargarNiveles() // Recargar la lista
-  } catch (error) {
-    console.error('Error cambiando estado:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error al cambiar el estado',
-      position: 'top'
-    })
-  }
+// contar estudiantes por nivel
+const countStudents = (nivel) => {
+  if (!nivel || !estudiantes.value) return 0
+  return estudiantes.value.filter(s => Number(s.nivel_id) === Number(nivel.id)).length
 }
 
 // Cargar datos al montar el componente
 onMounted(() => {
+  // await Promise.all([cargarNiveles(), cargarEstudiantes()])
   cargarNiveles()
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $secondary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .q-item {
   border-radius: 8px;
   transition: all 0.3s ease;
