@@ -1,5 +1,6 @@
 import { api } from "boot/axios.js";
 const URL_PART = "/api/persona";
+import { Notify } from "quasar";
 export const listar = async (params = {}) => {
   try {
     const response = await api.get(URL_PART + `/personasTipo`, {
@@ -9,6 +10,20 @@ export const listar = async (params = {}) => {
   } catch (error) {
     console.error("Error en el store:", error.response || error);
     throw error; // Lanzamos el error para manejarlo en el componente
+  }
+};
+export const listarTodosEstudiantes = async () => {
+  try {
+    const response = await api.get(URL_PART + "/todosEstudiantes");
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error.response);
+    Notify.create({
+      type: "negative",
+      message: "Error al listar los estudiantes",
+      position: "bottom",
+    });
+    return error.response.data;
   }
 };
 export const listarRoles = async () => {

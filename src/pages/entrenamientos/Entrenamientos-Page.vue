@@ -133,7 +133,7 @@ import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
 import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento } from "stores/entrenamientos-store.js";
-import { listar } from 'stores/persona-store.js'
+import { listar, listarTodosEstudiantes } from 'stores/persona-store.js'
 import { listarPaquetes } from "stores/paquete-store.js";
 import { listarUbicaciones } from "stores/ubicacion-store.js";
 
@@ -543,6 +543,9 @@ const getStatusLabel = (status) => {
 // Cargar datos iniciales
 onMounted(async () => {
   // Cargar disciplinas para filtros
+  const xd = await listarTodosEstudiantes()
+  console.log('SOLO ESTUDIANTES: ', xd);
+
   mockCoaches.value = await listarDisciplinas()
   disciplineOptions.value = mockCoaches.value
   // Cargar paquetes y ubicaciones para filtros

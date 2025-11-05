@@ -94,7 +94,8 @@
           <q-list bordered>
             <q-item v-for="coach in training.entrenadores" :key="coach.id">
               <q-item-section>
-                <q-item-label>{{ coach.nombres || coach.nombre || '' }} {{ coach.apellido_paterno || '' }} {{ coach.apellido_materno || '' }}</q-item-label>
+                <q-item-label>{{ coach.nombres || coach.nombre || '' }} {{ coach.apellido_paterno || '' }} {{
+                  coach.apellido_materno || '' }}</q-item-label>
                 <q-item-label caption>
                   Tel: {{ coach.telefono || 'N/A' }} • Edad: {{ calcularEdad(coach.fecha_nacimiento) || 'N/D' }}
                 </q-item-label>
@@ -115,15 +116,33 @@
     </q-card-section>
 
     <q-card-actions align="right">
-      <q-btn flat label="Tomar asistencia" color="primary" @click.prevent />
-      <q-btn flat label="Evaluar" color="secondary" @click.prevent />
+      <q-btn flat label="Tomar asistencia" color="primary" @click="asistenciaDialog = true" />
+      <q-btn flat label="Ver asistencias" color="accent" @click="verAsistenciasDialog = true" />
+      <q-btn flat label="Evaluar" color="secondary" @click="openEvaluateDialog" />
       <q-btn flat label="Cerrar" color="primary" v-close-popup />
     </q-card-actions>
+
+    <!-- Componente dialog de evaluación (controlado por v-model) -->
+    <EvaluarEntrenamiento v-model:modelValue="evaluateDialog" :personas="personas" :entrenamientos="[training]"
+      :cualidades="cualidades" @save="onSaveEvaluaciones" @cancel="onCancelEvaluacion" />
+
+    <!-- Dialog para tomar asistencia -->
+    <TomarAsistencia v-model:modelValue="asistenciaDialog" :entrenamientoId="training.id" @save="onSaveAsistencias"
+      @cancel="() => asistenciaDialog = false" />
+
+    <!-- Dialog para ver asistencias -->
+    <VerAsistencias v-model:modelValue="verAsistenciasDialog" :entrenamientoId="training.id" />
   </q-card>
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import EvaluarEntrenamiento from './EvaluarEntrenamiento.vue'
+import TomarAsistencia from './TomarAsistencia.vue'
+import VerAsistencias from './VerAsistencias.vue'
+import { guardarAsistencias } from 'stores/asistencia-store.js'
+import { listar } from 'stores/persona-store.js'
 
 // 1. Declara la prop “training” y su tipo
 const { training } = defineProps({
@@ -132,6 +151,85 @@ const { training } = defineProps({
     required: true
   }
 })
+
+const $q = useQuasar()
+
+// Estado del diálogo de evaluación
+const evaluateDialog = ref(false)
+
+// Dialog estado para asistencia
+const asistenciaDialog = ref(false)
+const verAsistenciasDialog = ref(false)
+
+// Listas necesarias para evaluar
+const personas = ref([])
+const cualidades = ref([])
+
+// Intentar cargar cualidades desde un store dinámico; si no existe, usar ejemplos
+const loadCualidades = async () => {
+  try {
+    const mod = await import('stores/cualidad-store.js')
+    if (mod && typeof mod.listar === 'function') {
+      const resp = await mod.listar()
+      cualidades.value = Array.isArray(resp) ? resp : (resp?.data || [])
+      return
+    }
+  } catch {
+    // ignore - usar fallback
+  }
+
+  // Fallback: ejemplos básicos (reemplazar con tu store/endpoint real)
+  cualidades.value = [
+    { id: 1, nombre: 'Técnica' },
+    { id: 2, nombre: 'Actitud' },
+    { id: 3, nombre: 'Puntualidad' }
+  ]
+}
+
+const loadPersonas = async () => {
+  try {
+    const resp = await listar()
+    personas.value = Array.isArray(resp) ? resp : (resp?.data || [])
+  } catch (e) {
+    console.warn('No se pudieron cargar personas:', e)
+    personas.value = []
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadPersonas(), loadCualidades()])
+})
+
+// Abrir diálogo
+const openEvaluateDialog = () => {
+  evaluateDialog.value = true
+}
+
+// Manejar guardado desde el componente de evaluación
+const onSaveEvaluaciones = async (payload) => {
+  // Aquí puedes llamar a tu store o API para persistir
+  console.log('Evaluaciones a guardar:', payload)
+  evaluateDialog.value = false
+  $q.notify({ type: 'positive', message: 'Evaluación enviada' })
+}
+
+const onCancelEvaluacion = () => {
+  evaluateDialog.value = false
+}
+
+// Guardar asistencias: recibe payload { asistencias }
+const onSaveAsistencias = async (payload) => {
+  const asistencias = payload?.asistencias || []
+  try {
+    await guardarAsistencias(asistencias)
+    $q.notify({ type: 'positive', message: 'Asistencias guardadas correctamente' })
+  } catch (e) {
+    console.error('Error guardando asistencias:', e)
+    // guardarAsistencias ya notificó, aquí se puede manejar rollback si es necesario
+  } finally {
+    asistenciaDialog.value = false
+  }
+}
 
 // Función para convertir número de día a nombre
 function obtenerNombreDia(numeroDia) {
