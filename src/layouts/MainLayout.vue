@@ -192,12 +192,56 @@
             </q-list>
           </div>
 
-          <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reportes')">
+          <div v-if="tieneAlguno([15, 16, 17, 18, 19])">
+            <q-list bordered>
+              <q-expansion-item group="somegroup" icon="person" class="" label="Reportes" header-class="text-primary">
+                <q-list class="bg-grey-7">
+                  <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reportePagos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="menu_book" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Pagos</q-item-section>
+                  </q-item>
+
+
+                  <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reporteEntrenamientos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="event_available" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Entrenamientos</q-item-section>
+                  </q-item>
+                  <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('vista4')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="emoji_events" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Torneos</q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('reporteGastos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="location_on" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Gastos</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-expansion-item>
+            </q-list>
+          </div>
+
+          <!-- <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reportes')">
             <q-item-section avatar>
               <q-icon color="primary" name="auto_stories" />
             </q-item-section>
             <q-item-section>Reportes</q-item-section>
-          </q-item>
+          </q-item> -->
 
           <q-item clickable v-if="tienePermiso(16)" v-ripple @click="navegar('paisaje')">
             <q-item-section avatar>

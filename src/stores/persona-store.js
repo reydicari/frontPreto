@@ -93,3 +93,17 @@ export const buscarCiRepetido = async (ci) => {
     return error.response.data;
   }
 };
+export const todasPersonas = async () => {
+  try {
+    const response = await api.get(URL_PART + "/todasPersonas");
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error.response);
+    Notify.create({
+      type: "negative",
+      message: "Error al listar las personas",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};

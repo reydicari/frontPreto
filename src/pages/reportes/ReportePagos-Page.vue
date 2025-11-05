@@ -1,11 +1,14 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center justify-between q-mb-md">
-      <h2 class="text-h4 q-ma-none">Gestión de Pagos</h2>
-      <q-btn color="primary" icon="add" label="Nuevo Pago" @click="openDialog" />
+      <h2 class="text-h4 q-ma-none">Reporte de Pagos</h2>
+      <div>
+        <q-btn color="orange" icon="picture_as_pdf" label="Generar Reporte" @click="generarReporte" class="q-mr-sm" />
+        <q-btn color="secondary" icon="file_download" label="Generar Excel" @click="generarReporteExcel" />
+      </div>
     </div>
 
-    <!-- Filtros -->
+    <!-- Filtros (copiados de pagos-page) -->
     <q-card class="q-mb-md">
       <q-card-section>
         <div class="row q-col-gutter-md">
@@ -15,7 +18,6 @@
             </template>
           </q-input>
 
-          <!-- Rango de fechas (popup) -->
           <q-input dense outlined class="col-md-3" label="Desde" v-model="filterDesde" readonly>
             <template v-slot:prepend>
               <q-icon name="event" />
@@ -33,7 +35,6 @@
             </q-popup-proxy>
           </q-input>
 
-          <!-- Persona (select con búsqueda) -->
           <q-select dense outlined class="col-md-4" v-model="filterPersona" :options="personOptions"
             option-label="displayName" option-value="id" use-input input-debounce="200" emit-value map-options
             label="Persona (o General)" clearable @filter="filterPerson">
@@ -44,12 +45,10 @@
             </template>
           </q-select>
 
-          <!-- Usuario -->
           <q-select dense outlined class="col-md-3" v-model="filterUsuario" :options="usuarioOptions"
             option-label="username" option-value="id" use-input input-debounce="300" emit-value map-options
             label="Usuario" clearable />
 
-          <!-- Estado -->
           <q-select dense outlined class="col-md-2" v-model="filterEstado" :options="estadoOptions" label="Estado"
             clearable />
 
@@ -57,47 +56,25 @@
       </q-card-section>
     </q-card>
 
-    <!-- Tabla -->
+    <!-- Tabla (preview de pagos filtrados) -->
     <q-card>
       <q-table :rows="pagos" :columns="columns" row-key="id" :loading="loading">
-        <template v-slot:body-cell-estado="props">
-          <q-td :props="props">
-            <q-badge :color="estadoColor(props.row.estado)" :label="estadoLabel(props.row.estado)" text-color="white" />
-          </q-td>
-        </template>
-
         <template v-slot:body-cell-persona="props">
           <q-td :props="props">{{ personaLabel(props.row) }}</q-td>
         </template>
-
         <template v-slot:body-cell-comprobante="props">
           <q-td :props="props">
-            <q-btn flat dense :icon="props.row.comprobante ? 'image' : 'image_not_supported'"
-              @click="verPago(props.row)" :color="props.row.comprobante ? 'primary' : 'grey-6'">
-              <q-tooltip>{{ props.row.comprobante ? 'Ver comprobante' : 'Sin comprobante' }}</q-tooltip>
-            </q-btn>
+            <q-icon :name="props.row.comprobante ? 'image' : 'image_not_supported'" />
           </q-td>
         </template>
-
-        <template v-slot:body-cell-saldo="props">
-          <q-td :props="props">{{ props.row.saldo ?? 0 }}</q-td>
-        </template>
-
-        <template v-slot:body-cell-descuento="props">
-          <q-td :props="props">{{ props.row.descuento ?? 0 }}</q-td>
-        </template>
-
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
             <q-btn dense flat icon="visibility" color="primary" @click="verPago(props.row)" />
-            <q-btn v-if="props.row.estado != 0" dense flat icon="cancel" color="negative"
-              @click="anularPago(props.row)" />
           </q-td>
         </template>
       </q-table>
     </q-card>
 
-    <!-- Dialogo detalle de pago (imagen a la izquierda) -->
     <q-dialog v-model="detalleDialog">
       <q-card style="min-width: 700px; max-width: 1000px">
         <q-card-section>
@@ -138,36 +115,6 @@
                   <q-item-label>{{ selectedPago?.monto ?? '-' }}</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Descuento</q-item-label>
-                  <q-item-label>{{ selectedPago?.descuento ?? 0 }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Categoría</q-item-label>
-                  <q-item-label>{{ selectedPago?.categoria?.nombre || selectedPago?.categoria || '-' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Método</q-item-label>
-                  <q-item-label>{{ selectedPago?.metodo?.nombre || selectedPago?.metodo || '-' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Usuario cobrador</q-item-label>
-                  <q-item-label>{{ selectedPago?.usuario_cobrador || '-' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>Estado</q-item-label>
-                  <q-item-label>{{ estadoLabel(selectedPago?.estado) }}</q-item-label>
-                </q-item-section>
-              </q-item>
             </q-list>
           </div>
         </q-card-section>
@@ -177,21 +124,19 @@
       </q-card>
     </q-dialog>
 
-    <!-- Dialog externo para Nuevo/Editar Pago -->
-    <NuevoPagoDialog v-model="dialogVisible" @saved="onPagoSaved" />
+    <!-- Este módulo es exclusivamente para reportes: no mostrar dialog Nuevo Pago -->
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { listarPagos, anularPago as anularPagoStore } from 'src/stores/pago_store.js'
-import NuevoPagoDialog from 'src/pages/pagos/NuevoPagoDialog.vue'
+import { listarPagos } from 'src/stores/pago_store.js'
+import { reportePagosParams, reportePagosExcel } from 'src/stores/reportes.js'
 
 const $q = useQuasar()
 
-// Estado
 const pagos = ref([])
 const loading = ref(false)
 
@@ -203,78 +148,34 @@ const filterPersona = ref(null)
 const filterUsuario = ref(null)
 const filterEstado = ref(null)
 
-// Dialogos y formulario
-const dialogVisible = ref(false)
 const detalleDialog = ref(false)
 const selectedPago = ref(null)
 
-// Opciones
 const personOptions = ref([])
-const allPersonOptions = ref([])
 const usuarioOptions = ref([])
-// const categoriaOptions = ref([])
-// metodoOptions ahora gestionado por NuevoPagoDialog (si se necesita aquí, cargar desde store)
+
 const estadoOptions = [
-  { label: 'anulado', value: 0 },
+  { label: 'Anulado', value: 0 },
   { label: 'Pagado', value: 1 },
   { label: 'Parcial', value: 2 }
 ]
 
-// Columnas tabla
 const columns = [
   { name: 'fecha', label: 'Fecha', field: 'fecha' },
   { name: 'comprobante', label: 'Comprobante', field: 'comprobante' },
   { name: 'detalle', label: 'Detalle', field: 'detalle' },
   { name: 'persona', label: 'Persona', field: 'persona' },
   { name: 'monto', label: 'Monto', field: 'monto', align: 'right' },
-  // { name: 'saldo', label: 'Saldo', field: 'saldo', align: 'right' },
   { name: 'descuento', label: 'Descuento', field: 'descuento', align: 'right' },
   { name: 'estado', label: 'Estado', field: 'estado' },
-  { name: 'usuario_cobrador', label: 'Usuario', field: 'usuario_cobrador' },
-  { name: 'categoria', label: 'Categoría', field: row => row.categorium?.nombre || row.categorium },
   { name: 'actions', label: 'Acciones', field: 'actions' }
 ]
 
-// Utilidades
-function estadoColor(estado) {
-  switch (estado) {
-    case 0: return 'negative' // deuda - rojo
-    case 1: return 'positive' // parcial - naranja
-    case 2: return 'positive' // pagado - verde
-    default: return 'grey'
-  }
-}
-function estadoLabel(estado) {
-  switch (estado) {
-    case 0: return 'Anulado'
-    case 1: return 'Pagado'
-    case 2: return 'Pagado'
-    default: return 'Desconocido'
-  }
-}
 function personaLabel(row) {
-  if (row.id_persona && row.persona) return `${row.persona.nombres} ${row.persona.apellido_paterno}`
+  if (row && row.id_persona && row.persona) return `${row.persona.nombres} ${row.persona.apellido_paterno}`
   return 'General'
 }
 
-// Cargar listas desde stores
-
-
-function filterPerson(val, update) {
-  update(() => {
-    if (!val) {
-      // reset to full list
-      personOptions.value = [...allPersonOptions.value]
-      return
-    }
-    const needle = val.toLowerCase()
-    personOptions.value = allPersonOptions.value.filter(p => (p.displayName || '').toLowerCase().includes(needle))
-  })
-}
-
-// onFileSelected y form movidos al componente NuevoPagoDialog
-
-// Cargar pagos con filtros
 async function loadPagos() {
   loading.value = true
   try {
@@ -288,8 +189,6 @@ async function loadPagos() {
     }
     const response = await listarPagos(params)
     pagos.value = Array.isArray(response) ? response : (response.data || [])
-    console.log('PAGOS', pagos.value);
-
   } catch (e) {
     console.error(e)
     $q.notify({ type: 'negative', message: 'Error cargando pagos' })
@@ -298,24 +197,12 @@ async function loadPagos() {
   }
 }
 
-// Watch filtros
-watch([filterDesde, filterHasta, filterPersona, filterUsuario, filterEstado, searchTerm], () => {
-  loadPagos()
-})
-
 onMounted(async () => {
   await loadPagos()
 })
 
-// Acciones
-function openDialog() {
-  dialogVisible.value = true
-}
+// onPagoSaved eliminado: esta página es sólo para reportes
 
-function onPagoSaved() {
-  // recargar la lista cuando se guarda un pago desde el componente
-  loadPagos()
-}
 const comprobanteUrl = (name) => {
   if (!name) return null
   if (name.startsWith('http')) return name
@@ -327,24 +214,27 @@ function verPago(pago) {
   detalleDialog.value = true
 }
 
-function anularPago(pago) {
-  $q.dialog({
-    title: 'Anular pago',
-    message: `¿Anular pago de ${personaLabel(pago)} por Bs ${pago.monto}?`,
-    cancel: true
-  }).onOk(async () => {
-    try {
-      await anularPagoStore(pago.id)
-      // recargar lista
-      await loadPagos()
-    } catch (e) {
-      console.error('Error anulando pago', e)
-    }
-  })
+async function generarReporte() {
+  const params = {
+    desde: filterDesde.value,
+    hasta: filterHasta.value,
+    id_persona: filterPersona.value,
+    id_usuario: filterUsuario.value,
+    estado: filterEstado.value,
+    search: searchTerm.value
+  }
+  await reportePagosParams(params)
 }
 
-// Computed: mostrar persona en tabla si viene como objeto
-// (el store puede devolver `persona` o `inscripcion.persona`)
-// No hacemos transformaciones complejas aquí para evitar suposiciones.
-
+async function generarReporteExcel() {
+  const params = {
+    desde: filterDesde.value,
+    hasta: filterHasta.value,
+    id_persona: filterPersona.value,
+    id_usuario: filterUsuario.value,
+    estado: filterEstado.value,
+    search: searchTerm.value
+  }
+  await reportePagosExcel(params)
+}
 </script>

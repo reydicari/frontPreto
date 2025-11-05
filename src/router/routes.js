@@ -40,6 +40,10 @@ const routes = [
         component: () => import("pages/reportes/Reportes-Page.vue"),
       },
       {
+        path: "/reportePagos",
+        component: () => import("pages/reportes/ReportePagos-Page.vue"),
+      },
+      {
         path: "/paisaje",
         component: () => import("pages/vista/paisaje-Page.vue"),
       },

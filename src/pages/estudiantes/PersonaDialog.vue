@@ -413,7 +413,7 @@ async function prepareAndSave() {
   // Loguear credenciales
   console.log('Credenciales creadas -> usuario:', usuario, 'clave:', clave)
   // Añadir al formData como objeto usuario
-  const usuarioObj = { usuario, clave }
+  const usuarioObj = { usuario, clave, rol: 'estudiante' }
   formData.append('usuario', JSON.stringify(usuarioObj))
   // Agregar foto de perfil
   if (profilePhotoFile.value) {
