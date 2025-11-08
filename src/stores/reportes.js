@@ -130,3 +130,46 @@ export const reporteAsistenciasEntrenamiento = async (params) => {
     return error.response.data;
   }
 };
+
+// Excel para asistencias por entrenamiento
+export const reporteAsistenciasEntrenamientoExcel = async (params) => {
+  try {
+    const response = await api.get(
+      URL_PART + "/asistenciasEntrenamientoExcel",
+      {
+        params,
+        responseType: "blob",
+      },
+    );
+
+    const contentType =
+      (response.headers &&
+        (response.headers["content-type"] ||
+          response.headers["Content-Type"])) ||
+      "";
+    let ext = "xlsx";
+    let mime =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (contentType.includes("csv") || contentType.includes("text/plain")) {
+      ext = "csv";
+      mime = "text/csv;charset=utf-8";
+    }
+
+    const blob = new Blob([response.data], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `reporte_asistencias_entrenamiento_${new Date().toISOString().slice(0, 10)}.${ext}`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return response.data;
+  } catch (error) {
+    console.log("error en reporteAsistenciasEntrenamientoExcel", error);
+    return error.response?.data;
+  }
+};

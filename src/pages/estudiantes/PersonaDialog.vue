@@ -273,7 +273,6 @@ const host = 'http://localhost:3001/uploads/'
 
 onMounted(() => {
   // Llamá esta función con tu URL
-  console.log('ONMOUTED DE PERDONA DIALOGGGGGGGGGGGGGGGGG');
 
   // cargarImagenDesdeUrl(host + localPersona.value.fotografia);
 })
@@ -417,6 +416,8 @@ async function prepareAndSave() {
   formData.append('usuario', JSON.stringify(usuarioObj))
   // Agregar foto de perfil
   if (profilePhotoFile.value) {
+    console.log('poniendote la fotooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo', profilePhotoFile.value);
+
     formData.append('foto', profilePhotoFile.value)
   } //y archivos adjuntos
   if (additionalFiles.value.length > 0) {

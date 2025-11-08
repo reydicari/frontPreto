@@ -162,7 +162,7 @@
                     </q-item-section>
                     <q-item-section>Entrenamientos</q-item-section>
                   </q-item>
-                  <q-item clickable v-if="tienePermiso(12)" v-ripple @click="navegar('vista4')">
+                  <q-item clickable v-if="tienePermiso(12)" v-ripple @click="navegar('torneos')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="emoji_events" />
@@ -214,7 +214,7 @@
                     </q-item-section>
                     <q-item-section>Entrenamientos</q-item-section>
                   </q-item>
-                  <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('vista4')">
+                  <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reporteTorneos')">
                     <q-item-section avatar>
                       <q-item-label class="secondary_item">
                         <q-icon color="light" name="emoji_events" />

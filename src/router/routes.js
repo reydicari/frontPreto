@@ -28,6 +28,10 @@ const routes = [
         component: () => import("pages/entrenamientos/Entrenamientos-Page.vue"),
       },
       {
+        path: "/torneos",
+        component: () => import("pages/torneos/Torneos-Module.vue"),
+      },
+      {
         path: "/entrenadores",
         component: () => import("pages/entrenadores/Entrenadores-Page.vue"),
       },
@@ -42,6 +46,11 @@ const routes = [
       {
         path: "/reportePagos",
         component: () => import("pages/reportes/ReportePagos-Page.vue"),
+      },
+      {
+        path: "/reporteEntrenamientos",
+        component: () =>
+          import("pages/reportes/ReporteEntrenamientos-Page.vue"),
       },
       {
         path: "/paisaje",

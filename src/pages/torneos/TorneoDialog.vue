@@ -1,0 +1,160 @@
+<template>
+  <q-card style="min-width: 420px; max-width: 720px;">
+    <q-card-section>
+      <div class="text-h6">{{ isEdit ? 'Editar torneo' : 'Nuevo torneo' }}</div>
+    </q-card-section>
+
+    <q-separator />
+
+    <q-card-section>
+      <q-form @submit.prevent="submit" ref="formRef">
+        <q-input dense v-model="form.nombre" label="Nombre" :rules="[val => !!val || 'Requerido']" autofocus />
+
+        <div class="row q-col-gutter-md q-mt-sm">
+          <div class="col-6">
+            <q-input dense v-model="form.fecha_inicio" label="Fecha inicio" type="date" />
+          </div>
+          <div class="col-6">
+            <q-input dense v-model="form.fecha_fin" label="Fecha fin" type="date" :min="minFechaFin" />
+            <div class="text-caption q-mt-xs">Mínimo permitido: {{ minFechaFin }}</div>
+          </div>
+        </div>
+
+        <div class="row q-col-gutter-md q-mt-sm">
+          <div class="col-6">
+            <q-select dense v-model="form.id_tipo" :options="tiposOptions" label="Tipo de torneo" emit-value map-options
+              clearable />
+          </div>
+          <div class="col-6">
+            <q-select dense v-model="form.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
+              map-options clearable />
+          </div>
+        </div>
+
+        <div class="row q-mt-md">
+          <q-space />
+          <q-btn flat label="Cancelar" color="secondary" @click="$emit('cancel')" />
+          <q-btn label="Guardar" color="primary" :disable="!canSave" @click="submit" />
+        </div>
+      </q-form>
+    </q-card-section>
+  </q-card>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { listarTiposTorneo } from 'src/stores/torneo-store'
+import { listarUbicaciones } from 'src/stores/ubicacion-store'
+
+const props = defineProps({ initial: { type: [Object, null], default: null } })
+const emit = defineEmits(['save', 'cancel'])
+
+const isEdit = computed(() => !!props.initial)
+
+const formRef = ref(null)
+
+
+const tipos = ref([])
+const ubicaciones = ref([])
+
+// helpers de fechas
+function todayStr() {
+  const d = new Date()
+  return d.toISOString().slice(0, 10)
+}
+function addMonthsStr(isoDateStr, months) {
+  const d = new Date(isoDateStr)
+  d.setMonth(d.getMonth() + months)
+  return d.toISOString().slice(0, 10)
+}
+
+const form = reactive({ nombre: '', fecha_inicio: '', fecha_fin: '', id_tipo: null, id_ubicacion: null, tipo_nombre: '', ubicacion_nombre: '' })
+
+// si viene initial, cargar; si no, establecer por defecto: inicio hoy, fin hoy+1 mes
+if (props.initial) {
+  form.nombre = props.initial.nombre || ''
+  form.fecha_inicio = props.initial.fecha_inicio || todayStr()
+  form.fecha_fin = props.initial.fecha_fin || addMonthsStr(form.fecha_inicio || todayStr(), 1)
+  form.id_tipo = props.initial.id_tipo_torneo || props.initial.tipo_torneo?.id || null
+  form.id_ubicacion = props.initial.id_ubicacion || props.initial.ubicacion?.id || null
+  form.tipo_nombre = props.initial.tipo_torneo?.nombre || ''
+  form.ubicacion_nombre = props.initial.ubicacion?.nombre || ''
+} else {
+  form.fecha_inicio = todayStr()
+  form.fecha_fin = addMonthsStr(form.fecha_inicio, 1)
+}
+
+// regla: fecha_fin no puede ser menor que fecha_inicio + 1 mes
+const minFechaFin = computed(() => addMonthsStr(form.fecha_inicio || todayStr(), 1))
+const fechaFinValida = computed(() => {
+  try {
+    return new Date(form.fecha_fin) >= new Date(minFechaFin.value)
+  } catch {
+    return false
+  }
+})
+
+const canSave = computed(() => !!form.nombre && !!form.fecha_inicio && !!form.fecha_fin && !!form.id_tipo && !!form.id_ubicacion && fechaFinValida.value)
+
+const tiposOptions = computed(() => tipos.value.map(t => ({ label: t.nombre, value: t.id })))
+const ubicacionOptions = computed(() => ubicaciones.value.map(u => ({ label: u.nombre, value: u.id })))
+
+onMounted(async () => {
+  try {
+    const [tList, uList] = await Promise.all([listarTiposTorneo().catch(() => []), listarUbicaciones().catch(() => [])])
+    tipos.value = Array.isArray(tList) ? tList : (tList?.data || [])
+    ubicaciones.value = Array.isArray(uList) ? uList : (uList?.data || [])
+
+    // Si no viene seleccionado y existe PETROAMBIENTAL, seleccionar por defecto
+    if (!form.id_ubicacion) {
+      const petro = ubicaciones.value.find(u => String(u.nombre).toLowerCase().includes('petroambiental'))
+      if (petro) form.id_ubicacion = petro.id
+    }
+
+    // Si no viene tipo seleccionado y hay al menos uno, seleccionar el primero
+    if (!form.id_tipo && tipos.value.length) {
+      form.id_tipo = tipos.value[0].id
+    }
+  } catch (err) {
+    console.error('Error cargando tipos/ubicaciones', err)
+  }
+})
+
+function submit() {
+  if (!canSave.value) return
+
+  // construir payload con ids seleccionados y objetos embebidos cuando estén disponibles
+  const payload = {
+    id: props.initial?.id || null,
+    nombre: form.nombre,
+    fecha_inicio: form.fecha_inicio,
+    fecha_fin: form.fecha_fin,
+    id_ubicacion: form.id_ubicacion,
+    id_tipo_torneo: form.id_tipo,
+    tipo_torneo: tipos.value.find(t => t.id === form.id_tipo) || { id: form.id_tipo || Date.now(), nombre: form.tipo_nombre || 'Desconocido', fases: props.initial?.tipo_torneo?.fases || [] },
+    ubicacion: ubicaciones.value.find(u => u.id === form.id_ubicacion) || { id: form.id_ubicacion || Date.now(), nombre: form.ubicacion_nombre }
+  }
+
+  // calcular estado según reglas: si estado==-1 respetar; ffin<=hoy -> 0; finicio<=hoy ->1; finicio>hoy ->2
+  function computeEstado(obj) {
+    if (typeof obj.estado !== 'undefined' && Number(obj.estado) === -1) return -1
+    const hoy = new Date()
+    const start = obj.fecha_inicio ? new Date(obj.fecha_inicio) : null
+    const end = obj.fecha_fin ? new Date(obj.fecha_fin) : null
+    if (end && end <= hoy) return 0
+    if (start && start <= hoy) return 1
+    if (start && start > hoy) return 2
+    return 2
+  }
+
+  payload.estado = computeEstado(payload)
+
+  emit('save', payload)
+}
+</script>
+
+<style scoped>
+.q-card {
+  overflow: visible
+}
+</style>
