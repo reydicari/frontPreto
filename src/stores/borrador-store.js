@@ -31,9 +31,9 @@ export const listarEquipos = async () => {
     );
     Notify.create({
       type: "negative",
-      message: "Error al cargar borradores",
+      message: "Error al cargar todos los equipos",
       position: "bottom",
     });
-    return error.response.data;
+    return [];
   }
 };

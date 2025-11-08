@@ -1,9 +1,8 @@
 <template>
-  <q-page padding>
+  <q-page padding :class="$q.dark.isActive ? 'bg-grey-4' : ''">
     <q-card>
       <q-card-section class="row items-center q-gutter-sm">
-        <div class="text-h6">Torneos</div>
-        <div class="text-subtitle2">Gestiona torneos, fases y partidos — datos en memoria</div>
+        <div class="text-h6 page-title">Torneos</div>
         <q-space />
         <q-btn color="primary" label="Agregar torneo" icon="add" @click="onAdd" />
       </q-card-section>
@@ -357,7 +356,18 @@ function teamName(p, side) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import 'src/css/quasar.variables.scss';
+
+.page-title {
+  border-left: 6px solid $orange-8;
+  padding-left: 12px;
+  color: $secondary;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .q-table tbody td {
   vertical-align: middle;
 }
