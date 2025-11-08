@@ -91,7 +91,8 @@
 
     <!-- Dialog de borradores -->
     <q-dialog v-model="showBorradoresDialog" persistent>
-      <borradores-dialog v-if="activeTorneoForBorradores" :torneo-id="activeTorneoForBorradores" @save="onBorradoresSaved" @cancel="showBorradoresDialog = false" />
+      <borradores-dialog v-if="activeTorneoForBorradores" :torneo-id="activeTorneoForBorradores"
+        @save="onBorradoresSaved" @cancel="showBorradoresDialog = false" />
     </q-dialog>
 
     <!-- Drawer de detalles a la derecha -->
@@ -296,7 +297,7 @@ function onAdd() {
   showTorneoDialog.value = true
 }
 
-function openBorradores (row) {
+function openBorradores(row) {
   activeTorneoForBorradores.value = row.id
   showBorradoresDialog.value = true
 }
@@ -321,7 +322,7 @@ function onSaveTorneo(payload) {
   showTorneoDialog.value = false
 }
 
-function onBorradoresSaved (payload) {
+function onBorradoresSaved(payload) {
   // payload: { nuevos, desechados }
   console.log('Borradores dialog returned:', payload)
   $q.notify({ type: 'positive', message: 'Borradores procesados (ver consola)' })

@@ -58,7 +58,11 @@
                     @click="registerNew(idx)" title="Registrar equipo" />
                   <q-btn v-if="!card.registered" dense round flat color="negative" icon="close" @click="removeNew(idx)"
                     title="Quitar" />
-                  <q-badge v-if="card.registered" color="positive" icon="check" />
+                  <div v-else class="row items-center" style="gap:8px;">
+                    <q-badge color="positive" icon="check" />
+                    <div v-if="card.registeredType === 'nuevo'" class="text-caption text-positive">nuevo registro</div>
+                    <div v-else-if="card.registeredType === 'existente'" class="text-caption text-grey">existente</div>
+                  </div>
                 </div>
               </div>
             </q-card>
@@ -78,7 +82,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { listarBorradores } from 'src/stores/borrador-store'
+import { listarBorradores, listarEquipos } from 'src/stores/borrador-store'
 import { Notify } from 'quasar'
 
 const props = defineProps({ torneoId: { type: [Number, String], required: true } })
@@ -89,6 +93,8 @@ const originals = ref([]) // borradores que vienen del backend
 const desechados = ref([]) // los borrados desde originals
 const newCards = ref([]) // tarjetas temporales para nuevos equipos
 const nuevosCollected = ref([]) // equipos que el usuario "registra" explícitamente (solo los confirmados)
+const existente = ref([]) // nuevos enviados que coinciden con la lista principal de equipos
+const equiposList = ref([]) // lista principal de equipos obtenida del store
 const inputRefs = ref([])
 
 function setInputRef(el, idx) {
@@ -105,6 +111,15 @@ onMounted(async () => {
     const res = await listarBorradores(props.torneoId).catch(() => [])
     originals.value = Array.isArray(res) ? res : (res?.data || [])
     console.log('borradores: ', originals.value);
+
+    // cargar lista principal de equipos para detectar existentes
+    try {
+      const eq = await listarEquipos().catch(() => [])
+      equiposList.value = Array.isArray(eq) ? eq : (eq?.data || [])
+      console.log('equipos principales:', equiposList.value)
+    } catch (e) {
+      console.warn('No se pudieron cargar equipos principales', e)
+    }
 
   } catch (err) {
     console.error('error cargando borradores', err)
@@ -142,10 +157,15 @@ function onNewInput(idx) {
 function removeNew(idx) {
   const card = newCards.value[idx]
   if (!card) return
-  // if card was registered, remove from nuevosCollected as well
+  // if card was registered, remove from nuevosCollected or existente as well
   if (card.registered) {
-    const nidx = nuevosCollected.value.findIndex(n => n.nombre === card.nombre)
+    const nameKey = (card.nombre || '').trim().toLowerCase()
+    // remover de nuevosCollected
+    const nidx = nuevosCollected.value.findIndex(n => (n.nombre || '').trim().toLowerCase() === nameKey)
     if (nidx !== -1) nuevosCollected.value.splice(nidx, 1)
+    // remover de existente
+    const eidx = existente.value.findIndex(n => (n.nombre || '').trim().toLowerCase() === nameKey)
+    if (eidx !== -1) existente.value.splice(eidx, 1)
   }
   newCards.value.splice(idx, 1)
   // remove associated input ref if exists
@@ -163,10 +183,26 @@ async function registerNew(idx) {
     Notify.create({ type: 'warning', message: 'Ingrese un nombre válido antes de registrar' })
     return
   }
-  // agregar a nuevosCollected
-  nuevosCollected.value.push({ nombre: card.nombre.trim() })
-  // marcar la card como registrada y dejarla readonly
-  card.registered = true
+  const name = card.nombre.trim()
+  const lower = name.toLowerCase()
+
+  // revisar si existe en lista principal de equipos (comparación case-insensitive)
+  const found = equiposList.value.find(e => (e.nombre || '').trim().toLowerCase() === lower)
+  if (found) {
+    // si ya está en 'existente' no lo duplicamos
+    if (!existente.value.find(e => (e.nombre || '').trim().toLowerCase() === lower)) {
+      existente.value.push({ id: found.id, nombre: found.nombre })
+    }
+    card.registered = true
+    card.registeredType = 'existente'
+  } else {
+    // agregar a nuevosCollected (solo nuevos netos)
+    if (!nuevosCollected.value.find(n => (n.nombre || '').trim().toLowerCase() === lower)) {
+      nuevosCollected.value.push({ nombre: name })
+    }
+    card.registered = true
+    card.registeredType = 'nuevo'
+  }
   // crear una nueva tarjeta vacía y enfocar
   newCards.value.push(makeNewCard())
   await nextTick()
@@ -175,14 +211,16 @@ async function registerNew(idx) {
 }
 
 function onSave() {
-  // solo tomar los nuevos que el usuario "registró" explícitamente (nuevosCollected)
+  // tomar los nuevos que el usuario "registró" explícitamente (nuevosCollected)
   const nuevos = nuevosCollected.value.slice()
+  const existentesCopy = existente.value.slice()
   const desechadosCopy = desechados.value.slice()
   // mostrar en consola y emitir
   console.log('Borradores - nuevos:', nuevos)
+  console.log('Borradores - existentes (coinciden con lista principal):', existentesCopy)
   console.log('Borradores - desechados:', desechadosCopy)
-  Notify.create({ type: 'positive', message: `Se procesaron ${nuevos.length} nuevos y ${desechadosCopy.length} eliminados` })
-  emit('save', { nuevos, desechados: desechadosCopy })
+  Notify.create({ type: 'positive', message: `Se procesaron ${nuevos.length} nuevos, ${existentesCopy.length} existentes y ${desechadosCopy.length} eliminados` })
+  emit('save', { nuevos, existentes: existentesCopy, desechados: desechadosCopy })
 }
 
 function onCancel() {

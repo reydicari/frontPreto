@@ -20,3 +20,20 @@ export const listarBorradores = async (id_torneo) => {
     return error.response.data;
   }
 };
+export const listarEquipos = async () => {
+  try {
+    const response = await api.get("/api/equipo/listar");
+    return response.data;
+  } catch (error) {
+    console.warn(
+      "No se pudo cargar cualidades desde API, devolviendo fallback",
+      error?.response || error,
+    );
+    Notify.create({
+      type: "negative",
+      message: "Error al cargar borradores",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};
