@@ -31,6 +31,11 @@
           </div>
 
           <div class="col-12 col-sm-6 col-md-3">
+            <q-select dense multiple use-chips chip-color="primary" v-model="filters.estados" :options="estadoOptions"
+              label="Estado" emit-value map-options clearable />
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
             <q-input dense v-model="filters.fecha_inicio_desde" label="Desde (inicio)" type="date" />
           </div>
 
@@ -62,9 +67,10 @@
             </q-td>
           </template>
 
-          <template v-slot:body-cell-estado="props">
+          <template v-slot:body-cell-situacion="props">
             <q-td :props="props">
-              <q-badge :color="badgeColorEstado(props.row.estado)">{{ estadoLabel(props.row.estado) }}</q-badge>
+              <q-badge :color="badgeColorEstado(estadoFromDates(props.row))">{{ estadoLabel(estadoFromDates(props.row))
+              }}</q-badge>
             </q-td>
           </template>
 
@@ -92,7 +98,8 @@
             <q-td :props="props">
               <q-btn dense flat icon="visibility" color="primary" @click.stop="openDetails(props.row)" title="Ver" />
               <q-btn dense flat icon="edit" color="secondary" @click.stop="onEdit(props.row)" title="Editar" />
-              <q-btn dense flat icon="delete" color="negative" @click.stop="onDelete(props.row)" title="Eliminar" />
+              <q-btn v-if="props.row.estado != 0" dense flat icon="delete" color="negative"
+                @click.stop="onDelete(props.row)" title="Eliminar" />
               <q-btn dense flat icon="groups" color="teal" @click.stop="openBorradores(props.row)" title="Borradores" />
             </q-td>
           </template>
@@ -109,6 +116,47 @@
     <q-dialog v-model="showBorradoresDialog" persistent>
       <borradores-dialog v-if="activeTorneoForBorradores" :torneo-id="activeTorneoForBorradores"
         @save="onBorradoresSaved" @cancel="showBorradoresDialog = false" />
+    </q-dialog>
+
+    <!-- Dialog para suspender / anular torneo con motivo -->
+    <q-dialog v-model="showSuspendDialog" persistent>
+      <q-card style="min-width: 420px; max-width: 560px;">
+        <q-toolbar class="bg-red-10 text-white">
+          <q-toolbar-title>
+            <q-icon name="block" class="q-mr-sm" /> Confirmar suspensión
+          </q-toolbar-title>
+        </q-toolbar>
+
+        <q-card-section>
+          <div class="text-subtitle2">¿Desea suspender el torneo <strong>{{ suspendTarget?.nombre }}</strong>?</div>
+          <div class="q-mt-md">
+            <q-input outlined dense type="text" v-model="suspendReason" label="Motivo de suspensión" counter
+              maxlength="50"
+              :rules="[val => !!val && val.trim().length >= 5 || 'Mínimo 5 caracteres', val => (val || '').trim().length <= 50 || 'Máximo 50 caracteres']" />
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="secondary" @click="cancelSuspend" />
+          <q-btn label="Confirmar suspensión" color="negative" @click="confirmSuspend" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Dialog de confirmación y respuesta para iniciar torneo -->
+    <q-dialog v-model="showStartConfirm" persistent>
+      <q-card style="min-width: 420px; max-width: 560px;">
+        <q-card-section class="q-pa-md text-center">
+          <div v-if="startResponseMessage" class="text-body1">{{ startResponseMessage }}</div>
+          <div v-else class="text-subtitle2">¿Desea comenzar el torneo <strong>{{ suspendTarget?.nombre }}</strong>?
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cerrar" color="secondary" @click="showStartConfirm = false" />
+          <q-btn unelevated color="positive" label="Comenzar" @click="doStartTournament" />
+        </q-card-actions>
+      </q-card>
     </q-dialog>
 
     <!-- Drawer de detalles a la derecha -->
@@ -171,7 +219,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
-import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo } from 'src/stores/torneo-store'
+import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo, comenzarTorneo, suspenderTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
 import { listarNiveles } from 'src/stores/nivel'
 import { actualizarBorradores } from 'src/stores/borrador-store'
@@ -189,7 +237,7 @@ const pagination = reactive({ page: 1, rowsPerPage: 10 })
 const columns = [
   { name: 'nro', label: 'Nro', field: 'nro', sortable: false },
   { name: 'nombre', label: 'Nombre', field: 'nombre', sortable: true },
-  { name: 'estado', label: 'Estado', field: 'estado', sortable: true },
+  { name: 'situacion', label: 'Situacion', field: row => estadoFromDates(row), sortable: true },
   { name: 'ubicacion', label: 'Ubicación', field: row => row.ubicacion?.nombre || '-', sortable: true },
   { name: 'nivel', label: 'Nivel', field: row => row.nivel?.nombre_nivel || (row.nivel?.nombre) || '-', sortable: true },
   { name: 'fecha_inicio', label: 'Inicio', field: 'fecha_inicio', sortable: true },
@@ -217,6 +265,15 @@ const nivelOptions = computed(() => {
 })
 
 const niveles = ref([])
+const estadoOptions = [
+  { label: 'Suspendido', value: 'suspendido', color: 'negative' },
+  { label: 'Terminado', value: 0, color: 'grey' },
+  { label: 'En marcha', value: 1, color: 'positive' },
+  { label: 'Sin comenzar', value: 2, color: 'info' }
+]
+
+// por defecto mostrar estados activos (En marcha y Sin comenzar)
+filters.estados = [1, 2]
 
 onMounted(async () => {
   loading.value = true
@@ -262,8 +319,6 @@ const badgeColorEstado = (estado) => {
 }
 
 const estadoLabel = (estado) => {
-  console.log('estado: ', estado);
-
   if (Number(estado) == -1) return 'Anulado'
   if (Number(estado) == 0) return 'Terminado'
   if (Number(estado) == 1) return 'En marcha'
@@ -305,13 +360,38 @@ const filteredTorneos = computed(() => {
       const hasta = new Date(filters.fecha_inicio_hasta)
       if (!t.fecha_inicio || new Date(t.fecha_inicio) > hasta) return false
     }
+    // filtro por estado(s)
+    if (filters.estados && Array.isArray(filters.estados) && filters.estados.length) {
+      const selections = filters.estados
+
+      // regla especial: los torneos con atributo estado === 0 solo deben aparecer si se seleccionó 'suspendido'
+      if (typeof t.estado !== 'undefined' && Number(t.estado) === 0 && !selections.includes('suspendido')) {
+        return false
+      }
+
+      let allowed = false
+
+      // si se seleccionó 'suspendido', incluimos torneos cuyo atributo estado === 0
+      if (selections.includes('suspendido')) {
+        if (Number(t.estado) === 0) allowed = true
+      }
+
+      // las demás selecciones (numéricas) se comparan con la situacion calculada por fechas
+      const numericSelections = selections.filter(s => s !== 'suspendido').map(Number).filter(n => !isNaN(n))
+      if (numericSelections.length) {
+        const est = estadoFromDates(t)
+        if (numericSelections.includes(est)) allowed = true
+      }
+
+      if (!allowed) return false
+    }
     return true
   })
 })
 
 const rowsWithNro = computed(() => {
   const start = Math.max(0, (pagination.page - 1) * pagination.rowsPerPage)
-  return filteredTorneos.value.map((r, idx) => ({ ...r, nro: start + idx + 1, estado: estadoFromDates(r) }))
+  return filteredTorneos.value.map((r, idx) => ({ ...r, nro: start + idx + 1 }))
 })
 
 function clearFilters() {
@@ -319,6 +399,7 @@ function clearFilters() {
   filters.id_tipo_torneo = null
   filters.id_ubicacion = null
   filters.id_nivel = null
+  filters.estados = [1, 2]
   filters.fecha_inicio_desde = null
   filters.fecha_inicio_hasta = null
 }
@@ -334,6 +415,8 @@ function openBorradores(row) {
 }
 
 function onEdit(row) {
+  console.log(row);
+
   editingTorneo.value = JSON.parse(JSON.stringify(row))
   showTorneoDialog.value = true
 }
@@ -353,16 +436,71 @@ const onBorradoresSaved = async (payload) => {
   showBorradoresDialog.value = false
 }
 
+// Suspender/Anular torneo con motivo: abrir diálogo modal personalizado
+const showSuspendDialog = ref(false)
+const suspendReason = ref('')
+const suspendTarget = ref(null)
+const currentUserName = ref('')
+const showStartConfirm = ref(false)
+const startResponseMessage = ref(null)
+
+onMounted(() => {
+  try {
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    currentUserName.value = current ? (current.persona?.nombres || current.usuario || '') : ''
+  } catch (err) { console.warn(err); currentUserName.value = '' }
+})
+
+
 function onDelete(row) {
-  $q.dialog({ title: 'Eliminar', message: `¿Eliminar torneo "${row.nombre}"?`, cancel: true, persistent: true }).onOk(() => {
-    const idx = torneos.value.findIndex(t => t.id === row.id)
-    if (idx !== -1) torneos.value.splice(idx, 1)
-    if (selectedTorneo.value && selectedTorneo.value.id === row.id) {
-      selectedTorneo.value = null
-      drawer.value = false
-    }
-    $q.notify({ type: 'info', message: 'Torneo eliminado' })
+  // abrir diálogo de suspensión, no eliminar directamente
+  suspendTarget.value = row
+  suspendReason.value = ''
+  showSuspendDialog.value = true
+}
+
+const confirmSuspend = async () => {
+  if (!suspendTarget.value) return
+  // validar motivo
+  const reason = (suspendReason.value || '').trim()
+  if (reason.length < 5 || reason.length > 50) {
+    $q.notify({ type: 'negative', message: 'indique el motivo' })
+    return
+  }
+  await suspenderTorneo({
+    torneoId: suspendTarget.value.id,
+    estadoActual: suspendTarget.value.estado,
+    motivoSuspension: reason,
+    usuarioQueSuspende: currentUserName.value
   })
+  showSuspendDialog.value = false
+}
+
+function cancelSuspend() {
+  showSuspendDialog.value = false
+  suspendReason.value = ''
+  suspendTarget.value = null
+}
+
+// (openStartConfirm removed; showStartConfirm is toggled where needed)
+
+async function doStartTournament() {
+  if (!suspendTarget.value) return
+  try {
+    const res = await comenzarTorneo(suspendTarget.value.id)
+    // si la respuesta trae mensaje, mostrarlo en el dialog; si no, cerrar y recargar
+    if (res && res.mensaje) {
+      startResponseMessage.value = res.mensaje
+    } else {
+      showStartConfirm.value = false
+      await loadTorneos()
+      $q.notify({ type: 'positive', message: 'Torneo iniciado' })
+    }
+  } catch (err) {
+    console.error('Error al iniciar torneo', err)
+    $q.notify({ type: 'negative', message: 'Error al iniciar torneo' })
+    showStartConfirm.value = false
+  }
 }
 
 function openDetails(row) {

@@ -13,7 +13,7 @@
       <div class="card">
         <div class="card-header">
           <div class="logo-container">
-            <img src="~assets/quasar-logo-vertical.svg" alt="Logo" class="logo">
+            <img src="~assets/logo.png" alt="Logo" class="logo">
           </div>
           <h2>Bienvenido</h2>
           <p>Ingresa tus credenciales para continuar</p>
@@ -62,7 +62,7 @@
             </q-btn>
 
             <div class="additional-options">
-              <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+              <!-- <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a> -->
             </div>
           </q-form>
         </div>

@@ -16,12 +16,12 @@
       </div>
 
       <div v-else>
-        <div class="row q-gutter-xs q-mb-md">
+        <div class="cards-grid q-mb-md">
 
 
-          <div v-if="originals.length === 0" class="col-12 text-caption q-pa-sm">No hay borradores existentes.</div>
+          <div v-if="originals.length === 0" class="empty-caption">No hay borradores existentes.</div>
 
-          <div v-for="(item, idx) in originals" :key="`orig-${item.id}`" class="col-xs-12 col-sm-6 col-md-4">
+          <div v-for="(item, idx) in originals" :key="`orig-${item.id}`" class="team-grid-item">
             <q-card flat bordered :class="[{ 'border-glow': item._highlight }, 'bg-grey-1', 'q-pa-xs']">
               <div class="row items-center">
                 <div class="col">
@@ -39,14 +39,14 @@
 
         <q-separator />
 
-        <div class="row q-mt-md q-gutter-xs">
+        <div class="cards-grid q-mt-md">
           <div class="col-12">
             <div class="text-subtitle1 q-mb-sm">Agregar nuevos equipos</div>
             <div class="text-caption q-mb-sm">Complete el nombre del equipo. Cuando termine uno se genera
               automáticamente otro campo vacío.</div>
           </div>
 
-          <div v-for="(card, idx) in newCards" :key="card._tempId" class="col-12 col-sm-6 col-md-4">
+          <div v-for="(card, idx) in newCards" :key="card._tempId" class="team-grid-item">
             <q-card class="q-pa-xs">
               <div class="row items-center">
                 <div class="col">
@@ -73,20 +73,73 @@
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
           <q-btn flat label="Cancelar" color="secondary" @click="onCancel" />
+          <q-btn flat label="Comenzar" color="accent" @click="openStartFlow" />
           <q-btn label="Guardar equipos" color="primary" @click="onSave" />
         </div>
       </div>
     </q-card-section>
   </q-card>
+
+  <!-- Diálogo de aviso: la fecha de inicio aún no llega -->
+  <q-dialog v-model="showDateWarning">
+    <q-card>
+      <q-card-section>
+        <div class="text-h6">Fecha de inicio no permitida</div>
+        <div class="q-mt-sm">La fecha de inicio del torneo es futura. No es posible comenzar el torneo antes de la fecha
+          de inicio.</div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cerrar" color="primary" @click="showDateWarning = false" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Componente externo que organiza partidos (abre cuando se inicia el torneo) -->
+  <OrganizeMatchesDialog v-model="showOrganizeDialog" :torneoId="props.torneoId"
+    @generatedMatches="handleGeneratedMatches" />
+
+  <!-- Diálogo para confirmar/comenzar el torneo y mostrar resultado -->
+  <q-dialog v-model="showStartDialog">
+    <q-card style="min-width: 320px;">
+      <q-card-section>
+        <div class="text-h6">Comenzar torneo</div>
+        <div class="q-mt-sm">{{ startResponseMessage || '¿Desea comenzar el torneo ahora?' }}</div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancelar" color="secondary" @click="closeStartDialog" />
+        <q-btn v-if="!startResponseMessage" color="primary" label="Confirmar" @click="confirmarComenzar" />
+        <q-btn v-else flat label="Aceptar" color="primary" @click="closeStartDialog" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { listarBorradores, listarEquipos } from 'src/stores/borrador-store'
+import { obtenerTorneo, comenzarTorneo } from 'src/stores/torneo-store'
+import OrganizeMatchesDialog from './OrganizeMatchesDialog.vue'
 import { Notify } from 'quasar'
 
+// helper to compute totals and limits
+function computeOriginalsBefore(originals, desechados) {
+  return (originals?.length || 0) + (desechados?.length || 0)
+}
+
+function computeCurrentFinal(originals, desechados, nuevos, existentes) {
+  const originalsBefore = computeOriginalsBefore(originals, desechados)
+  return originalsBefore + (nuevos?.length || 0) + (existentes?.length || 0) - (desechados?.length || 0)
+}
+
 const props = defineProps({ torneoId: { type: [Number, String], required: true } })
-const emit = defineEmits(['save', 'cancel'])
+const emit = defineEmits(['save', 'cancel', 'generatedMatches'])
+
+
+const torneoData = ref(null)
+const showStartDialog = ref(false)
+const startResponseMessage = ref('')
+const showDateWarning = ref(false)
+const showOrganizeDialog = ref(false)
 
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend
@@ -110,13 +163,11 @@ onMounted(async () => {
   try {
     const res = await listarBorradores(props.torneoId).catch(() => [])
     originals.value = Array.isArray(res) ? res : (res?.data || [])
-    console.log('borradores: ', originals.value);
 
     // cargar lista principal de equipos para detectar existentes
     try {
       const eq = await listarEquipos().catch(() => [])
       equiposList.value = Array.isArray(eq) ? eq : (eq?.data || [])
-      console.log('equipos principales:', equiposList.value)
     } catch (e) {
       console.warn('No se pudieron cargar equipos principales', e)
     }
@@ -126,6 +177,15 @@ onMounted(async () => {
     Notify.create({ type: 'negative', message: 'No se pudo cargar borradores' })
   } finally {
     loading.value = false
+  }
+
+  // cargar datos del torneo para validar fecha inicio
+  try {
+    const t = await obtenerTorneo(props.torneoId).catch(() => null)
+    torneoData.value = t || null
+  } catch (e) {
+    console.warn('No se pudo obtener torneo', e)
+    torneoData.value = null
   }
 
   // siempre comenzar con una tarjeta nueva vacía
@@ -145,6 +205,17 @@ function onNewInput(idx) {
   if (!card) return
   // si estamos en la última tarjeta y se escribió algo, agregar otra vacía
   if (idx === newCards.value.length - 1 && card.nombre && card.nombre.trim() !== '') {
+    // comprobar si al añadir otra tarjeta se supera el máximo final (16)
+    const nuevosNow = nuevosCollected.value.slice()
+    const existentesNow = existente.value.slice()
+    const desechadosNow = desechados.value.slice()
+    const currentFinal = computeCurrentFinal(originals.value, desechadosNow, nuevosNow, existentesNow)
+    // prospectivo al añadir una tarjeta extra (el usuario escribiría y la registraría)
+    const prospectivo = currentFinal + 1
+    if (prospectivo > 16) {
+      Notify.create({ type: 'negative', message: 'No puede agregarse más: el total máximo permitido es 16 equipos' })
+      return
+    }
     newCards.value.push(makeNewCard())
     // focus next after nextTick
     nextTick(() => {
@@ -162,6 +233,51 @@ function onEnter(idx) {
   if (card.registered) return
   // delegar en la función existente que valida y registra
   registerNew(idx)
+}
+
+function openStartFlow() {
+  // validar fecha_inicio: no permitir comenzar si fecha_inicio > hoy
+  const fi = torneoData.value?.fecha_inicio
+  if (fi) {
+    const inicio = new Date(fi)
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    if (inicio > hoy) {
+      showDateWarning.value = true
+      return
+    }
+  }
+  // abrir diálogo de confirmación
+  startResponseMessage.value = ''
+  showStartDialog.value = true
+}
+
+async function confirmarComenzar() {
+  if (!props.torneoId) return
+  // llamar al store comenzarTorneo
+  const data = await comenzarTorneo(props.torneoId)
+  // mostrar mensaje si viene
+  const msg = data?.mensaje ?? null
+  if (msg) {
+    startResponseMessage.value = msg
+    // dejar dialog abierto para que el usuario lo lea
+  } else {
+    // No hay mensaje: abrir el diálogo de organización externo
+    showStartDialog.value = false
+    showOrganizeDialog.value = true
+  }
+}
+
+// Nota: la organización visual se delega ahora a OrganizeMatchesDialog.vue
+
+function handleGeneratedMatches(payload) {
+  // reenviar al padre para que lo persista o lo maneje quien corresponda
+  emit('generatedMatches', payload)
+  Notify.create({ type: 'positive', message: 'Partidos generados listos' })
+  showOrganizeDialog.value = false
+}
+function closeStartDialog() {
+  showStartDialog.value = false
+  startResponseMessage.value = ''
 }
 
 function removeNew(idx) {
@@ -191,6 +307,15 @@ async function registerNew(idx) {
   if (!card) return
   if (!card.nombre || !card.nombre.trim()) {
     Notify.create({ type: 'warning', message: 'Ingrese un nombre válido antes de registrar' })
+    return
+  }
+  // antes de registrar, comprobar que no excedamos 16 equipos
+  const nuevosNow = nuevosCollected.value.slice()
+  const existentesNow = existente.value.slice()
+  const desechadosNow = desechados.value.slice()
+  const currentFinal = computeCurrentFinal(originals.value, desechadosNow, nuevosNow, existentesNow)
+  if (currentFinal + 1 > 16) {
+    Notify.create({ type: 'negative', message: 'No puede registrarse este equipo: el total final superaría 16 equipos' })
     return
   }
   const name = card.nombre.trim()
@@ -224,11 +349,17 @@ async function registerNew(idx) {
     card.registered = true
     card.registeredType = 'nuevo'
   }
-  // crear una nueva tarjeta vacía y enfocar
-  newCards.value.push(makeNewCard())
-  await nextTick()
-  const nextInput = inputRefs.value[inputRefs.value.length - 1]
-  if (nextInput && nextInput.focus) nextInput.focus()
+  // crear una nueva tarjeta vacía y enfocar (siempre que no se supere el límite)
+  const nuevosAfter = nuevosCollected.value.slice()
+  const existentesAfter = existente.value.slice()
+  const desechadosAfter = desechados.value.slice()
+  const finalAfter = computeCurrentFinal(originals.value, desechadosAfter, nuevosAfter, existentesAfter)
+  if (finalAfter < 16) {
+    newCards.value.push(makeNewCard())
+    await nextTick()
+    const nextInput = inputRefs.value[inputRefs.value.length - 1]
+    if (nextInput && nextInput.focus) nextInput.focus()
+  }
 }
 
 function onSave() {
@@ -236,6 +367,18 @@ function onSave() {
   const nuevos = nuevosCollected.value.slice()
   const existentesCopy = existente.value.slice()
   const desechadosCopy = desechados.value.slice()
+
+  // calcular total final esperado:
+  // consideramos el estado inicial de originals antes de eliminar (originals + desechados)
+  const originalsBefore = (originals.value?.length || 0) + (desechadosCopy.length || 0)
+  // según la fórmula solicitada: originals_before + nuevos + existentes - desechados
+  const totalFinal = originalsBefore + nuevos.length + existentesCopy.length - desechadosCopy.length
+
+  if (totalFinal > 16) {
+    Notify.create({ type: 'negative', message: `No se puede guardar: el total final de equipos sería ${totalFinal} (máximo 16). Desglosado: originales=${originalsBefore}, nuevos=${nuevos.length}, existentes=${existentesCopy.length}, desechados=${desechadosCopy.length}` })
+    return
+  }
+
   emit('save', { torneoId: props.torneoId, nuevos, existentes: existentesCopy, desechados: desechadosCopy })
 }
 
@@ -255,5 +398,34 @@ function onCancel() {
   box-shadow: 0 0 0 6px rgba(0, 150, 136, 0.16);
   border: 2px solid rgba(0, 150, 136, 0.8);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.team-grid-item {
+  width: 100%;
+}
+
+.empty-caption {
+  grid-column: 1 / -1;
+  color: var(--q-color-grey-6);
+  padding: 8px;
+}
+
+/* Responsive: 2 columns on small screens, 1 on extra small */
+@media (max-width: 900px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .cards-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 </style>

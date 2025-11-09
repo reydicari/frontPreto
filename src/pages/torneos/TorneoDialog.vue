@@ -156,19 +156,7 @@ function submit() {
   // attach nivel object if available
   payload.nivel = niveles.value.find(n => n.id === form.id_nivel) || { id: form.id_nivel, nombre_nivel: form.nivel_nombre }
 
-  // calcular estado según reglas: si estado==-1 respetar; ffin<=hoy -> 0; finicio<=hoy ->1; finicio>hoy ->2
-  function computeEstado(obj) {
-    if (typeof obj.estado !== 'undefined' && Number(obj.estado) === -1) return -1
-    const hoy = new Date()
-    const start = obj.fecha_inicio ? new Date(obj.fecha_inicio) : null
-    const end = obj.fecha_fin ? new Date(obj.fecha_fin) : null
-    if (end && end <= hoy) return 0
-    if (start && start <= hoy) return 1
-    if (start && start > hoy) return 2
-    return 2
-  }
-
-  payload.estado = computeEstado(payload)
+  // No modificamos aquí el atributo `estado` del torneo: lo calcula el backend o se mantiene como está.
   console.log('nuevo torneo: ', payload);
 
   emit('save', payload)

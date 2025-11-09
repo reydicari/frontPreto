@@ -66,6 +66,24 @@ export async function modificarTorneo(torneo) {
     });
   }
 }
+export async function suspenderTorneo(datos) {
+  try {
+    const res = await api.put(`/api/torneo/suspender/${datos.torneoId}`, datos);
+    Notify.create({
+      type: "warning",
+      message: "Torneo suspendido",
+      position: "bottom",
+    });
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    Notify.create({
+      type: "negative",
+      message: "Error al suspender el torneo",
+      position: "bottom",
+    });
+  }
+}
 
 export const listarTiposTorneo = async () => {
   try {
@@ -119,5 +137,27 @@ export const listarEquipos = async () => {
     });
     // Fallback para desarrollo / pruebas
     return [];
+  }
+};
+
+// Iniciar / comenzar un torneo en backend (envía id)
+export const comenzarTorneo = async (id) => {
+  try {
+    // se espera que el backend responda con un objeto { mensaje: '...' } o similar
+    const resp = await api.post(`${URL_PART}/comenzar/${id}`);
+    Notify.create({
+      type: "positive",
+      message: "Solicitud de inicio enviada",
+      position: "bottom",
+    });
+    return resp.data;
+  } catch (error) {
+    console.error("Error al comenzar torneo", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al comenzar el torneo",
+      position: "bottom",
+    });
+    return null;
   }
 };
