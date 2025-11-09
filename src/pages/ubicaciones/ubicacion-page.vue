@@ -178,8 +178,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRoute } from 'vue-router'
 
 // Instalar Leaflet primero: npm install leaflet
 import L from 'leaflet'
@@ -187,6 +188,7 @@ import 'leaflet/dist/leaflet.css'
 import { agregarUbicacion, cambiarEstadoUbicacion, listarUbicaciones, modificarUbicacion } from 'src/stores/ubicacion-store'
 
 const $q = useQuasar()
+const route = useRoute()
 
 // Estado reactivo
 const cargando = ref(false)
@@ -305,6 +307,8 @@ const cargarUbicaciones = async () => {
     if (map && primera) {
       map.setView([primera.latitud, primera.longitud], 15)
     }
+    // si viene query.focus en la ruta, intentar centrar en esa ubicación
+    tryFocusFromRoute()
   } catch (error) {
     console.error('Error cargando ubicaciones:', error)
     $q.notify({
@@ -316,6 +320,27 @@ const cargarUbicaciones = async () => {
     cargando.value = false
   }
 }
+
+const tryFocusFromRoute = () => {
+  const focus = route.query && route.query.focus
+  if (!focus) return
+  const idToFocus = String(focus)
+  const index = ubicaciones.value.findIndex(u => String(u.id) === idToFocus)
+  if (index !== -1) {
+    // ajustar paginación para que el item esté visible
+    const page = Math.floor(index / itemsPorPagina) + 1
+    paginaActual.value = page
+    // centrar en la ubicación encontrada
+    const found = ubicaciones.value[index]
+    centrarEnUbicacion(found)
+  }
+}
+
+// reaccionar si la query cambia
+watch(() => route.query.focus, (newVal) => {
+  if (!newVal) return
+  tryFocusFromRoute()
+})
 
 const marcarUbicacionesEnMapa = () => {
   // Limpiar marcadores anteriores (excepto el seleccionado)
@@ -486,14 +511,6 @@ const applyToggle = async () => {
   }
 }
 
-// Simulación de API
-const simularApiCall = (data, delay = 800) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ data })
-    }, delay)
-  })
-}
 
 // Lifecycle hooks
 onMounted(() => {

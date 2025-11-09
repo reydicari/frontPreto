@@ -37,3 +37,21 @@ export const listarEquipos = async () => {
     return [];
   }
 };
+export async function actualizarBorradores(equipos) {
+  try {
+    const res = await api.post("/api/borrador/actualizar", equipos);
+    Notify.create({
+      type: "positive",
+      message: "equipos actualizados con éxito",
+      position: "bottom",
+    });
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    Notify.create({
+      type: "negative",
+      message: "Error al actualizar los equipos",
+      position: "bottom",
+    });
+  }
+}

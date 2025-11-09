@@ -48,6 +48,25 @@ export async function crearTorneo(torneo) {
     });
   }
 }
+export async function modificarTorneo(torneo) {
+  try {
+    const res = await api.put(`/api/torneo/modificar/${torneo.id}`, torneo);
+    Notify.create({
+      type: "positive",
+      message: "Torneo modificado con éxito",
+      position: "bottom",
+    });
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    Notify.create({
+      type: "negative",
+      message: "Error al modificar el torneo",
+      position: "bottom",
+    });
+  }
+}
+
 export const listarTiposTorneo = async () => {
   try {
     const response = await api.get(`${URL_PART}/listar-tipos`);

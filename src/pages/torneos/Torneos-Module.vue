@@ -1,5 +1,5 @@
 <template>
-  <q-page padding :class="$q.dark.isActive ? 'bg-grey-4' : ''">
+  <q-page padding :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <q-card>
       <q-card-section class="row items-center q-gutter-sm">
         <div class="text-h6 page-title">Torneos</div>
@@ -23,6 +23,11 @@
           <div class="col-12 col-sm-6 col-md-3">
             <q-select dense v-model="filters.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
               map-options clearable />
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select dense v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
+              clearable />
           </div>
 
           <div class="col-12 col-sm-6 col-md-3">
@@ -65,8 +70,20 @@
 
           <template v-slot:body-cell-ubicacion="props">
             <q-td :props="props">
-              <q-badge :color="badgeColor('ubicacion')" class="q-ml-sm" outline>
-                {{ props.row.ubicacion?.nombre || '—' }}
+              <div>
+                <!-- Botón compacto para ubicación: visible pero no grande -->
+                <q-btn size="sm" dense rounded outline color="indigo" class="q-ml-sm"
+                  @click.stop="goToUbicacion(props.row.ubicacion?.id)" :label="props.row.ubicacion?.nombre || '—'"
+                  title="Ver ubicación" />
+                <q-tooltip anchor="top middle" self="bottom middle">Ver ubicación</q-tooltip>
+              </div>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-nivel="props">
+            <q-td :props="props">
+              <q-badge color="secondary" class="q-ml-sm" outline>
+                {{ props.row.nivel?.nombre_nivel || props.row.nivel?.nombre || '—' }}
               </q-badge>
             </q-td>
           </template>
@@ -151,18 +168,22 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
-import { listarTorneos, listarTiposTorneo } from 'src/stores/torneo-store'
+import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
+import { listarNiveles } from 'src/stores/nivel'
+import { actualizarBorradores } from 'src/stores/borrador-store'
 
 const $q = useQuasar()
+const router = useRouter()
 
 const torneos = ref([])
 const tiposTorneo = ref([])
 const ubicaciones = ref([])
 const loading = ref(false)
-const filters = reactive({ search: '', id_tipo_torneo: null, id_ubicacion: null, fecha_inicio_desde: null, fecha_inicio_hasta: null })
+const filters = reactive({ search: '', id_tipo_torneo: null, id_ubicacion: null, id_nivel: null, fecha_inicio_desde: null, fecha_inicio_hasta: null })
 const pagination = reactive({ page: 1, rowsPerPage: 10 })
 
 const columns = [
@@ -170,6 +191,7 @@ const columns = [
   { name: 'nombre', label: 'Nombre', field: 'nombre', sortable: true },
   { name: 'estado', label: 'Estado', field: 'estado', sortable: true },
   { name: 'ubicacion', label: 'Ubicación', field: row => row.ubicacion?.nombre || '-', sortable: true },
+  { name: 'nivel', label: 'Nivel', field: row => row.nivel?.nombre_nivel || (row.nivel?.nombre) || '-', sortable: true },
   { name: 'fecha_inicio', label: 'Inicio', field: 'fecha_inicio', sortable: true },
   { name: 'fecha_fin', label: 'Fin', field: 'fecha_fin', sortable: true },
   { name: 'acciones', label: 'Acciones', field: 'acciones' }
@@ -190,27 +212,35 @@ const ubicacionOptions = computed(() => {
   return ubicaciones.value.map(u => ({ label: u.nombre, value: u.id }))
 })
 
+const nivelOptions = computed(() => {
+  return niveles.value.map(n => ({ label: n.nombre_nivel || n.nombre || 'N/A', value: n.id }))
+})
+
+const niveles = ref([])
+
 onMounted(async () => {
   loading.value = true
+  await loadTorneos()
+})
+const loadTorneos = async () => {
   try {
-    const [tList, tipos, ubics] = await Promise.all([
+    const [tList, tipos, ubics, nivelesList] = await Promise.all([
       listarTorneos().catch(() => []),
       listarTiposTorneo().catch(() => []),
-      listarUbicaciones().catch(() => [])
+      listarUbicaciones().catch(() => []),
+      listarNiveles().catch(() => [])
     ])
     torneos.value = Array.isArray(tList) ? tList : (tList?.data || [])
     tiposTorneo.value = Array.isArray(tipos) ? tipos : (tipos?.data || [])
     ubicaciones.value = Array.isArray(ubics) ? ubics : (ubics?.data || [])
-    console.log('torneos rescatados: ', torneos.value);
-
+    niveles.value = Array.isArray(nivelesList) ? nivelesList : (nivelesList?.data || [])
   } catch (err) {
     console.error('Error cargando datos de torneos', err)
     $q.notify({ type: 'negative', message: 'Error al cargar datos de torneos' })
   } finally {
     loading.value = false
   }
-})
-
+}
 const badgeColor = (key) => {
   if (!key) return 'grey'
   const name = String(key).toLowerCase()
@@ -265,6 +295,7 @@ const filteredTorneos = computed(() => {
     }
     if (filters.id_tipo_torneo && t.id_tipo_torneo !== filters.id_tipo_torneo) return false
     if (filters.id_ubicacion && t.id_ubicacion !== filters.id_ubicacion) return false
+    if (filters.id_nivel && t.id_nivel !== filters.id_nivel) return false
     // filtro por fecha_inicio rango
     if (filters.fecha_inicio_desde) {
       const desde = new Date(filters.fecha_inicio_desde)
@@ -287,6 +318,7 @@ function clearFilters() {
   filters.search = ''
   filters.id_tipo_torneo = null
   filters.id_ubicacion = null
+  filters.id_nivel = null
   filters.fecha_inicio_desde = null
   filters.fecha_inicio_hasta = null
 }
@@ -306,25 +338,18 @@ function onEdit(row) {
   showTorneoDialog.value = true
 }
 
-function onSaveTorneo(payload) {
+const onSaveTorneo = async (payload) => {
   if (payload.id) {
-    const idx = torneos.value.findIndex(t => t.id === payload.id)
-    if (idx !== -1) torneos.value.splice(idx, 1, payload)
-    $q.notify({ type: 'positive', message: 'Torneo actualizado' })
+    await modificarTorneo(payload)
   } else {
-    // generar id simple
-    const newId = Math.max(0, ...torneos.value.map(t => t.id)) + 1
-    payload.id = newId
-    torneos.value.unshift(payload)
-    $q.notify({ type: 'positive', message: 'Torneo creado' })
+    await crearTorneo(payload)
   }
   showTorneoDialog.value = false
+  await loadTorneos()
 }
 
-function onBorradoresSaved(payload) {
-  // payload: { nuevos, desechados }
-  console.log('Borradores dialog returned:', payload)
-  $q.notify({ type: 'positive', message: 'Borradores procesados (ver consola)' })
+const onBorradoresSaved = async (payload) => {
+  await actualizarBorradores(payload)
   showBorradoresDialog.value = false
 }
 
@@ -345,6 +370,15 @@ function openDetails(row) {
   const item = row && row.row ? row.row : row
   selectedTorneo.value = item
   drawer.value = true
+}
+
+function goToUbicacion(id) {
+  if (!id) {
+    $q.notify({ type: 'warning', message: 'Ubicación no disponible' })
+    return
+  }
+  // navegar al módulo de ubicaciones y pasar query param 'focus' para centrar
+  router.push({ path: '/ubicaciones', query: { focus: id } })
 }
 
 function dateRange(t) { return `${t.fecha_inicio} → ${t.fecha_fin}` }

@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width:420px; max-width:900px;">
+  <q-card style="width: min(920px, 96vw); max-width: 920px;">
     <q-card-section class="row items-center">
       <div>
         <div class="text-h6">Equipos en torneo </div>
@@ -16,17 +16,17 @@
       </div>
 
       <div v-else>
-        <div class="row q-gutter-sm q-mb-md">
+        <div class="row q-gutter-xs q-mb-md">
 
 
           <div v-if="originals.length === 0" class="col-12 text-caption q-pa-sm">No hay borradores existentes.</div>
 
-          <div v-for="item in originals" :key="`orig-${item.id}`" class="col-xs-12 col-sm-6 col-md-4">
-            <q-card flat bordered class="bg-grey-1 q-pa-sm">
+          <div v-for="(item, idx) in originals" :key="`orig-${item.id}`" class="col-xs-12 col-sm-6 col-md-4">
+            <q-card flat bordered :class="[{ 'border-glow': item._highlight }, 'bg-grey-1', 'q-pa-xs']">
               <div class="row items-center">
                 <div class="col">
                   <div class="text-subtitle2">{{ item.nombre }}</div>
-                  <div class="text-caption">ID: {{ item.id }}</div>
+                  <div class="text-caption">Nro: {{ idx + 1 }}</div>
                 </div>
                 <div>
                   <q-btn dense round flat color="negative" icon="remove_circle" @click="removeOriginal(item)"
@@ -39,7 +39,7 @@
 
         <q-separator />
 
-        <div class="row q-mt-md q-gutter-sm">
+        <div class="row q-mt-md q-gutter-xs">
           <div class="col-12">
             <div class="text-subtitle1 q-mb-sm">Agregar nuevos equipos</div>
             <div class="text-caption q-mb-sm">Complete el nombre del equipo. Cuando termine uno se genera
@@ -47,18 +47,18 @@
           </div>
 
           <div v-for="(card, idx) in newCards" :key="card._tempId" class="col-12 col-sm-6 col-md-4">
-            <q-card class="q-pa-sm">
+            <q-card class="q-pa-xs">
               <div class="row items-center">
                 <div class="col">
                   <q-input dense v-model="card.nombre" placeholder="Nombre del equipo" @input="onNewInput(idx)"
-                    :ref="el => setInputRef(el, idx)" :readonly="card.registered" />
+                    @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)" :readonly="card.registered" />
                 </div>
-                <div class="row items-center">
+                <div class="row items-center" style="gap:8px;">
                   <q-btn v-if="!card.registered" dense round flat color="positive" icon="cloud_upload"
                     @click="registerNew(idx)" title="Registrar equipo" />
-                  <q-btn v-if="!card.registered" dense round flat color="negative" icon="close" @click="removeNew(idx)"
-                    title="Quitar" />
-                  <div v-else class="row items-center" style="gap:8px;">
+                  <!-- permitir quitar cualquier tarjeta, registrada o no -->
+                  <q-btn dense round flat color="negative" icon="close" @click="removeNew(idx)" title="Quitar" />
+                  <div v-if="card.registered" class="row items-center" style="gap:8px;">
                     <q-badge color="positive" icon="check" />
                     <div v-if="card.registeredType === 'nuevo'" class="text-caption text-positive">nuevo registro</div>
                     <div v-else-if="card.registeredType === 'existente'" class="text-caption text-grey">existente</div>
@@ -152,6 +152,16 @@ function onNewInput(idx) {
       if (nextInput && nextInput.focus) nextInput.focus()
     })
   }
+
+}
+
+function onEnter(idx) {
+  const card = newCards.value[idx]
+  if (!card) return
+  // si ya está registrada no hacemos nada
+  if (card.registered) return
+  // delegar en la función existente que valida y registra
+  registerNew(idx)
 }
 
 function removeNew(idx) {
@@ -186,6 +196,17 @@ async function registerNew(idx) {
   const name = card.nombre.trim()
   const lower = name.toLowerCase()
 
+  // Si el nombre ya existe en los borradores originales, mostrar notificación y resaltar
+  const origMatch = originals.value.find(o => (o.nombre || '').trim().toLowerCase() === lower)
+  if (origMatch) {
+    Notify.create({ duration: 3000, type: 'info', message: 'El equipo ya existe en los borradores del torneo' })
+    // marcar temporalmente para que el usuario lo vea
+    origMatch._highlight = true
+    // quitar el highlight después de 3s
+    setTimeout(() => { origMatch._highlight = false }, 3000)
+    return
+  }
+
   // revisar si existe en lista principal de equipos (comparación case-insensitive)
   const found = equiposList.value.find(e => (e.nombre || '').trim().toLowerCase() === lower)
   if (found) {
@@ -215,12 +236,7 @@ function onSave() {
   const nuevos = nuevosCollected.value.slice()
   const existentesCopy = existente.value.slice()
   const desechadosCopy = desechados.value.slice()
-  // mostrar en consola y emitir
-  console.log('Borradores - nuevos:', nuevos)
-  console.log('Borradores - existentes (coinciden con lista principal):', existentesCopy)
-  console.log('Borradores - desechados:', desechadosCopy)
-  Notify.create({ type: 'positive', message: `Se procesaron ${nuevos.length} nuevos, ${existentesCopy.length} existentes y ${desechadosCopy.length} eliminados` })
-  emit('save', { nuevos, existentes: existentesCopy, desechados: desechadosCopy })
+  emit('save', { torneoId: props.torneoId, nuevos, existentes: existentesCopy, desechados: desechadosCopy })
 }
 
 function onCancel() {
@@ -231,5 +247,13 @@ function onCancel() {
 <style scoped>
 .q-card {
   overflow: visible
+}
+
+/* Resalte temporal para un equipo que ya existe en los borradores */
+.border-glow {
+  /* Borde más grueso y sombra ligeramente mayor para visibilidad */
+  box-shadow: 0 0 0 6px rgba(0, 150, 136, 0.16);
+  border: 2px solid rgba(0, 150, 136, 0.8);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 </style>
