@@ -49,7 +49,7 @@
             <q-card flat bordered class="control-container q-pa-sm">
               <q-card-section>
                 <div class="column q-gutter-sm">
-                  <q-btn dense unelevated color="secondary" class="full-width" label="Pares con impares"
+                  <q-btn dense unelevated color="secondary" class="full-width" label="por orden de registro"
                     @click="paresConImpares" />
                   <q-btn dense unelevated color="orange" class="full-width" label="Sortear aleatorio"
                     @click="sortearAleatorio" />

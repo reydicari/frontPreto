@@ -246,6 +246,11 @@ function openStartFlow() {
       return
     }
   }
+  // si hay cambios sin guardar en la lista (nuevos, existentes o desechados), pedir guardar antes de comenzar
+  if ((nuevosCollected.value && nuevosCollected.value.length > 0) || (existente.value && existente.value.length > 0) || (desechados.value && desechados.value.length > 0)) {
+    Notify.create({ type: 'warning', message: 'Guarde la configuracion de la lista para poder comenzar' })
+    return
+  }
   // abrir diálogo de confirmación
   startResponseMessage.value = ''
   showStartDialog.value = true
@@ -380,6 +385,10 @@ function onSave() {
   }
 
   emit('save', { torneoId: props.torneoId, nuevos, existentes: existentesCopy, desechados: desechadosCopy })
+  console.log('DESPUES DE EMIT');
+  nuevosCollected.value = []
+  existente.value = []
+  desechados.value = []
 }
 
 function onCancel() {

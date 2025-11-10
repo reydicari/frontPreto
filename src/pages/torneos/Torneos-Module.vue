@@ -70,7 +70,7 @@
           <template v-slot:body-cell-situacion="props">
             <q-td :props="props">
               <q-badge :color="badgeColorEstado(estadoFromDates(props.row))">{{ estadoLabel(estadoFromDates(props.row))
-              }}</q-badge>
+                }}</q-badge>
             </q-td>
           </template>
 
@@ -434,6 +434,7 @@ const onSaveTorneo = async (payload) => {
 const onBorradoresSaved = async (payload) => {
   await actualizarBorradores(payload)
   showBorradoresDialog.value = false
+  showBorradoresDialog.value = true
 }
 
 // Suspender/Anular torneo con motivo: abrir diálogo modal personalizado
