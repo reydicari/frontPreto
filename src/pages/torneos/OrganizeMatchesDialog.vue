@@ -7,7 +7,9 @@
             <q-card flat bordered class="matches-container q-pa-sm">
               <q-card-section>
                 <div class="text-h6">Organizar partidos</div>
-                <div class="text-caption q-mt-xs">Fase: <strong>{{ phaseName || 'No especificada' }}</strong></div>
+                <div class="q-mt-xs">
+                  <div class="text-h5 text-primary q-mt-xs"><strong>{{ phaseName || 'No especificada' }}</strong></div>
+                </div>
               </q-card-section>
 
               <q-separator />
@@ -63,8 +65,8 @@
                   <div class="row q-gutter-sm items-start">
                     <q-chip v-for="t in unpairedTeams" :key="t.id" dense :disable="!manualMode" clickable
                       :outline="selectedTeam !== t.id" :color="selectedTeam === t.id ? 'primary' : undefined"
-                      @click="selectTeam(t.id)" @keyup.enter="selectTeam(t.id)" :class="{ 'cursor-pointer': manualMode }"
-                      tabindex="0" :aria-pressed="selectedTeam === t.id">
+                      @click="selectTeam(t.id)" @keyup.enter="selectTeam(t.id)"
+                      :class="{ 'cursor-pointer': manualMode }" tabindex="0" :aria-pressed="selectedTeam === t.id">
                       {{ t.nombre }}
                     </q-chip>
                   </div>
@@ -136,15 +138,33 @@ async function prepareOrganization() {
     const borr = await listarBorradores(props.torneoId).catch(() => [])
     borradores.value = Array.isArray(borr) ? borr : (borr?.data || [])
 
-    // si tipo 1 y 16 equipos -> buscar fase "octavos" y generar 1-2,3-4...
-    if (tor && tor.id_tipo_torneo === 1 && (borradores.value?.length || 0) === 16) {
+    // si tipo 1 -> intentar mapear el número de borradores a una fase por su "orden";
+    // si no se encuentra, buscar por nombre (ej. "octav") y luego fallback a la primera fase disponible.
+    if (tor && tor.id_tipo_torneo === 1) {
       const fases = await listarFases(props.torneoId).catch(() => [])
-      let phase = (Array.isArray(fases) ? fases.find(f => (f.nombre || '').toLowerCase().includes('octav')) : null)
-      if (!phase && Array.isArray(fases) && fases.length > 0) phase = fases[0]
-      phaseId.value = phase?.id ?? null
-      phaseName.value = phase?.nombre ?? 'Octavos'
-      // generar 8 partidos: 1-2,3-4,...
-      for (let i = 0; i + 1 < 16; i += 2) {
+      let phase = null
+      if (Array.isArray(fases) && fases.length > 0) {
+        const total = (borradores.value?.length || 0)
+        // buscar por campo "orden" que coincida exactamente con el número de equipos
+        phase = fases.find(f => {
+          const orden = Number(f?.orden)
+          return orden && orden === total
+        })
+        // si no hay match por orden, buscar por nombre (ej. "octav", "dieciseis", "16")
+        if (!phase) {
+          const needle = ('' + total).toLowerCase()
+          phase = fases.find(f => {
+            const name = (f.nombre || '').toLowerCase()
+            return name.includes('octav') || name.includes('diec') || name.includes(needle)
+          })
+        }
+        if (!phase) phase = fases[0]
+        phaseId.value = phase?.id ?? null
+        phaseName.value = phase?.nombre ?? `Fase ${phaseId.value ?? ''}`
+      }
+
+      // generar partidos por parejas secuenciales (1-2,3-4, ...)
+      for (let i = 0; i + 1 < (borradores.value?.length || 0); i += 2) {
         const a = borradores.value[i]
         const b = borradores.value[i + 1]
         matches.value.push({ id_equipo_local: a?.id ?? null, id_equipo_visitante: b?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId })
