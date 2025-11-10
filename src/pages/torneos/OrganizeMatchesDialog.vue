@@ -28,7 +28,7 @@
                       <div class="row items-center justify-between">
                         <div class="text-caption">{{ idx + 1 }}</div>
                         <div class="row items-center" style="gap:8px;">
-                          <div class="text-caption">{{ phaseName || '-' }}</div>
+                          <div class="text-caption">{{ m._phaseName || phaseName || '-' }}</div>
                           <q-btn dense flat icon="swap_horiz" @click.stop="swapMatch(idx)" />
                           <q-btn dense flat icon="delete" color="negative" @click.stop="removeMatch(idx)" />
                         </div>
@@ -49,35 +49,57 @@
             <q-card flat bordered class="control-container q-pa-sm">
               <q-card-section>
                 <div class="column q-gutter-sm">
-                  <q-btn dense unelevated color="secondary" class="full-width" label="por orden de registro"
-                    @click="paresConImpares" />
+                  <q-btn v-if="torneoType !== 2" dense unelevated color="secondary" class="full-width"
+                    label="por orden de registro" @click="paresConImpares" />
                   <q-btn dense unelevated color="orange" class="full-width" label="Sortear aleatorio"
                     @click="sortearAleatorio" />
-                  <q-btn dense unelevated :color="manualMode ? 'primary' : 'accent'" :outline="!manualMode"
-                    class="full-width" :label="manualMode ? 'Salir modo manual' : 'Organizar manualmente'"
+                  <q-btn v-if="torneoType !== 2" dense unelevated :color="manualMode ? 'primary' : 'accent'"
+                    :outline="!manualMode" class="full-width"
+                    :label="manualMode ? 'Salir modo manual' : 'Organizar manualmente'"
                     :icon="manualMode ? 'close' : 'edit'" @click="organizarManual" />
                 </div>
-                <div class="text-caption q-mt-xs">Elige una estrategia para generar los partidos.</div>
+                <div class="text-caption q-mt-xs">
+                  <template v-if="torneoType === 2">Todos los equipos juegan contra todos al menos una vez y están
+                    distribuidos equitativamente.</template>
+                  <template v-else>Elige una estrategia para generar los partidos.</template>
+                </div>
+
+                <!-- Mostrar aviso si faltan combinaciones en liga -->
+                <div v-if="torneoType === 2 && missingCount > 0" class="q-mt-sm">
+                  <q-banner dense class="bg-yellow-2 text-black">
+                    <div>Hay <strong>{{ missingCount }}</strong> combinaciones que no están jugando. Se recomienda
+                      volver a sortear.
+                    </div>
+                    <template v-slot:action>
+                      <q-btn dense flat color="primary" label="Sortear nuevamente" @click="sortearAleatorio" />
+                      <q-btn dense unelevated color="secondary" label="Completar los que faltan"
+                        @click="completarFaltantes" class="q-ml-sm" />
+                    </template>
+                  </q-banner>
+                </div>
 
                 <q-separator class="q-mt-sm" />
 
                 <div class="q-mt-sm">
-                  <div class="row q-gutter-sm items-start">
-                    <q-chip v-for="t in unpairedTeams" :key="t.id" dense :disable="!manualMode" clickable
-                      :outline="selectedTeam !== t.id" :color="selectedTeam === t.id ? 'primary' : undefined"
-                      @click="selectTeam(t.id)" @keyup.enter="selectTeam(t.id)"
-                      :class="{ 'cursor-pointer': manualMode }" tabindex="0" :aria-pressed="selectedTeam === t.id">
-                      {{ t.nombre }}
-                    </q-chip>
+                  <div v-if="torneoType !== 2">
+                    <div class="row q-gutter-sm items-start">
+                      <q-chip v-for="t in unpairedTeams" :key="t.id" dense :disable="!manualMode" clickable
+                        :outline="selectedTeam !== t.id" :color="selectedTeam === t.id ? 'primary' : undefined"
+                        @click="selectTeam(t.id)" @keyup.enter="selectTeam(t.id)"
+                        :class="{ 'cursor-pointer': manualMode }" tabindex="0" :aria-pressed="selectedTeam === t.id">
+                        {{ t.nombre }}
+                      </q-chip>
+                    </div>
+                    <div class="text-caption q-mt-xs">Haga click en "Organizar manualmente" y luego seleccione dos
+                      equipos
+                      para crear un par.</div>
+                    <q-banner v-if="manualMode" class="q-mt-sm" dense inline-actions>
+                      <template v-slot:avatar>
+                        <q-icon name="edit" />
+                      </template>
+                      <div>Modo manual activo — seleccione dos equipos (o pulse ESC para cancelar).</div>
+                    </q-banner>
                   </div>
-                  <div class="text-caption q-mt-xs">Haga click en "Organizar manualmente" y luego seleccione dos equipos
-                    para crear un par.</div>
-                  <q-banner v-if="manualMode" class="q-mt-sm" dense inline-actions>
-                    <template v-slot:avatar>
-                      <q-icon name="edit" />
-                    </template>
-                    <div>Modo manual activo — seleccione dos equipos (o pulse ESC para cancelar).</div>
-                  </q-banner>
                 </div>
               </q-card-section>
             </q-card>
@@ -104,7 +126,7 @@ import { Notify } from 'quasar'
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
   torneoId: { type: [Number, String], required: true }
-})
+});
 const emit = defineEmits(['update:modelValue', 'generatedMatches'])
 
 const loading = ref(false)
@@ -114,6 +136,7 @@ const phaseId = ref(null)
 const borradores = ref([])
 const manualMode = ref(false)
 const selectedTeam = ref(null)
+const torneoType = ref(null)
 
 const localVisible = ref(props.modelValue)
 
@@ -124,7 +147,7 @@ watch(localVisible, async (val) => {
   if (val) {
     await prepareOrganization()
   }
-})
+});
 
 async function prepareOrganization() {
   loading.value = true
@@ -137,6 +160,9 @@ async function prepareOrganization() {
     // cargar borradores
     const borr = await listarBorradores(props.torneoId).catch(() => [])
     borradores.value = Array.isArray(borr) ? borr : (borr?.data || [])
+
+    // guardar tipo de torneo para condicionar la UI
+    torneoType.value = tor?.id_tipo_torneo ?? null
 
     // si tipo 1 -> intentar mapear el número de borradores a una fase por su "orden";
     // si no se encuentra, buscar por nombre (ej. "octav") y luego fallback a la primera fase disponible.
@@ -169,6 +195,10 @@ async function prepareOrganization() {
         const b = borradores.value[i + 1]
         matches.value.push({ id_equipo_local: a?.id ?? null, id_equipo_visitante: b?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId })
       }
+    } else if (tor && tor.id_tipo_torneo === 2) {
+      // tipo 2: liga. Generar calendario Round-Robin balanceado.
+      const fases = await listarFases(props.torneoId).catch(() => [])
+      await generateRoundRobin(borradores.value || [], fases)
     } else {
       // fallback: pares secuenciales y fase por defecto si existe
       const fases = await listarFases(props.torneoId).catch(() => [])
@@ -197,6 +227,56 @@ function findEquipoName(id) {
   return `#${id}`
 }
 
+async function generateRoundRobin(teamsOrig, fases) {
+  // teamsOrig: array of equipos objects {id,nombre}
+  matches.value = []
+  const teams = (teamsOrig || []).slice()
+  // si impar -> añadir bye
+  if (teams.length % 2 === 1) teams.push({ id: null, nombre: 'BYE' })
+  const n = teams.length
+  const rounds = n - 1
+  const half = n / 2
+
+  // copia para rotación
+  const rot = teams.slice()
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < half; i++) {
+      const t1 = rot[i]
+      const t2 = rot[n - 1 - i]
+      if (!t1 || !t2) continue
+      if (t1.id == null || t2.id == null) continue
+      matches.value.push({ id_equipo_local: t1.id, id_equipo_visitante: t2.id, id_fase: null, id_torneo: props.torneoId, ronda: r + 1 })
+    }
+    // rotación manteniendo rot[0]
+    const fixed = rot[0]
+    const rest = rot.slice(1)
+    rest.unshift(rest.pop())
+    rot.length = 0
+    rot.push(fixed)
+    rot.push(...rest)
+  }
+
+  // asignar fases por ronda si hay fases
+  for (let r = 0; r < rounds; r++) {
+    const phase = (Array.isArray(fases) && fases[r]) ? fases[r] : (Array.isArray(fases) && fases.length > 0 ? fases[0] : null)
+    const baseName = (phase && phase.nombre) ? phase.nombre : 'Jornada'
+    const label = `${baseName} ${r + 1}`
+    const idF = phase?.id ?? null
+    matches.value.forEach(m => {
+      if (m.ronda === r + 1) {
+        m.id_fase = idF
+        m._phaseName = label
+      }
+    })
+  }
+
+  if (matches.value.length > 0) {
+    const first = matches.value.find(m => m.ronda === 1)
+    phaseName.value = first?._phaseName || ''
+    phaseId.value = first?.id_fase ?? phaseId.value
+  }
+}
+
 const unpairedTeams = computed(() => {
   const pairedIds = new Set();
   (matches.value || []).forEach(m => {
@@ -204,7 +284,53 @@ const unpairedTeams = computed(() => {
     if (m.id_equipo_visitante) pairedIds.add(m.id_equipo_visitante)
   })
   return (borradores.value || []).filter(e => !pairedIds.has(e.id))
+});
+
+const expectedMatchesCount = computed(() => {
+  // para liga: combinaciones C(n,2) donde n es número de equipos reales en borradores
+  const n = (borradores.value || []).length
+  return n >= 2 ? (n * (n - 1)) / 2 : 0
 })
+
+const missingCount = computed(() => {
+  if (torneoType.value !== 2) return 0
+  const expected = expectedMatchesCount.value
+  const actual = (matches.value || []).length
+  return Math.max(0, expected - actual)
+})
+
+function pairKey(a, b) {
+  // key for unordered pair
+  return a < b ? `${a}|${b}` : `${b}|${a}`
+}
+
+function completarFaltantes() {
+  const teams = (borradores.value || []).map(t => t).filter(t => t && t.id != null)
+  const expected = new Set()
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      expected.add(pairKey(teams[i].id, teams[j].id))
+    }
+  }
+  const existing = new Set();
+  (matches.value || []).forEach(m => {
+    if (m.id_equipo_local != null && m.id_equipo_visitante != null) existing.add(pairKey(m.id_equipo_local, m.id_equipo_visitante))
+  })
+  const missing = []
+  expected.forEach(k => {
+    if (!existing.has(k)) missing.push(k)
+  })
+  if (missing.length === 0) {
+    Notify.create({ type: 'info', message: 'No hay combinaciones faltantes.' })
+    return
+  }
+  // agregar partidos faltantes como pendientes (ronda y fase null)
+  missing.forEach(k => {
+    const [a, b] = k.split('|')
+    matches.value.push({ id_equipo_local: Number(a), id_equipo_visitante: Number(b), id_fase: null, id_torneo: props.torneoId, ronda: null, _phaseName: 'Pendiente' })
+  })
+  Notify.create({ type: 'positive', message: `${missing.length} partidos agregados como pendientes` })
+}
 
 function selectTeam(id) {
   if (!manualMode.value) {
@@ -270,8 +396,22 @@ function paresConImpares() {
   Notify.create({ type: 'info', message: 'Generado: pares con impares' })
 }
 
-function sortearAleatorio() {
-  // mezcla y empareja secuencialmente
+async function sortearAleatorio() {
+  // Si es liga (tipo 2) barajar el orden de equipos y regenerar Round-Robin
+  if (torneoType.value === 2) {
+    const fases = await listarFases(props.torneoId).catch(() => [])
+    const teams = (borradores.value || []).slice()
+    // shuffle
+    for (let i = teams.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = teams[i]; teams[i] = teams[j]; teams[j] = tmp
+    }
+    await generateRoundRobin(teams, fases)
+    Notify.create({ type: 'positive', message: 'Equipos sorteados aleatoriamente (Round-Robin)' })
+    return
+  }
+
+  // mezcla y empareja secuencialmente (modo por pares)
   const b = (borradores.value || []).slice()
   for (let i = b.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
