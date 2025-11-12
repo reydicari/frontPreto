@@ -12,7 +12,7 @@
     <q-card class="q-mb-md">
       <q-card-section>
         <div class="row q-col-gutter-md">
-          <q-input v-model="searchTerm" outlined dense placeholder="Buscar por detalle o comprobante" class="col-md-4">
+          <q-input v-model="searchTerm" outlined dense placeholder="Buscar por detalle" class="col-md-4">
             <template v-slot:append>
               <q-icon name="search" />
             </template>
@@ -218,10 +218,11 @@ async function generarReporte() {
   const params = {
     desde: filterDesde.value,
     hasta: filterHasta.value,
-    id_persona: filterPersona.value,
-    id_usuario: filterUsuario.value,
+    persona: { nombres: 'angel', apellidos: 'perez' },
+    usuario: 'yo xd',
+    nombreSistema: 'TarijaSport',
     estado: filterEstado.value,
-    search: searchTerm.value
+    pagosLista: pagos.value
   }
   await reportePagosParams(params)
 }
@@ -233,7 +234,8 @@ async function generarReporteExcel() {
     id_persona: filterPersona.value,
     id_usuario: filterUsuario.value,
     estado: filterEstado.value,
-    search: searchTerm.value
+    search: searchTerm.value,
+    lista: pagos.value
   }
   await reportePagosExcel(params)
 }

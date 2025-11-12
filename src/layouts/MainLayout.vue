@@ -202,7 +202,7 @@
                         <q-icon color="light" name="menu_book" />
                       </q-item-label>
                     </q-item-section>
-                    <q-item-section>Pagos</q-item-section>
+                    <q-item-section>Reporte de pagos</q-item-section>
                   </q-item>
 
 
@@ -366,10 +366,7 @@ const cerrarSesion = () => {
   sessionStorage.clear()
   router.replace('/login')
 }
-const tieneRol = (id_rol) => {
-  const current = JSON.parse(sessionStorage.getItem('user'))
-  return current.rols.some(rol => rol.id === id_rol)
-}
+
 const navegar = (ruta) => {
   router.push(ruta)
 }
