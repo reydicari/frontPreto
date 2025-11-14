@@ -21,8 +21,7 @@ export const reportePagosParams = async (params) => {
 // Generar y descargar Excel con los mismos params (asume endpoint /pagos/excel)
 export const reportePagosExcel = async (params) => {
   try {
-    const response = await api.get(URL_PART + "/pagosExcel", {
-      params,
+    const response = await api.post(URL_PART + "/pagosExcel", params, {
       responseType: "blob",
     });
 

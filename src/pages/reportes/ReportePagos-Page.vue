@@ -231,11 +231,11 @@ async function generarReporteExcel() {
   const params = {
     desde: filterDesde.value,
     hasta: filterHasta.value,
-    id_persona: filterPersona.value,
-    id_usuario: filterUsuario.value,
+    persona: { nombres: 'angel', apellidos: 'perez' },
+    usuario: 'yo xd',
+    nombreSistema: 'TarijaSport',
     estado: filterEstado.value,
-    search: searchTerm.value,
-    lista: pagos.value
+    pagosLista: pagos.value
   }
   await reportePagosExcel(params)
 }

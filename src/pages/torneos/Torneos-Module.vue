@@ -67,10 +67,16 @@
             </q-td>
           </template>
 
-          <template v-slot:body-cell-situacion="props">
+          <template v-slot:body-cell-estado="props">
             <q-td :props="props">
-              <q-badge :color="badgeColorEstado(estadoFromDates(props.row))">{{ estadoLabel(estadoFromDates(props.row))
-                }}</q-badge>
+              <div class="row items-center">
+                <q-badge :color="badgeColorEstado(props.row, estadoFromDates(props.row))" class="q-mr-sm">
+                  <template v-if="isSpecialGolden(props.row, estadoFromDates(props.row))">
+                    <q-icon name="star" size="14px" class="q-mr-xs" />
+                  </template>
+                  {{ estadoLabel(props.row, estadoFromDates(props.row)) }}
+                </q-badge>
+              </div>
             </q-td>
           </template>
 
@@ -237,7 +243,7 @@ const pagination = reactive({ page: 1, rowsPerPage: 10 })
 const columns = [
   { name: 'nro', label: 'Nro', field: 'nro', sortable: false },
   { name: 'nombre', label: 'Nombre', field: 'nombre', sortable: true },
-  { name: 'situacion', label: 'Situacion', field: row => estadoFromDates(row), sortable: true },
+  { name: 'estado', label: 'Estado', field: row => estadoFromDates(row), sortable: true },
   { name: 'ubicacion', label: 'Ubicación', field: row => row.ubicacion?.nombre || '-', sortable: true },
   { name: 'nivel', label: 'Nivel', field: row => row.nivel?.nombre_nivel || (row.nivel?.nombre) || '-', sortable: true },
   { name: 'fecha_inicio', label: 'Inicio', field: 'fecha_inicio', sortable: true },
@@ -308,8 +314,14 @@ const badgeColor = (key) => {
   return 'primary'
 }
 
-const badgeColorEstado = (estado) => {
-  switch (Number(estado)) {
+// Determina color de badge para la columna Estado.
+// Reglas especiales:
+// - si row.estado === 0 -> 'Suspendido' (rojo)
+// - si computedEstado === 1 (En marcha) y row.estado === 2 -> dorado (amber) con icono
+const badgeColorEstado = (row, computedEstado) => {
+  if (row && typeof row.estado !== 'undefined' && Number(row.estado) === 0) return 'negative'
+  if (computedEstado === 1 && row && Number(row.estado) === 2) return 'amber'
+  switch (Number(computedEstado)) {
     case -1: return 'negative' // anulado
     case 0: return 'grey' // terminado
     case 1: return 'positive' // en marcha
@@ -318,12 +330,17 @@ const badgeColorEstado = (estado) => {
   }
 }
 
-const estadoLabel = (estado) => {
-  if (Number(estado) == -1) return 'Anulado'
-  if (Number(estado) == 0) return 'Terminado'
-  if (Number(estado) == 1) return 'En marcha'
-  if (Number(estado) == 2) return 'Sin comenzar'
+const estadoLabel = (row, computedEstado) => {
+  if (row && typeof row.estado !== 'undefined' && Number(row.estado) === 0) return 'Suspendido'
+  if (Number(computedEstado) == -1) return 'Anulado'
+  if (Number(computedEstado) == 0) return 'Terminado'
+  if (Number(computedEstado) == 1) return 'En marcha'
+  if (Number(computedEstado) == 2) return 'Sin comenzar'
   return 'Desconocido'
+}
+
+const isSpecialGolden = (row, computedEstado) => {
+  return computedEstado === 1 && row && Number(row.estado) === 2
 }
 
 function estadoFromDates(t) {
@@ -376,7 +393,7 @@ const filteredTorneos = computed(() => {
         if (Number(t.estado) === 0) allowed = true
       }
 
-      // las demás selecciones (numéricas) se comparan con la situacion calculada por fechas
+      // las demás selecciones (numéricas) se comparan con la estado calculada por fechas
       const numericSelections = selections.filter(s => s !== 'suspendido').map(Number).filter(n => !isNaN(n))
       if (numericSelections.length) {
         const est = estadoFromDates(t)

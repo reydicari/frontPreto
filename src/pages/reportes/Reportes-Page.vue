@@ -13,21 +13,9 @@
               <div class="text-caption text-grey">Por mes actual</div>
             </div>
             <div class="col-auto">
-              <q-btn
-                flat
-                color="primary"
-                icon="visibility"
-                label="Vista previa"
-                @click="verReporte('pagos')"
-              />
-              <q-btn
-                flat
-                color="red"
-                icon="picture_as_pdf"
-                label="Generar PDF"
-                @click="generarPDF('pagos')"
-                class="q-ml-sm"
-              />
+              <q-btn flat color="primary" icon="visibility" label="Vista previa" @click="verReporte('pagos')" />
+              <q-btn flat color="red" icon="picture_as_pdf" label="Generar PDF" @click="generarPDF('pagos')"
+                class="q-ml-sm" />
             </div>
           </div>
         </q-card-section>
@@ -48,21 +36,9 @@
               <div class="text-caption text-grey">Por mes actual</div>
             </div>
             <div class="col-auto">
-              <q-btn
-                flat
-                color="primary"
-                icon="visibility"
-                label="Vista previa"
-                @click="verReporte('gastos')"
-              />
-              <q-btn
-                flat
-                color="red"
-                icon="picture_as_pdf"
-                label="Generar PDF"
-                @click="generarPDF('gastos')"
-                class="q-ml-sm"
-              />
+              <q-btn flat color="primary" icon="visibility" label="Vista previa" @click="verReporte('gastos')" />
+              <q-btn flat color="red" icon="picture_as_pdf" label="Generar PDF" @click="generarPDF('gastos')"
+                class="q-ml-sm" />
             </div>
           </div>
         </q-card-section>
@@ -85,19 +61,8 @@
           <div class="text-caption text-grey">Total: {{ totalEstudiantes }}</div>
         </q-card-section>
         <q-card-actions align="center" class="q-pb-md">
-          <q-btn
-            flat
-            color="primary"
-            icon="visibility"
-            label="Vista"
-            @click="verReporte('estudiantes')"
-          />
-          <q-btn
-            flat
-            color="red"
-            icon="picture_as_pdf"
-            @click="generarPDF('estudiantes')"
-          />
+          <q-btn flat color="primary" icon="visibility" label="Vista" @click="verReporte('estudiantes')" />
+          <q-btn flat color="red" icon="picture_as_pdf" @click="generarPDF('estudiantes')" />
         </q-card-actions>
       </q-card>
 
@@ -109,19 +74,8 @@
           <div class="text-caption text-grey">Total: {{ totalEntrenadores }}</div>
         </q-card-section>
         <q-card-actions align="center" class="q-pb-md">
-          <q-btn
-            flat
-            color="primary"
-            icon="visibility"
-            label="Vista"
-            @click="verReporte('entrenadores')"
-          />
-          <q-btn
-            flat
-            color="red"
-            icon="picture_as_pdf"
-            @click="generarPDF('entrenadores')"
-          />
+          <q-btn flat color="primary" icon="visibility" label="Vista" @click="verReporte('entrenadores')" />
+          <q-btn flat color="red" icon="picture_as_pdf" @click="generarPDF('entrenadores')" />
         </q-card-actions>
       </q-card>
 
@@ -133,19 +87,8 @@
           <div class="text-caption text-grey">Activos: {{ torneosActivos }}</div>
         </q-card-section>
         <q-card-actions align="center" class="q-pb-md">
-          <q-btn
-            flat
-            color="primary"
-            icon="visibility"
-            label="Vista"
-            @click="verReporte('torneos')"
-          />
-          <q-btn
-            flat
-            color="red"
-            icon="picture_as_pdf"
-            @click="generarPDF('torneos')"
-          />
+          <q-btn flat color="primary" icon="visibility" label="Vista" @click="verReporte('torneos')" />
+          <q-btn flat color="red" icon="picture_as_pdf" @click="generarPDF('torneos')" />
         </q-card-actions>
       </q-card>
 
@@ -157,19 +100,8 @@
           <div class="text-caption text-grey">Semanal: {{ entrenamientosSemana }}</div>
         </q-card-section>
         <q-card-actions align="center" class="q-pb-md">
-          <q-btn
-            flat
-            color="primary"
-            icon="visibility"
-            label="Vista"
-            @click="verReporte('entrenamientos')"
-          />
-          <q-btn
-            flat
-            color="red"
-            icon="picture_as_pdf"
-            @click="generarPDF('entrenamientos')"
-          />
+          <q-btn flat color="primary" icon="visibility" label="Vista" @click="verReporte('entrenamientos')" />
+          <q-btn flat color="red" icon="picture_as_pdf" @click="generarPDF('entrenamientos')" />
         </q-card-actions>
       </q-card>
     </div>
@@ -179,10 +111,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import InscripcionesChart from 'components/graficas/InscripcionesChart.vue'
-import PagosChart from 'components/graficas/PagosChart.vue'
+// import InscripcionesChart from 'components/graficas/InscripcionesChart.vue'
+// import PagosChart from 'components/graficas/PagosChart.vue'
 import GastosChart from 'components/graficas/GastosChart.vue'
-import {reportePagos, reportePersonas} from "stores/reportes.js";
+import { reportePagos, reportePersonas } from "stores/reportes.js";
 
 const router = useRouter()
 
@@ -197,15 +129,15 @@ const verReporte = (tipo) => {
   router.push(`/reportes/${tipo}`)
 }
 
-const generarPDF =async (tipo) => {
+const generarPDF = async (tipo) => {
   console.log(`Generando PDF para ${tipo}`)
   if (tipo === 'pagos') {
     const res = await reportePagos()
-    console.log('res',res)
+    console.log('res', res)
   }
   if (tipo === 'estudiantes') {
     const res = await reportePersonas()
-    console.log('res',res)
+    console.log('res', res)
   }
 }
 
@@ -219,6 +151,7 @@ onMounted(() => {
 .q-card {
   transition: transform 0.3s;
 }
+
 .q-card:hover {
   transform: translateY(-5px);
 }
