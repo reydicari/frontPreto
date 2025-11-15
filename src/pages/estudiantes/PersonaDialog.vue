@@ -84,7 +84,8 @@
                       class="col-md-4 col-6" :rules="[rules.required]" />
                     <q-select v-model="localPersona.id_nivel" :options="nivelOptions" option-label="label"
                       option-value="value" emit-value label="Nivel" map-options outlined dense clearable
-                      class="col-6 col-md-3 q-ml-sm col-sm-6 col-xs-12" :rules="!!val || 'Debe seleccionar un nivel'" />
+                      class="col-6 col-md-3 q-ml-sm col-sm-6 col-xs-12"
+                      :rules="[val => !!val || 'Debe seleccionar un nivel']" />
 
                   </div>
                 </div>
@@ -268,6 +269,8 @@ const generoOptions = ref([
 
 watch(() => props.persona, (newVal) => {
   localPersona.value = { ...newVal }
+  // Valor por defecto para género si no viene establecido (asegurar en ambos watchers)
+  if (!localPersona.value.genero) localPersona.value.genero = 'M'
 })
 const host = 'http://localhost:3001/uploads/'
 
@@ -278,6 +281,8 @@ onMounted(() => {
 })
 watch(() => props.persona, async (newVal) => {
   localPersona.value = { ...newVal }
+  // Valor por defecto para género si no viene establecido
+  if (!localPersona.value.genero) localPersona.value.genero = 'M'
   if (localPersona.value.fotografia) {
     // Aquí cargas la imagen en el uploader o en tu variable de preview
     console.log('Cargando imagen de perfil:', profilePhoto.value)
@@ -412,7 +417,7 @@ async function prepareAndSave() {
   // Loguear credenciales
   console.log('Credenciales creadas -> usuario:', usuario, 'clave:', clave)
   // Añadir al formData como objeto usuario
-  const usuarioObj = { usuario, clave, rol: 'estudiante' }
+  const usuarioObj = { usuario, clave, rol: 'Estudiante' }
   formData.append('usuario', JSON.stringify(usuarioObj))
   // Agregar foto de perfil
   if (profilePhotoFile.value) {

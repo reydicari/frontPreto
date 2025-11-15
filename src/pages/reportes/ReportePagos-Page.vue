@@ -46,8 +46,14 @@
           </q-select>
 
           <q-select dense outlined class="col-md-3" v-model="filterUsuario" :options="usuarioOptions"
-            option-label="username" option-value="id" use-input input-debounce="300" emit-value map-options
-            label="Usuario" clearable />
+            option-label="username" option-value="value" use-input input-debounce="300" emit-value map-options
+            label="Usuario" clearable @filter="filterUsuarioFunc">
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">Escriba al menos 3 caracteres</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
 
           <q-select dense outlined class="col-md-2" v-model="filterEstado" :options="estadoOptions" label="Estado"
             clearable />
@@ -130,10 +136,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { listarPagos } from 'src/stores/pago_store.js'
 import { reportePagosParams, reportePagosExcel } from 'src/stores/reportes.js'
+import { todasPersonas } from 'src/stores/persona-store.js'
+import { listarUsuarios } from 'src/stores/usuario-store.js'
 
 const $q = useQuasar()
 
@@ -142,8 +150,13 @@ const loading = ref(false)
 
 // Filtros
 const searchTerm = ref('')
-const filterDesde = ref(null)
-const filterHasta = ref(null)
+// por defecto: desde inicio del año actual hasta hoy
+const today = new Date()
+const yyyy = today.getFullYear()
+const pad = (n) => String(n).padStart(2, '0')
+const formatDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const filterDesde = ref(`${yyyy}-01-01`)
+const filterHasta = ref(formatDate(today))
 const filterPersona = ref(null)
 const filterUsuario = ref(null)
 const filterEstado = ref(null)
@@ -152,7 +165,10 @@ const detalleDialog = ref(false)
 const selectedPago = ref(null)
 
 const personOptions = ref([])
+const allPersonOptions = ref([])
+const allUsuarioOptions = ref([])
 const usuarioOptions = ref([])
+const filteredPersona = ref(null) // objeto persona seleccionado
 
 const estadoOptions = [
   { label: 'Anulado', value: 0 },
@@ -176,6 +192,39 @@ function personaLabel(row) {
   return 'General'
 }
 
+function filterPerson(val, update) {
+  update(() => {
+    if (!val || val.length < 3) {
+      // no mostrar opciones hasta que el usuario escriba al menos 3 caracteres
+      personOptions.value = []
+      return
+    }
+    const needle = val.toLowerCase()
+    personOptions.value = allPersonOptions.value.filter(p => (p.displayName || '').toLowerCase().includes(needle))
+  })
+}
+
+// Mantener objeto persona seleccionado en filteredPersona
+watch(filterPersona, (id) => {
+  if (!id) {
+    filteredPersona.value = null
+    return
+  }
+  const found = allPersonOptions.value.find(p => p.id === id)
+  filteredPersona.value = found ? (found.raw || found) : null
+})
+
+function filterUsuarioFunc(val, update) {
+  update(() => {
+    if (!val || val.length < 3) {
+      usuarioOptions.value = []
+      return
+    }
+    const needle = val.toLowerCase()
+    usuarioOptions.value = allUsuarioOptions.value.filter(u => (u.username || '').toLowerCase().includes(needle))
+  })
+}
+
 async function loadPagos() {
   loading.value = true
   try {
@@ -183,7 +232,7 @@ async function loadPagos() {
       desde: filterDesde.value,
       hasta: filterHasta.value,
       id_persona: filterPersona.value,
-      id_usuario: filterUsuario.value,
+      usuario: filterUsuario.value,
       estado: filterEstado.value,
       search: searchTerm.value
     }
@@ -198,6 +247,25 @@ async function loadPagos() {
 }
 
 onMounted(async () => {
+  // cargar fechas por defecto y opciones para selects
+  try {
+    const personas = await todasPersonas().catch(() => [])
+    allPersonOptions.value = Array.isArray(personas) ? personas.map(p => ({ id: p.id, displayName: `${p.nombres} ${p.apellido_paterno}`, raw: p })) : []
+    // no mostrar opciones hasta que el usuario escriba 3 caracteres
+    personOptions.value = []
+
+    const usuarios = await listarUsuarios().catch(() => [])
+    // mapear para uso interno y mantener lista completa; no mostrar opciones hasta 3 caracteres
+    const mapped = (Array.isArray(usuarios) ? usuarios : []).map(u => {
+      const usernameString = (u.usuario && u.usuario.usuario) ? u.usuario.usuario : (u.username || (u.usuario && String(u.usuario)) || String(u.id))
+      return { id: u.id, username: usernameString, value: usernameString, raw: u }
+    })
+    allUsuarioOptions.value = mapped
+    usuarioOptions.value = []
+  } catch (err) {
+    console.error('Error cargando personas/usuarios', err)
+  }
+
   await loadPagos()
 })
 
@@ -215,26 +283,32 @@ function verPago(pago) {
 }
 
 async function generarReporte() {
+  const current = JSON.parse(sessionStorage.getItem('user'))
+
   const params = {
     desde: filterDesde.value,
     hasta: filterHasta.value,
-    persona: { nombres: 'angel', apellidos: 'perez' },
-    usuario: 'yo xd',
+    persona: filterPersona.value,
+    usuario: current.usuario,
+    usuarioCobrador: filterUsuario.value,
     nombreSistema: 'TarijaSport',
-    estado: filterEstado.value,
+    estado: filterEstado.value == null ? null : filterEstado.value.value == 1 ? 1 : filterEstado.value.value == 0 ? 0 : filterEstado.value.value == 2 ? 2 : null,
     pagosLista: pagos.value
   }
   await reportePagosParams(params)
 }
 
 async function generarReporteExcel() {
+  const current = JSON.parse(sessionStorage.getItem('user'))
+
   const params = {
     desde: filterDesde.value,
     hasta: filterHasta.value,
-    persona: { nombres: 'angel', apellidos: 'perez' },
-    usuario: 'yo xd',
+    persona: filterPersona.value,
+    usuario: current.usuario,
+    usuarioCobrador: filterUsuario.value,
     nombreSistema: 'TarijaSport',
-    estado: filterEstado.value,
+    estado: filterEstado.value == null ? null : filterEstado.value.value == 1 ? 1 : filterEstado.value.value == 0 ? 0 : filterEstado.value.value == 2 ? 2 : null,
     pagosLista: pagos.value
   }
   await reportePagosExcel(params)

@@ -88,7 +88,8 @@
                       ]" /> -->
 
                     <q-select v-model="localPersona.genero" :options="generoOptions" map-options option-label="label"
-                      option-value="value" emit-value label="Género" outlined dense class="col-6" />
+                      option-value="value" emit-value label="Género" outlined dense class="col-6"
+                      :rules="[rules.required]" />
 
                     <!-- Campos adicionales: salario, genero, grupos_maximo -->
                     <q-input v-model.number="localPersona.salario" label="Salario" type="number" outlined dense
@@ -97,7 +98,8 @@
                     <q-input v-model.number="localPersona.grupos_maximo" label="Máximo de grupos" type="number" outlined
                       dense class="col-md-6 col-6" />
                     <q-select v-model="localPersona.id_nivel" :options="nivelOptions" option-label="label"
-                      option-value="value" label="Nivel" outlined dense class="col-md-6 col-6" />
+                      option-value="value" label="Nivel" outlined dense class="col-md-6 col-6"
+                      :rules="[val => !!val || 'Debe seleccionar un nivel']" />
                   </div>
                 </div>
                 <!-- Columna derecha - Foto de perfil -->
@@ -280,6 +282,8 @@ const roles = ref([])
 
 watch(() => props.persona, (newVal) => {
   localPersona.value = { ...newVal }
+  // Valor por defecto para género si no viene establecido
+  if (!localPersona.value.genero) localPersona.value.genero = 'M'
 })
 const host = 'http://localhost:3001/uploads/'
 
@@ -299,6 +303,8 @@ onMounted(async () => {
 })
 watch(() => props.persona, (newVal) => {
   localPersona.value = { ...newVal }
+  // Valor por defecto para género si no viene establecido (asegurar también aquí)
+  if (!localPersona.value.genero) localPersona.value.genero = 'M'
   if (localPersona.value.fotografia) {
     // Aquí cargas la imagen en el uploader o en tu variable de preview
     console.log('Cargando imagen de perfil:', profilePhoto.value)
@@ -416,7 +422,7 @@ function prepareAndSave() {
   const password = `${ci}`
   console.log('Credenciales creadas -> username:', username, 'password:', password)
   localPersona.value.usuario_creado = username
-  formData.append('usuario', JSON.stringify({ username, password }))
+  formData.append('usuario', JSON.stringify({ usuario: username, clave: password, rol: 'Entrenador' }))
 
   // Agregar datos de la persona como JSON
   formData.append('persona', JSON.stringify(localPersona.value))
