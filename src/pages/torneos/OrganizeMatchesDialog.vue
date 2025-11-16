@@ -105,7 +105,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                          }})</template>
+                        }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
@@ -183,13 +183,47 @@
         <q-btn color="primary" label="Confirmar generación" @click="confirm" :disable="matches.length === 0" />
       </q-card-actions>
     </q-card>
+
+    <!-- Diálogo que advierte sobre equipos incompletos o combinaciones faltantes -->
+    <q-dialog v-model="showIncompleteDialog" persistent>
+      <q-card style="min-width:420px; max-width:560px;">
+        <q-toolbar class="bg-primary text-white">
+          <q-toolbar-title>Confirmar acción</q-toolbar-title>
+        </q-toolbar>
+        <q-card-section>
+          <div v-if="incompleteDialogInfo.type === 4">
+            <div>Hay <strong>{{ incompleteDialogInfo.count }}</strong> equipos que no completaron sus desafíos (N = {{
+              desafiosCount }}).</div>
+            <div class="q-mt-sm text-caption">¿Desea continuar de todas formas y comenzar el torneo?</div>
+            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-sm">
+              <div class="text-subtitle2">Equipos:</div>
+              <ul>
+                <li v-for="t in incompleteDialogInfo.teams.slice(0, 5)" :key="t.id">{{ t.nombre }} ({{ t.actual }}
+                  partidos)
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div v-else-if="incompleteDialogInfo.type === 2">
+            <div>Faltan <strong>{{ incompleteDialogInfo.count }}</strong> combinaciones por generar para completar la
+              liga.
+            </div>
+            <div class="q-mt-sm text-caption">¿Desea continuar de todas formas y comenzar el torneo?</div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="secondary" @click="cancelIncompleteDialog" />
+          <q-btn unelevated label="Continuar" color="negative" @click="proceedDespiteIncomplete" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-dialog>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { listarBorradores } from 'src/stores/borrador-store'
-import { obtenerTorneo, listarFases } from 'src/stores/torneo-store'
+import { obtenerTorneo, listarFases, confirmarInicioTorneo } from 'src/stores/torneo-store'
 import { Notify } from 'quasar'
 
 const props = defineProps({
@@ -211,6 +245,8 @@ const desafiados = ref([])
 const fasesForDesafio = ref([])
 const pendingMatches = ref([]) // selección temporal en modo manual para tipo 4
 const desafiosLocked = ref(false)
+const showIncompleteDialog = ref(false)
+const incompleteDialogInfo = ref({ type: null, count: 0, teams: [] })
 
 const localVisible = ref(props.modelValue)
 
@@ -704,11 +740,94 @@ function confirm() {
   } catch {
     console.log('Generated matches for torneo', props.torneoId, matches.value)
   }
+  // Antes de confirmar, validar condiciones por tipo
+  // preparar listado combinado de partidos (incluye pending si aplica)
+  const combined = [].concat(matches.value || [], pendingMatches.value || [])
+
+  // Caso: tipo 4 -> verificar que todos los equipos alcanzaron N desafíos
+  if (torneoType.value === 4) {
+    const N = Number(desafiosCount.value) || 0
+    if (!desafiosValid.value || N <= 0) {
+      Notify.create({ type: 'warning', message: 'Ingrese una cantidad válida de desafíos antes de confirmar.' })
+      return
+    }
+    const countMap = new Map()
+    combined.forEach(m => {
+      if (m && m.id_equipo_local != null) {
+        countMap.set(m.id_equipo_local, (countMap.get(m.id_equipo_local) || 0) + 1)
+      }
+    })
+    const missingTeams = [];
+    ; (teamsForTipo4.value || []).forEach(t => {
+      const cnt = countMap.get(t.id) || 0
+      if (cnt < N) missingTeams.push({ id: t.id, nombre: t.nombre || `#${t.id}`, actual: cnt })
+    })
+    if (missingTeams.length > 0) {
+      incompleteDialogInfo.value = { type: 4, count: missingTeams.length, teams: missingTeams }
+      showIncompleteDialog.value = true
+      return
+    }
+    // todo OK -> emitir y llamar al store
+    emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
+    // llamar al método del store para iniciar torneo y enviar partidos
+    confirmarInicioTorneo(props.torneoId, combined).then(() => {
+      Notify.create({ type: 'positive', message: 'Torneo iniciado' })
+    }).catch(err => {
+      console.error('Error iniciando torneo', err)
+      Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
+    })
+    localVisible.value = false
+    desafiosLocked.value = false
+    return
+  }
+
+  // Caso: tipo 2 -> si faltan combinaciones mostrar dialogo de confirmación, si no -> iniciar
+  if (torneoType.value === 2) {
+    const missing = missingCount.value || 0
+    if (missing > 0) {
+      incompleteDialogInfo.value = { type: 2, count: missing, teams: [] }
+      showIncompleteDialog.value = true
+      return
+    }
+    // ok -> emitir y llamar al store
+    emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
+    confirmarInicioTorneo(props.torneoId, combined).then(() => {
+      Notify.create({ type: 'positive', message: 'Torneo iniciado' })
+    }).catch(err => {
+      console.error('Error iniciando torneo', err)
+      Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
+    })
+    localVisible.value = false
+    desafiosLocked.value = false
+    return
+  }
+
+  // demás tipos: comportamiento previo
   emit('generatedMatches', { torneoId: props.torneoId, matches: matches.value })
   localVisible.value = false
   // desbloquear input al confirmar
   desafiosLocked.value = false
 }
+
+function proceedDespiteIncomplete() {
+  // emitir y forzar inicio del torneo
+  const combined = [].concat(matches.value || [], pendingMatches.value || [])
+  emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
+  confirmarInicioTorneo(props.torneoId, combined).then(() => {
+    Notify.create({ type: 'positive', message: 'Torneo iniciado' })
+  }).catch(err => {
+    console.error('Error iniciando torneo', err)
+    Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
+  })
+  showIncompleteDialog.value = false
+  localVisible.value = false
+  desafiosLocked.value = false
+}
+
+function cancelIncompleteDialog() {
+  showIncompleteDialog.value = false
+}
+
 
 function paresConImpares() {
   // genera pares tomando pares (índices 1,3,5...) como locales y los impares anteriores como visitantes: 2-1,4-3...

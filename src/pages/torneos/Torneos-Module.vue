@@ -92,20 +92,29 @@
             </q-td>
           </template>
 
+          <template v-slot:body-cell-fecha_inicio="props">
+            <q-td :props="props">
+              {{ formatDate(props.row.fecha_inicio) }}
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-fecha_fin="props">
+            <q-td :props="props">
+              {{ formatDate(props.row.fecha_fin) }}
+            </q-td>
+          </template>
+
           <template v-slot:body-cell-nivel="props">
             <q-td :props="props">
-              <q-badge color="secondary" class="q-ml-sm" outline>
-                {{ props.row.nivel?.nombre_nivel || props.row.nivel?.nombre || '—' }}
-              </q-badge>
+              {{ props.row.nivel?.nombre_nivel || props.row.nivel?.nombre || '—' }}
             </q-td>
           </template>
 
           <template v-slot:body-cell-acciones="props">
             <q-td :props="props">
-              <q-btn dense flat icon="visibility" color="primary" @click.stop="openDetails(props.row)" title="Ver" />
               <q-btn dense flat icon="edit" color="secondary" @click.stop="onEdit(props.row)" title="Editar" />
-              <q-btn v-if="props.row.estado != 0" dense flat icon="delete" color="negative"
-                @click.stop="onDelete(props.row)" title="Eliminar" />
+              <q-btn v-if="props.row.estado != 0" dense flat icon="pause_circle" color="negative"
+                @click.stop="onDelete(props.row)" title="Suspender" />
               <q-btn dense flat icon="groups" color="teal" @click.stop="openBorradores(props.row)" title="Borradores" />
             </q-td>
           </template>
@@ -121,7 +130,7 @@
     <!-- Dialog de borradores -->
     <q-dialog v-model="showBorradoresDialog" persistent>
       <borradores-dialog v-if="activeTorneoForBorradores" :torneo-id="activeTorneoForBorradores"
-        @save="onBorradoresSaved" @cancel="showBorradoresDialog = false" />
+        @save="onBorradoresSaved" @cancel="showBorradoresDialog = false" @started="onBorradoresStarted" />
     </q-dialog>
 
     <!-- Dialog para suspender / anular torneo con motivo -->
@@ -160,10 +169,14 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cerrar" color="secondary" @click="showStartConfirm = false" />
-          <q-btn unelevated color="positive" label="Comenzar" @click="doStartTournament" />
+          <q-btn v-if="suspendTarget && Number(suspendTarget.estado) === 2" unelevated color="primary"
+            label="Seguir torneo" @click="openSeguimiento" />
+          <q-btn v-else unelevated color="positive" label="Comenzar" @click="doStartTournament" />
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <seguimiento-torneo-dialog v-model="showSeguimiento" :torneo="selectedTorneo" />
 
     <!-- Drawer de detalles a la derecha -->
     <q-drawer v-model="drawer" side="right" overlay width="520">
@@ -225,6 +238,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
+import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue'
 import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo, comenzarTorneo, suspenderTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
 import { listarNiveles } from 'src/stores/nivel'
@@ -241,7 +255,7 @@ const filters = reactive({ search: '', id_tipo_torneo: null, id_ubicacion: null,
 const pagination = reactive({ page: 1, rowsPerPage: 10 })
 
 const columns = [
-  { name: 'nro', label: 'Nro', field: 'nro', sortable: false },
+  { name: 'nro', label: 'Nro', field: 'nro', sortable: true },
   { name: 'nombre', label: 'Nombre', field: 'nombre', sortable: true },
   { name: 'estado', label: 'Estado', field: row => estadoFromDates(row), sortable: true },
   { name: 'ubicacion', label: 'Ubicación', field: row => row.ubicacion?.nombre || '-', sortable: true },
@@ -297,6 +311,8 @@ const loadTorneos = async () => {
     tiposTorneo.value = Array.isArray(tipos) ? tipos : (tipos?.data || [])
     ubicaciones.value = Array.isArray(ubics) ? ubics : (ubics?.data || [])
     niveles.value = Array.isArray(nivelesList) ? nivelesList : (nivelesList?.data || [])
+    console.log(torneos.value);
+
   } catch (err) {
     console.error('Error cargando datos de torneos', err)
     $q.notify({ type: 'negative', message: 'Error al cargar datos de torneos' })
@@ -451,7 +467,22 @@ const onSaveTorneo = async (payload) => {
 const onBorradoresSaved = async (payload) => {
   await actualizarBorradores(payload)
   showBorradoresDialog.value = false
-  showBorradoresDialog.value = true
+  await loadTorneos()
+}
+
+async function onBorradoresStarted(evt) {
+  // evt may contain { torneoId }
+  showBorradoresDialog.value = false
+  await loadTorneos()
+  // seleccionar el torneo que inició
+  const id = evt?.torneoId || (selectedTorneo.value && selectedTorneo.value.id)
+  if (id) {
+    // intentar encontrar en la lista recargada
+    const found = torneos.value.find(t => String(t.id) === String(id))
+    if (found) selectedTorneo.value = found
+  }
+  showSeguimiento.value = true
+  $q.notify({ type: 'positive', message: 'Torneo iniciado — mostrando seguimiento' })
 }
 
 // Suspender/Anular torneo con motivo: abrir diálogo modal personalizado
@@ -461,6 +492,12 @@ const suspendTarget = ref(null)
 const currentUserName = ref('')
 const showStartConfirm = ref(false)
 const startResponseMessage = ref(null)
+const showSeguimiento = ref(false)
+
+function openSeguimiento() {
+  showSeguimiento.value = true
+  showStartConfirm.value = false
+}
 
 onMounted(() => {
   try {
@@ -521,12 +558,37 @@ async function doStartTournament() {
   }
 }
 
-function openDetails(row) {
-  // q-table @row-click sometimes sends (evt,row) or just row
-  const item = row && row.row ? row.row : row
+function openDetails(evtOrRow, maybeRow) {
+  // q-table @row-click puede pasar (evt, row) o solo (row).
+  let item = null
+
+  if (maybeRow) {
+    // llamado como (evt, row)
+    item = maybeRow
+  } else if (evtOrRow) {
+    // puede ser (row) o el evento
+    if (evtOrRow.row) item = evtOrRow.row
+    else if (typeof evtOrRow.id !== 'undefined') item = evtOrRow
+  }
+
+  if (!item) {
+    $q.notify({ type: 'warning', message: 'Registro inválido o fila no disponible' })
+    return
+  }
+
   selectedTorneo.value = item
-  drawer.value = true
+
+  // Sólo abrir el diálogo de seguimiento cuando el torneo tenga estado === 2.
+  if (typeof item.estado !== 'undefined' && Number(item.estado) === 2) {
+    showSeguimiento.value = true
+    return
+  }
+
+  // si no está iniciado, notificar al usuario
+  $q.notify({ type: 'warning', message: 'El torneo aún no fue iniciado' })
 }
+
+
 
 function goToUbicacion(id) {
   if (!id) {
@@ -537,7 +599,23 @@ function goToUbicacion(id) {
   router.push({ path: '/ubicaciones', query: { focus: id } })
 }
 
-function dateRange(t) { return `${t.fecha_inicio} → ${t.fecha_fin}` }
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  // esperar formato 'aaaa-mm-dd' (posible también con hora), tomamos la parte date
+  const part = String(dateStr).split('T')[0]
+  const parts = part.split('-')
+  if (parts.length < 3) return dateStr
+  const [yyyy, mm, dd] = parts
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  const mi = parseInt(mm, 10) - 1
+  const mon = monthNames[mi] || mm
+  return `${dd} ${mon} ${yyyy}`
+}
+
+function dateRange(t) {
+  if (!t) return ''
+  return `${formatDate(t.fecha_inicio)} → ${formatDate(t.fecha_fin)}`
+}
 
 function teamName(p, side) {
   if (!p) return '-'
@@ -560,5 +638,10 @@ function teamName(p, side) {
 
 .q-table tbody td {
   vertical-align: middle;
+}
+
+/* Centrar los encabezados de la q-table dentro de este componente */
+::v-deep .q-table thead th {
+  text-align: center;
 }
 </style>

@@ -145,9 +145,33 @@ export const comenzarTorneo = async (id) => {
   try {
     // se espera que el backend responda con un objeto { mensaje: '...' } o similar
     const resp = await api.post(`${URL_PART}/comenzar/${id}`);
+    // Notify.create({
+    //   type: "positive",
+    //   message: "Solicitud de inicio enviada",
+    //   position: "bottom",
+    // });
+    return resp.data;
+  } catch (error) {
+    console.error("Error al comenzar torneo", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al comenzar el torneo",
+      position: "bottom",
+    });
+    return null;
+  }
+};
+export const confirmarInicioTorneo = async (id, partidos) => {
+  try {
+    console.log("confirmando inicio de torneo");
+
+    // se espera que el backend responda con un objeto { mensaje: '...' } o similar
+    const resp = await api.put(`${URL_PART}/confirmarComienzo/${id}`, {
+      partidos,
+    });
     Notify.create({
       type: "positive",
-      message: "Solicitud de inicio enviada",
+      message: "Torneo iniciado con éxito",
       position: "bottom",
     });
     return resp.data;
@@ -155,7 +179,7 @@ export const comenzarTorneo = async (id) => {
     console.error("Error al comenzar torneo", error);
     Notify.create({
       type: "negative",
-      message: "Error al comenzar el torneo",
+      message: "Error al iniciar el torneo",
       position: "bottom",
     });
     return null;

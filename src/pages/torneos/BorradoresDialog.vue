@@ -73,7 +73,9 @@
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
           <q-btn flat label="Cancelar" color="secondary" @click="onCancel" />
-          <q-btn flat label="Comenzar" color="accent" @click="openStartFlow" />
+          <q-btn v-if="torneoData && Number(torneoData.estado) === 2" flat label="Seguir torneo" color="primary"
+            @click="showSeguimiento = true" />
+          <q-btn v-else flat label="Comenzar" color="accent" @click="openStartFlow" />
           <q-btn label="Guardar equipos" color="primary" @click="onSave" />
         </div>
       </div>
@@ -98,6 +100,9 @@
   <OrganizeMatchesDialog v-model="showOrganizeDialog" :torneoId="props.torneoId"
     @generatedMatches="handleGeneratedMatches" />
 
+  <!-- Diálogo de seguimiento específico del torneo (lista de partidos) -->
+  <SeguimientoTorneoDialog v-model="showSeguimiento" :torneo-id="props.torneoId" />
+
   <!-- Diálogo para confirmar/comenzar el torneo y mostrar resultado -->
   <q-dialog v-model="showStartDialog">
     <q-card style="min-width: 320px;">
@@ -119,6 +124,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { listarBorradores, listarEquipos } from 'src/stores/borrador-store'
 import { obtenerTorneo, comenzarTorneo } from 'src/stores/torneo-store'
 import OrganizeMatchesDialog from './OrganizeMatchesDialog.vue'
+import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue'
 import { Notify } from 'quasar'
 
 // helper to compute totals and limits
@@ -132,7 +138,7 @@ function computeCurrentFinal(originals, desechados, nuevos, existentes) {
 }
 
 const props = defineProps({ torneoId: { type: [Number, String], required: true } })
-const emit = defineEmits(['save', 'cancel', 'generatedMatches'])
+const emit = defineEmits(['save', 'cancel', 'generatedMatches', 'started'])
 
 
 const torneoData = ref(null)
@@ -140,6 +146,7 @@ const showStartDialog = ref(false)
 const startResponseMessage = ref('')
 const showDateWarning = ref(false)
 const showOrganizeDialog = ref(false)
+const showSeguimiento = ref(false)
 
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend
@@ -279,6 +286,9 @@ function handleGeneratedMatches(payload) {
   emit('generatedMatches', payload)
   Notify.create({ type: 'positive', message: 'Partidos generados listos' })
   showOrganizeDialog.value = false
+  // notificar al padre que el torneo fue iniciado / partidos generados
+  // el padre se encargará de cerrar el diálogo de borradores y refrescar la lista
+  emit('started', { torneoId: props.torneoId })
 }
 function closeStartDialog() {
   showStartDialog.value = false
