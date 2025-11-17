@@ -41,11 +41,15 @@
         <div class="row q-mt-md">
           <q-space />
           <q-btn flat label="Cancelar" color="secondary" @click="$emit('cancel')" />
+          <q-btn flat label="Asignar encargados" color="secondary" @click="showAssignDialog = true" />
           <q-btn label="Guardar" color="primary" :disable="!canSave" @click="submit" />
         </div>
       </q-form>
     </q-card-section>
   </q-card>
+
+  <AsignarEncargadoDialog v-model="showAssignDialog" :torneo="props.initial" :torneo-id="props.initial?.id"
+    @assigned="handleAssigned" />
 </template>
 
 <script setup>
@@ -53,6 +57,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { listarTiposTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
 import { listarNiveles } from 'src/stores/nivel'
+import AsignarEncargadoDialog from './AsignarEncargadoDialog.vue'
+import { Notify } from 'quasar'
 
 const props = defineProps({ initial: { type: [Object, null], default: null } })
 const emit = defineEmits(['save', 'cancel'])
@@ -77,6 +83,18 @@ function addMonthsStr(isoDateStr, months) {
 }
 
 const form = reactive({ nombre: '', fecha_inicio: '', fecha_fin: '', id_tipo: null, id_ubicacion: null, id_nivel: null, tipo_nombre: '', ubicacion_nombre: '', nivel_nombre: '' })
+
+// encargados seleccionados (array de {id_torneo,id_persona})
+form.encargados = []
+
+const showAssignDialog = ref(false)
+
+function handleAssigned(payload) {
+  // payload: array of { id_torneo, id_persona }
+  form.encargados = Array.isArray(payload) ? payload : []
+  Notify.create({ type: 'positive', message: `${form.encargados.length} encargado(s) asignado(s)` })
+  console.log('encargados: ', payload);
+}
 
 // si viene initial, cargar; si no, establecer por defecto: inicio hoy, fin hoy+1 mes
 if (props.initial) {
@@ -158,6 +176,10 @@ function submit() {
 
   // No modificamos aquí el atributo `estado` del torneo: lo calcula el backend o se mantiene como está.
   console.log('nuevo torneo: ', payload);
+
+  // attach encargados if any
+  if (form.encargados && form.encargados.length) payload.encargados = form.encargados
+  console.log('antes del amit del', payload);
 
   emit('save', payload)
 }

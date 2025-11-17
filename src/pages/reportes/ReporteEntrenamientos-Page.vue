@@ -3,7 +3,7 @@
     <div class="row items-center justify-between q-mb-md">
       <h2 class="text-h4 q-ma-none">Reporte de Entrenamientos</h2>
       <div>
-        <q-btn color="primary" icon="picture_as_pdf" label="Generar Reporte" @click="generarReporte" class="q-mr-sm" />
+        <q-btn color="orange" icon="picture_as_pdf" label="Generar PDF" @click="generarReporte" class="q-mr-sm" />
         <q-btn color="secondary" icon="file_download" label="Generar Excel" @click="generarReporteExcel" />
       </div>
     </div>

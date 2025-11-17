@@ -210,9 +210,25 @@
             </div>
             <div class="q-mt-sm text-caption">¿Desea continuar de todas formas y comenzar el torneo?</div>
           </div>
+          <div v-else-if="incompleteDialogInfo.type === 1">
+            <div>Se detectaron equipos sin participación en la generación actual.</div>
+            <div class="q-mt-sm">Equipos totales: <strong>{{ incompleteDialogInfo.totalTeams }}</strong>. Partidos
+              generados: <strong>{{ incompleteDialogInfo.actualMatches }}</strong>. Partidos esperados: <strong>{{
+                incompleteDialogInfo.expectedMatches }}</strong>.</div>
+            <div class="q-mt-sm text-caption">Algunos equipos no participan. Se recomienda volver a ordenar/sortear o
+              continuar de todas formas.</div>
+            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-sm">
+              <div class="text-subtitle2">Equipos sin participación:</div>
+              <ul>
+                <li v-for="t in incompleteDialogInfo.teams.slice(0, 10)" :key="t.id">{{ t.nombre }}</li>
+              </ul>
+            </div>
+          </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="secondary" @click="cancelIncompleteDialog" />
+          <q-btn v-if="incompleteDialogInfo.type === 1" flat label="Re-sortear" color="primary"
+            @click="reSortFromDialog" />
           <q-btn unelevated label="Continuar" color="negative" @click="proceedDespiteIncomplete" />
         </q-card-actions>
       </q-card>
@@ -230,12 +246,13 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   torneoId: { type: [Number, String], required: true }
 });
-const emit = defineEmits(['update:modelValue', 'generatedMatches'])
+const emit = defineEmits(['update:modelValue', 'generatedMatches', 'started'])
 
 const loading = ref(false)
 const matches = ref([])
 const phaseName = ref('')
 const phaseId = ref(null)
+const tipoLabel = ref('Jornada')
 const borradores = ref([])
 const manualMode = ref(false)
 const selectedTeam = ref(null)
@@ -297,6 +314,8 @@ async function prepareOrganization() {
   try {
     const t = await obtenerTorneo(props.torneoId).catch(() => null)
     const tor = t || null
+    // etiqueta para las rondas: usar el nombre del tipo de torneo si está disponible
+    tipoLabel.value = (tor && tor.tipo_torneo && tor.tipo_torneo.nombre) ? tor.tipo_torneo.nombre : 'Jornada'
     // cargar borradores
     const borr = await listarBorradores(props.torneoId).catch(() => [])
     borradores.value = Array.isArray(borr) ? borr : (borr?.data || [])
@@ -318,6 +337,7 @@ async function prepareOrganization() {
         })
         // si no hay match por orden, buscar por nombre (ej. "octav", "dieciseis", "16")
         if (!phase) {
+
           const needle = ('' + total).toLowerCase()
           phase = fases.find(f => {
             const name = (f.nombre || '').toLowerCase()
@@ -333,7 +353,7 @@ async function prepareOrganization() {
       for (let i = 0; i + 1 < (borradores.value?.length || 0); i += 2) {
         const a = borradores.value[i]
         const b = borradores.value[i + 1]
-        matches.value.push({ id_equipo_local: a?.id ?? null, id_equipo_visitante: b?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId })
+        matches.value.push({ id_equipo_local: a?.id ?? null, id_equipo_visitante: b?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId, ronda: phaseName.value, _phaseName: phaseName.value })
       }
     } else if (tor && tor.id_tipo_torneo === 2) {
       // tipo 2: liga. Generar calendario Round-Robin balanceado (dirigido: cada par en ambas orientaciones)
@@ -453,6 +473,20 @@ async function generateDirectedRoundRobin(teamsOrig, fases) {
     phaseName.value = first._phaseName || ''
     phaseId.value = first.id_fase ?? phaseId.value
   }
+
+  // Para tipo 2, sobreescribir/establecer campo 'ronda' agrupando partidos de a 2
+  if (torneoType.value === 2 && matches.value.length > 0) {
+    for (let i = 0; i < matches.value.length; i++) {
+      const roundIndex = Math.floor(i / 2) + 1
+      const label = `${tipoLabel.value} ${roundIndex}`
+      matches.value[i].ronda = label
+      // también ajustar _phaseName para mostrar coherente en la UI
+      matches.value[i]._phaseName = label
+    }
+    // actualizar phaseName y phaseId basados en el primer partido
+    phaseName.value = matches.value[0]._phaseName || phaseName.value
+    phaseId.value = matches.value[0].id_fase ?? phaseId.value
+  }
 }
 
 const unpairedTeams = computed(() => {
@@ -508,6 +542,36 @@ function completarFaltantes() {
     matches.value.push({ id_equipo_local: Number(a), id_equipo_visitante: Number(b), id_fase: null, id_torneo: props.torneoId, ronda: null, _phaseName: 'Pendiente' })
   })
   Notify.create({ type: 'positive', message: `${missing.length} partidos agregados como pendientes` })
+}
+
+function setRondaForMatches(arr) {
+  if (!arr || !Array.isArray(arr)) return
+  for (let i = 0; i < arr.length; i++) {
+    const m = arr[i]
+    if (!m) continue
+    // no sobreescribimos si ya tiene ronda definida
+    if (m.ronda) continue
+    if (torneoType.value === 2) {
+      const roundIndex = Math.floor(i / 2) + 1
+      const label = `${tipoLabel.value} ${roundIndex}`
+      m.ronda = label
+      m._phaseName = label
+    } else if (torneoType.value === 1) {
+      // usar nombre de la fase tal cual
+      m.ronda = phaseName.value || 'Fase'
+      m._phaseName = phaseName.value || 'Fase'
+    } else if (torneoType.value === 4) {
+      // para desafíos, numerar secuencialmente (Desafío 1, ...)
+      const label = `Desafío ${i + 1}`
+      m.ronda = label
+      m._phaseName = label
+    } else {
+      // fallback genérico
+      const label = `${tipoLabel.value} ${Math.floor(i / 2) + 1}`
+      m.ronda = label
+      m._phaseName = label
+    }
+  }
 }
 
 function selectTeam(id) {
@@ -714,11 +778,15 @@ function mezclarMatches() {
   if (torneoType.value === 4 && manualMode.value && (pendingMatches.value || []).length > 1) {
     shuffleArray(pendingMatches.value)
     Notify.create({ type: 'info', message: 'Partidos pendientes mezclados' })
+    // asegurar ronda para pendingMatches
+    setRondaForMatches(pendingMatches.value)
     return
   }
   if ((matches.value || []).length > 1) {
     shuffleArray(matches.value)
     Notify.create({ type: 'info', message: 'Partidos mezclados' })
+    // re-asignar rondas coherentes tras mezclar
+    setRondaForMatches(matches.value)
     return
   }
 }
@@ -733,7 +801,7 @@ function close() {
   desafiosLocked.value = false
 }
 
-function confirm() {
+async function confirm() {
   // Log de la lista de partidos generados para cualquier tipo de torneo
   try {
     console.log('Generated matches for torneo', props.torneoId, JSON.parse(JSON.stringify(matches.value)))
@@ -767,15 +835,19 @@ function confirm() {
       showIncompleteDialog.value = true
       return
     }
-    // todo OK -> emitir y llamar al store
+    // todo OK -> emitir y llamar al store. Emitimos generatedMatches primero, y solo cuando
+    // confirmarInicioTorneo se resuelva emitimos 'started' para que el padre (Borradores) pueda
+    // cerrar su diálogo, recargar la lista principal y abrir seguimiento de forma fiable.
     emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
-    // llamar al método del store para iniciar torneo y enviar partidos
-    confirmarInicioTorneo(props.torneoId, combined).then(() => {
+    try {
+      await confirmarInicioTorneo(props.torneoId, combined)
       Notify.create({ type: 'positive', message: 'Torneo iniciado' })
-    }).catch(err => {
+      // informar al padre que el torneo fue iniciado (persistido)
+      emit('started', { torneoId: props.torneoId })
+    } catch (err) {
       console.error('Error iniciando torneo', err)
       Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
-    })
+    }
     localVisible.value = false
     desafiosLocked.value = false
     return
@@ -789,14 +861,49 @@ function confirm() {
       showIncompleteDialog.value = true
       return
     }
-    // ok -> emitir y llamar al store
+    // ok -> emitir y llamar al store (tipo 2). Emitir 'started' al resolverse.
     emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
-    confirmarInicioTorneo(props.torneoId, combined).then(() => {
+    try {
+      await confirmarInicioTorneo(props.torneoId, combined)
       Notify.create({ type: 'positive', message: 'Torneo iniciado' })
-    }).catch(err => {
+      emit('started', { torneoId: props.torneoId })
+    } catch (err) {
       console.error('Error iniciando torneo', err)
       Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
+    }
+    localVisible.value = false
+    desafiosLocked.value = false
+    return
+  }
+
+  // Caso: tipo 1 -> verificar que todos los equipos participen (N equipos -> N/2 partidos esperados)
+  if (torneoType.value === 1) {
+    const totalTeams = (borradores.value || []).length || 0
+    const expectedMatches = Math.floor(totalTeams / 2)
+    const actualMatches = (combined || []).length
+    // determinar equipos que no aparecen en ningun partido
+    const appeared = new Set()
+    combined.forEach(m => {
+      if (m && m.id_equipo_local != null) appeared.add(m.id_equipo_local)
+      if (m && m.id_equipo_visitante != null) appeared.add(m.id_equipo_visitante)
     })
+    const missingTeams = (borradores.value || []).filter(t => !appeared.has(t.id)).map(t => ({ id: t.id, nombre: t.nombre || `#${t.id}` }))
+
+    if (actualMatches !== expectedMatches || missingTeams.length > 0) {
+      incompleteDialogInfo.value = { type: 1, count: missingTeams.length, teams: missingTeams, totalTeams, expectedMatches, actualMatches }
+      showIncompleteDialog.value = true
+      return
+    }
+    // ok -> emitir y llamar al store (tipo 1). Emitir 'started' al resolverse.
+    emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
+    try {
+      await confirmarInicioTorneo(props.torneoId, combined)
+      Notify.create({ type: 'positive', message: 'Torneo iniciado' })
+      emit('started', { torneoId: props.torneoId })
+    } catch (err) {
+      console.error('Error iniciando torneo', err)
+      Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
+    }
     localVisible.value = false
     desafiosLocked.value = false
     return
@@ -809,16 +916,18 @@ function confirm() {
   desafiosLocked.value = false
 }
 
-function proceedDespiteIncomplete() {
+async function proceedDespiteIncomplete() {
   // emitir y forzar inicio del torneo
   const combined = [].concat(matches.value || [], pendingMatches.value || [])
   emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
-  confirmarInicioTorneo(props.torneoId, combined).then(() => {
+  try {
+    await confirmarInicioTorneo(props.torneoId, combined)
     Notify.create({ type: 'positive', message: 'Torneo iniciado' })
-  }).catch(err => {
+    emit('started', { torneoId: props.torneoId })
+  } catch (err) {
     console.error('Error iniciando torneo', err)
     Notify.create({ type: 'negative', message: 'Error iniciando torneo' })
-  })
+  }
   showIncompleteDialog.value = false
   localVisible.value = false
   desafiosLocked.value = false
@@ -826,6 +935,12 @@ function proceedDespiteIncomplete() {
 
 function cancelIncompleteDialog() {
   showIncompleteDialog.value = false
+}
+
+function reSortFromDialog() {
+  // intentamos sortear aleatoriamente de nuevo y cerrar el diálogo
+  showIncompleteDialog.value = false
+  sortearAleatorio()
 }
 
 
@@ -839,6 +954,8 @@ function paresConImpares() {
     matches.value.push({ id_equipo_local: local?.id ?? null, id_equipo_visitante: visitante?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId })
   }
   Notify.create({ type: 'info', message: 'Generado: pares con impares' })
+  // asignar rondas coherentes
+  setRondaForMatches(matches.value)
 }
 
 async function sortearAleatorio() {
@@ -866,12 +983,23 @@ async function sortearAleatorio() {
       }
     }
 
-    // asignar fases/rondas secuencialmente si hay fases (fallback: no asignar)
+    // asignar fases/rondas agrupando partidos de a 2 por ronda. Si hay fases, mapear por ronda.
     if (Array.isArray(fases) && fases.length > 0) {
       newMatches.forEach((m, idx) => {
-        const phase = fases[idx] || fases[idx % fases.length]
-        m.ronda = `${phase?.nombre || 'Jornada'} ${Math.floor(idx / (teams.length - 1)) + 1}`
+        const roundIndex = Math.floor(idx / 2)
+        const phase = fases[roundIndex] || fases[roundIndex % fases.length]
+        const label = `${tipoLabel.value} ${roundIndex + 1}`
+        m.ronda = label
+        m._phaseName = label
         m.id_fase = phase?.id ?? null
+      })
+    } else {
+      // si no hay fases, igualmente asignar ronda agrupada de a 2
+      newMatches.forEach((m, idx) => {
+        const roundIndex = Math.floor(idx / 2)
+        const label = `${tipoLabel.value} ${roundIndex + 1}`
+        m.ronda = label
+        m._phaseName = label
       })
     }
 
@@ -1007,6 +1135,8 @@ async function sortearAleatorio() {
     const bb = b[i + 1]
     matches.value.push({ id_equipo_local: a?.id ?? null, id_equipo_visitante: bb?.id ?? null, id_fase: phaseId.value, id_torneo: props.torneoId })
   }
+  // asignar rondas tras sorteo aleatorio
+  setRondaForMatches(matches.value)
   Notify.create({ type: 'positive', message: 'Equipos sorteados aleatoriamente' })
 }
 

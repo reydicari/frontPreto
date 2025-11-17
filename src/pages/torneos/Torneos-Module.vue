@@ -494,7 +494,13 @@ const showStartConfirm = ref(false)
 const startResponseMessage = ref(null)
 const showSeguimiento = ref(false)
 
-function openSeguimiento() {
+async function openSeguimiento() {
+  // recargar la lista principal antes de abrir seguimiento
+  try {
+    await loadTorneos()
+  } catch (e) {
+    console.warn('Error recargando torneos antes de abrir seguimiento', e)
+  }
   showSeguimiento.value = true
   showStartConfirm.value = false
 }
@@ -558,7 +564,7 @@ async function doStartTournament() {
   }
 }
 
-function openDetails(evtOrRow, maybeRow) {
+async function openDetails(evtOrRow, maybeRow) {
   // q-table @row-click puede pasar (evt, row) o solo (row).
   let item = null
 
@@ -580,6 +586,11 @@ function openDetails(evtOrRow, maybeRow) {
 
   // Sólo abrir el diálogo de seguimiento cuando el torneo tenga estado === 2.
   if (typeof item.estado !== 'undefined' && Number(item.estado) === 2) {
+    try {
+      await loadTorneos()
+    } catch (e) {
+      console.warn('Error recargando torneos antes de abrir seguimiento', e)
+    }
     showSeguimiento.value = true
     return
   }

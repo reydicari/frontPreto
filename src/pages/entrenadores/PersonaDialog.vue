@@ -97,8 +97,8 @@
 
                     <q-input v-model.number="localPersona.grupos_maximo" label="Máximo de grupos" type="number" outlined
                       dense class="col-md-6 col-6" />
-                    <q-select v-model="localPersona.id_nivel" :options="nivelOptions" option-label="label"
-                      option-value="value" label="Nivel" outlined dense class="col-md-6 col-6"
+                    <q-select v-model="localPersona.id_nivel" map-options emit-value :options="nivelOptions"
+                      option-label="label" option-value="value" label="Nivel" outlined dense class="col-md-6 col-6"
                       :rules="[val => !!val || 'Debe seleccionar un nivel']" />
                   </div>
                 </div>

@@ -98,7 +98,7 @@
 
   <!-- Componente externo que organiza partidos (abre cuando se inicia el torneo) -->
   <OrganizeMatchesDialog v-model="showOrganizeDialog" :torneoId="props.torneoId"
-    @generatedMatches="handleGeneratedMatches" />
+    @generatedMatches="handleGeneratedMatches" @started="handleOrganizeStarted" />
 
   <!-- Diálogo de seguimiento específico del torneo (lista de partidos) -->
   <SeguimientoTorneoDialog v-model="showSeguimiento" :torneo-id="props.torneoId" />
@@ -243,6 +243,19 @@ function onEnter(idx) {
 }
 
 function openStartFlow() {
+  // verificar que exista al menos un encargado asignado al torneo
+  try {
+    const encs = torneoData.value?.encargados || []
+    console.log('encargados: ', torneoData.value);
+
+    if (!Array.isArray(encs) || encs.length === 0) {
+      Notify.create({ type: 'negative', message: 'Asigne al menos un encargado al torneo antes de comenzar' })
+      return
+    }
+  } catch (e) {
+    // continuar con validaciones normales si hay problemas leyendo encargados
+    console.warn('No se pudo verificar encargados del torneo', e)
+  }
   // validar fecha_inicio: no permitir comenzar si fecha_inicio > hoy
   const fi = torneoData.value?.fecha_inicio
   if (fi) {
@@ -286,9 +299,14 @@ function handleGeneratedMatches(payload) {
   emit('generatedMatches', payload)
   Notify.create({ type: 'positive', message: 'Partidos generados listos' })
   showOrganizeDialog.value = false
-  // notificar al padre que el torneo fue iniciado / partidos generados
-  // el padre se encargará de cerrar el diálogo de borradores y refrescar la lista
-  emit('started', { torneoId: props.torneoId })
+}
+
+function handleOrganizeStarted(evt) {
+  // El OrganizeMatchesDialog confirmó que el torneo fue iniciado en backend.
+  // Cerramos el diálogo de organización (por si aún está abierto) y reenviamos al padre.
+  showOrganizeDialog.value = false
+  Notify.create({ type: 'positive', message: 'Torneo iniciado — confirmación recibida' })
+  emit('started', evt)
 }
 function closeStartDialog() {
   showStartDialog.value = false

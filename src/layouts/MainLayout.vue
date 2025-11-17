@@ -212,7 +212,7 @@
                         <q-icon color="light" name="event_available" />
                       </q-item-label>
                     </q-item-section>
-                    <q-item-section>Entrenamientos</q-item-section>
+                    <q-item-section>Reporte de entrenamientos</q-item-section>
                   </q-item>
                   <q-item clickable v-if="tienePermiso(15)" v-ripple @click="navegar('reporteTorneos')">
                     <q-item-section avatar>
@@ -220,7 +220,7 @@
                         <q-icon color="light" name="emoji_events" />
                       </q-item-label>
                     </q-item-section>
-                    <q-item-section>Torneos</q-item-section>
+                    <q-item-section> Reporte de Torneos</q-item-section>
                   </q-item>
 
                   <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('reporteGastos')">
@@ -229,7 +229,31 @@
                         <q-icon color="light" name="location_on" />
                       </q-item-label>
                     </q-item-section>
-                    <q-item-section>Gastos</q-item-section>
+                    <q-item-section>Reporte de Gastos</q-item-section>
+                  </q-item>
+                  <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('reporteGastos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="location_on" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Reporte de Inscripciones</q-item-section>
+                  </q-item>
+                  <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('reporteGastos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="location_on" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Reporte de Miembros</q-item-section>
+                  </q-item>
+                  <q-item clickable v-if="tienePermiso(14)" v-ripple @click="navegar('reporteGastos')">
+                    <q-item-section avatar>
+                      <q-item-label class="secondary_item">
+                        <q-icon color="light" name="location_on" />
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section>Reporte de Gastos</q-item-section>
                   </q-item>
                 </q-list>
               </q-expansion-item>
