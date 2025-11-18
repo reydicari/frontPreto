@@ -244,7 +244,9 @@ import { Notify } from 'quasar'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
-  torneoId: { type: [Number, String], required: true }
+  torneoId: { type: [Number, String], required: true },
+  // Equipos iniciales opcionales: [{ id, nombre }, ...]
+  initialTeams: { type: Array, required: false }
 });
 const emit = defineEmits(['update:modelValue', 'generatedMatches', 'started'])
 
@@ -316,9 +318,13 @@ async function prepareOrganization() {
     const tor = t || null
     // etiqueta para las rondas: usar el nombre del tipo de torneo si está disponible
     tipoLabel.value = (tor && tor.tipo_torneo && tor.tipo_torneo.nombre) ? tor.tipo_torneo.nombre : 'Jornada'
-    // cargar borradores
-    const borr = await listarBorradores(props.torneoId).catch(() => [])
-    borradores.value = Array.isArray(borr) ? borr : (borr?.data || [])
+    // cargar borradores. Si se pasaron equipos iniciales, úsalos como borradores
+    if (props.initialTeams && Array.isArray(props.initialTeams) && props.initialTeams.length > 0) {
+      borradores.value = props.initialTeams.map(t => ({ id: t.id, nombre: t.nombre || t.nombre_corto || '' }))
+    } else {
+      const borr = await listarBorradores(props.torneoId).catch(() => [])
+      borradores.value = Array.isArray(borr) ? borr : (borr?.data || [])
+    }
 
     // guardar tipo de torneo para condicionar la UI
     torneoType.value = tor?.id_tipo_torneo ?? null

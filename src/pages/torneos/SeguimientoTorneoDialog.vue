@@ -78,13 +78,15 @@
 
             <div class="partidos-list">
               <q-card v-for="p in filteredPartidos" :key="p.id || `${p.id_equipo_local}-${p.id_equipo_visitante}`"
-                class="partido-card" :class="{ 'finalizado': p.estado_partido === 'Finalizado' }">
+                class="partido-card"
+                :class="{ 'finalizado': p.estado_partido === 'Finalizado' || p.id_equipo_ganador || p.equipoGanador }">
                 <q-card-section class="partido-content">
                   <!-- Equipo local -->
                   <div class="equipo equipo-local" :class="{ winner: isWinner(p, 'local') }">
                     <div class="equipo-info">
                       <div class="equipo-nombre">{{ nameOf(p, 'local') }}</div>
                     </div>
+
                     <div class="marcador">
                       <template v-if="isEncargado">
                         <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'local')"
@@ -124,6 +126,7 @@
                     <div class="equipo-info">
                       <div class="equipo-nombre">{{ nameOf(p, 'visitante') }}</div>
                     </div>
+
                   </div>
 
                   <!-- Acciones -->
@@ -144,7 +147,12 @@
             </div>
 
             <div class="advance-center q-mt-md" v-if="enMarchaCount === 0 && partidos.length > 0">
-              <q-btn class="advance-btn" icon="skip_next" @click="avanzarFase">Avanzar fase</q-btn>
+              <template v-if="displayTorneo?.id_tipo_torneo === 1">
+                <q-btn class="advance-btn" icon="skip_next" @click="openOrganizeWithWinners">Avanzar fase</q-btn>
+              </template>
+              <template v-else>
+                <q-btn class="advance-btn" flat color="grey-6" disable icon="flag" label="Torneo finalizado" />
+              </template>
             </div>
           </div>
         </div>
@@ -154,12 +162,16 @@
         <q-btn flat label="Cerrar" color="grey-7" @click="close" />
       </q-card-actions>
     </q-card>
+    <!-- Organize dialog embebido: se abre con los ganadores cuando corresponde -->
+    <OrganizeMatchesDialog :modelValue="organizeVisible" @update:modelValue="val => organizeVisible = val"
+      :torneoId="displayTorneo?.id || props.torneoId" :initialTeams="organizeTeams" />
   </q-dialog>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { listarPartidos } from 'src/stores/partido-store'
+import OrganizeMatchesDialog from 'src/pages/torneos/OrganizeMatchesDialog.vue'
+import { actualizarPartido, listarPartidos } from 'src/stores/partido-store'
 import { obtenerTorneo } from 'src/stores/torneo-store'
 import { useRouter } from 'vue-router'
 import { Notify } from 'quasar'
@@ -169,7 +181,7 @@ const props = defineProps({
   torneoId: { type: [Number, String], required: false },
   torneo: { type: Object, required: false }
 })
-const emit = defineEmits(['update:modelValue', 'partido-updated'])
+const emit = defineEmits(['update:modelValue', 'partido-updated', 'open-organize'])
 
 const router = useRouter()
 const localVisible = ref(props.modelValue)
@@ -178,6 +190,8 @@ const loading = ref(false)
 const filterMode = ref('en_marcha')
 const localTorneo = ref(props.torneo || null)
 const displayTorneo = ref(localTorneo.value)
+const organizeVisible = ref(false)
+const organizeTeams = ref([])
 
 const filteredPartidos = computed(() => {
   if (!partidos.value) return []
@@ -255,6 +269,17 @@ async function loadPartidos(id) {
   try {
     const res = await listarPartidos(id)
     partidos.value = Array.isArray(res) ? res : (res?.data || [])
+    // Normalizar partidos: si vienen con un ganador ya asignado, marcar como Finalizado
+    partidos.value = (partidos.value || []).map(p => {
+      // defensivo: normalizar estado y tipos
+      if ((p.id_equipo_ganador || p.equipoGanador) && p.estado_partido !== 'Finalizado') {
+        p.estado_partido = 'Finalizado'
+      }
+      // asegurar campos de goles como números para evitar comparaciones erróneas
+      p.goles_local = Number(p.goles_local || p.golesLocal || 0)
+      p.goles_visitante = Number(p.goles_visitante || p.golesVisitante || 0)
+      return p
+    })
   } catch (err) {
     console.error('Error al listar partidos', err)
     Notify.create({ type: 'negative', message: 'No se pudieron cargar los partidos' })
@@ -264,7 +289,7 @@ async function loadPartidos(id) {
   }
 }
 
-function finishMatch(p) {
+async function finishMatch(p) {
   // old signature: finishMatch(p)
   // new: may receive event as second arg, so allow either
   if (!p) return
@@ -296,7 +321,7 @@ function finishMatch(p) {
   p.id_equipo_ganador = (winnerObj && (winnerObj.id || winnerObj.id_equipo)) || winnerId
   p.estado_partido = 'Finalizado'
   console.log('Finalizando partido:', JSON.parse(JSON.stringify(p)))
-
+  await actualizarPartido(p)
   emit('partido-updated', JSON.parse(JSON.stringify(p)))
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
   // trigger confetti at the button location if we have the event
@@ -310,13 +335,7 @@ function finishMatch(p) {
   }
 }
 
-function avanzarFase() {
-  // emitimos para que el padre decida cómo avanzar la fase
-  const torneoId = displayTorneo.value?.id || props.torneoId
-  console.log('Solicitando avanzar fase para torneo', torneoId)
-  emit('avanzar-fase', { torneoId })
-  Notify.create({ type: 'info', message: 'Solicitud de avance de fase enviada' })
-}
+// avanzarFase ya no se usa — ahora `openOrganizeWithWinners` arma la lista de ganadores y emite `open-organize`.
 
 function triggerConfetti(originEl) {
   if (!originEl || typeof window === 'undefined') return
@@ -390,6 +409,39 @@ function triggerConfetti(originEl) {
     }
   }
   requestAnimationFrame(draw)
+}
+
+function getWinnerEquipo(p) {
+  if (!p) return null
+  const winnerId = p.id_equipo_ganador || (p.equipoGanador && (p.equipoGanador.id || p.equipoGanador.id_equipo)) || null
+  if (!winnerId) return null
+  const wObj = p.equipoGanador || p.equipo_ganador || null
+  if (wObj && (wObj.id || wObj.id_equipo)) {
+    return { id: wObj.id || wObj.id_equipo, nombre: wObj.nombre || wObj.nombre_corto || nameOf(p, (winnerId === p.id_equipo_local ? 'local' : 'visitante')) }
+  }
+  if (winnerId === p.id_equipo_local) return { id: winnerId, nombre: nameOf(p, 'local') }
+  if (winnerId === p.id_equipo_visitante) return { id: winnerId, nombre: nameOf(p, 'visitante') }
+  return { id: winnerId, nombre: nameOf(p, 'local') }
+}
+
+function openOrganizeWithWinners() {
+  const winnersMap = new Map()
+  for (const p of partidos.value || []) {
+    const w = getWinnerEquipo(p)
+    if (w && w.id) winnersMap.set(String(w.id), w)
+  }
+  const winners = Array.from(winnersMap.values())
+  if (!winners || winners.length < 2) {
+    Notify.create({ type: 'warning', message: 'Se requieren al menos 2 equipos ganadores para organizar la siguiente fase' })
+    return
+  }
+  const torneoId = displayTorneo.value?.id || props.torneoId
+  // abrir localmente el diálogo de organización con los ganadores
+  organizeTeams.value = winners
+  organizeVisible.value = true
+  // emitir también por compatibilidad
+  emit('open-organize', { torneoId, teams: winners })
+  Notify.create({ type: 'positive', message: `Abriendo organizador con ${winners.length} equipos ganadores` })
 }
 
 function close() {
@@ -741,6 +793,40 @@ function goToUbicacion(id) {
       font-size: 0.75rem;
       font-weight: 500;
       align-items: center;
+    }
+
+    .ganador-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ganador-equina {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #e1e5eb;
+      margin-left: 8px;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    .ganador-equina .horse-icon {
+      color: #f59e0b;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .partido-card.finalizado .equipo.winner .ganador-equina {
+      background: #d1e7dd;
+      border-color: #0f5132;
+    }
+
+    .partido-card.finalizado .equipo.winner .ganador-equina .horse-icon {
+      color: #0f5132;
     }
   }
 

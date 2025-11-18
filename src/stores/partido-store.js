@@ -15,3 +15,17 @@ export const listarPartidos = async (id_torneo) => {
     return error.response.data;
   }
 };
+export const actualizarPartido = async (partido) => {
+  try {
+    const response = await api.put(URL_PART + "/actualizar", partido);
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al actualizar el partido",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};
