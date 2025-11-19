@@ -29,3 +29,25 @@ export const actualizarPartido = async (partido) => {
     return error.response.data;
   }
 };
+export const agregarEncargadoTorneo = async (encargado) => {
+  try {
+    const response = await api.post(
+      URL_PART + "/agregarEncargadoTorneo",
+      encargado,
+    );
+    Notify.create({
+      type: "info",
+      message: "Encargado agregado con éxito",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al agregar encargado al torneo",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};

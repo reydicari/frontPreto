@@ -167,7 +167,7 @@ function submit() {
     fecha_fin: form.fecha_fin,
     id_ubicacion: form.id_ubicacion,
     id_nivel: form.id_nivel,
-    estado: 1,
+    estado: props.initial ? props.initial.estado : 1,
     id_tipo_torneo: form.id_tipo,
     tipo_torneo: tipos.value.find(t => t.id === form.id_tipo) || { id: form.id_tipo || Date.now(), nombre: form.tipo_nombre || 'Desconocido', fases: props.initial?.tipo_torneo?.fases || [] },
     ubicacion: ubicaciones.value.find(u => u.id === form.id_ubicacion) || { id: form.id_ubicacion || Date.now(), nombre: form.ubicacion_nombre }
