@@ -14,7 +14,7 @@
         </div>
         <div v-else>
           <q-select dense multiple use-chips v-model="selectedIds" :options="personOptions" option-value="value"
-            option-label="label" label="Entrenadores" hint="Escriba para filtrar" clearable map-options emit-value />
+            option-label="label" label="Entrenadores" hint="Escriba para filtrar" map-options emit-value />
 
           <div class="q-mt-md text-caption">Seleccionados: {{ selectedIds.length }}</div>
         </div>

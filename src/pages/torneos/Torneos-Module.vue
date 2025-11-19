@@ -57,7 +57,8 @@
           <template v-slot:body-cell-nombre="props">
             <q-td :props="props">
               <div class="row items-center">
-                <q-badge :color="badgeColor(props.row.tipo_torneo?.nombre || 'Desconocido')" class="q-mr-sm" outline>
+                <q-badge :color="badgeColor(props.row.tipo_torneo?.nombre || 'Desconocido')" class="q-mr-sm col-label"
+                  outline>
                   {{ props.row.tipo_torneo?.nombre || '—' }}
                 </q-badge>
                 <div>
@@ -70,7 +71,7 @@
           <template v-slot:body-cell-estado="props">
             <q-td :props="props">
               <div class="row items-center">
-                <q-badge :color="badgeColorEstado(props.row, estadoFromDates(props.row))" class="q-mr-sm">
+                <q-badge :color="badgeColorEstado(props.row, estadoFromDates(props.row))" class="q-mr-sm col-label">
                   <template v-if="isSpecialGolden(props.row, estadoFromDates(props.row))">
                     <q-icon name="star" size="14px" class="q-mr-xs" />
                   </template>
@@ -84,7 +85,7 @@
             <q-td :props="props">
               <div>
                 <!-- Botón compacto para ubicación: visible pero no grande -->
-                <q-btn size="sm" dense rounded outline color="indigo" class="q-ml-sm"
+                <q-btn size="sm" dense rounded outline color="indigo" class="q-ml-sm col-label-btn"
                   @click.stop="goToUbicacion(props.row.ubicacion?.id)" :label="props.row.ubicacion?.nombre || '—'"
                   title="Ver ubicación" />
                 <q-tooltip anchor="top middle" self="bottom middle">Ver ubicación</q-tooltip>
@@ -112,7 +113,8 @@
 
           <template v-slot:body-cell-acciones="props">
             <q-td :props="props">
-              <q-btn dense flat icon="edit" color="secondary" @click.stop="onEdit(props.row)" title="Editar" />
+              <q-btn v-if="props.row.estado != 2" dense flat icon="edit" color="secondary"
+                @click.stop="onEdit(props.row)" title="Editar" />
               <q-btn v-if="props.row.estado != 0" dense flat icon="pause_circle" color="negative"
                 @click.stop="onDelete(props.row)" title="Suspender" />
               <q-btn dense flat icon="groups" color="teal" @click.stop="openBorradores(props.row)" title="Borradores" />
@@ -654,5 +656,28 @@ function teamName(p, side) {
 /* Centrar los encabezados de la q-table dentro de este componente */
 ::v-deep .q-table thead th {
   text-align: center;
+}
+
+/* Fixed-width label for consistency across rows */
+.col-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  max-width: 100px;
+  width: 100px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-label-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 130px;
+  max-width: 130px;
+  width: 130px;
 }
 </style>

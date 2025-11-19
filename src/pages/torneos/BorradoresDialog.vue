@@ -72,6 +72,7 @@
         <q-separator class="q-mt-md" />
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
+          <q-btn flat label="Asignar encargados" color="secondary" @click="showAssignDialog = true" />
           <q-btn flat label="Cancelar" color="secondary" @click="onCancel" />
           <q-btn v-if="torneoData && Number(torneoData.estado) === 2" flat label="Seguir torneo" color="primary"
             @click="showSeguimiento = true" />
@@ -103,6 +104,9 @@
   <!-- Diálogo de seguimiento específico del torneo (lista de partidos) -->
   <SeguimientoTorneoDialog v-model="showSeguimiento" :torneo-id="props.torneoId" />
 
+  <AsignarEncargadoDialog v-model="showAssignDialog" :torneo="torneoData" :torneo-id="props.torneoId"
+    @assigned="handleAssignedEncargados" />
+
   <!-- Diálogo para confirmar/comenzar el torneo y mostrar resultado -->
   <q-dialog v-model="showStartDialog">
     <q-card style="min-width: 320px;">
@@ -125,6 +129,8 @@ import { listarBorradores, listarEquipos } from 'src/stores/borrador-store'
 import { obtenerTorneo, comenzarTorneo } from 'src/stores/torneo-store'
 import OrganizeMatchesDialog from './OrganizeMatchesDialog.vue'
 import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue'
+import AsignarEncargadoDialog from './AsignarEncargadoDialog.vue'
+import { agregarEncargadoTorneo } from 'src/stores/partido-store'
 import { Notify } from 'quasar'
 
 // helper to compute totals and limits
@@ -147,6 +153,8 @@ const startResponseMessage = ref('')
 const showDateWarning = ref(false)
 const showOrganizeDialog = ref(false)
 const showSeguimiento = ref(false)
+const showAssignDialog = ref(false)
+const assignedEncargados = ref(null)
 
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend
@@ -308,6 +316,11 @@ function handleOrganizeStarted(evt) {
   Notify.create({ type: 'positive', message: 'Torneo iniciado — confirmación recibida' })
   emit('started', evt)
 }
+// handler when AsignarEncargadoDialog emits assigned
+function handleAssignedEncargados(payload) {
+  assignedEncargados.value = Array.isArray(payload) ? payload : []
+  Notify.create({ type: 'info', message: `Seleccionados ${assignedEncargados.value.length} encargado(s)` })
+}
 function closeStartDialog() {
   showStartDialog.value = false
   startResponseMessage.value = ''
@@ -395,7 +408,7 @@ async function registerNew(idx) {
   }
 }
 
-function onSave() {
+async function onSave() {
   // tomar los nuevos que el usuario "registró" explícitamente (nuevosCollected)
   const nuevos = nuevosCollected.value.slice()
   const existentesCopy = existente.value.slice()
@@ -412,11 +425,31 @@ function onSave() {
     return
   }
 
+  // emitir el payload principal (guardar borradores/equipos)
   emit('save', { torneoId: props.torneoId, nuevos, existentes: existentesCopy, desechados: desechadosCopy })
   console.log('DESPUES DE EMIT');
   nuevosCollected.value = []
   existente.value = []
   desechados.value = []
+
+  // Si se asignaron encargados desde el diálogo y hay cambios, llamar al store
+  try {
+    if (Array.isArray(assignedEncargados.value)) {
+      // comparar con los encargados actuales del torneo (torneoData.value.encargados puede tener estructura diversa)
+      const current = (torneoData.value && Array.isArray(torneoData.value.encargados)) ? torneoData.value.encargados.map(e => (e.persona && e.persona.id) || e.id_persona || e.id) : []
+      const assignedIds = assignedEncargados.value.map(a => a.id_persona || a.id_persona)
+      const same = assignedIds.length === current.length && assignedIds.every(id => current.includes(id))
+      if (!same && props.torneoId) {
+        // construir payload [{id_torneo,id_persona}]
+        const payload = assignedEncargados.value.map(a => ({ id_torneo: props.torneoId, id_persona: a.id_persona || a.id }))
+        if (payload.length) {
+          await agregarEncargadoTorneo(payload)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error agregando encargados:', e)
+  }
 }
 
 function onCancel() {
