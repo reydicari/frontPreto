@@ -133,7 +133,7 @@
                   <div class="partido-acciones">
                     <template v-if="isEncargado">
                       <q-btn color="primary" unelevated v-if="p.id_equipo_ganador == null" label="Finalizar"
-                        @click="finishMatch(p, $event)" />
+                        @click="finishMatch(p, $event.currentTarget)" />
                     </template>
                   </div>
                 </q-card-section>
@@ -297,7 +297,7 @@ async function finishMatch(p) {
     Notify.create({ type: 'warning', message: 'No tienes permiso para finalizar este partido' })
     return
   }
-  const maybeEvent = arguments[1]
+  // el segundo argumento puede ser un event o un elemento DOM; lo procesamos abajo
   const golesLocal = Number(p.goles_local || p.golesLocal || 0)
   const golesVisit = Number(p.goles_visitante || p.golesVisitante || 0)
   if (golesLocal === golesVisit) {
@@ -324,12 +324,10 @@ async function finishMatch(p) {
   await actualizarPartido(p)
   emit('partido-updated', JSON.parse(JSON.stringify(p)))
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
-  // trigger confetti at the button location if we have the event
+  // trigger confetti at the button location (try to use a DOM element passed), fallback to center
   try {
-    if (maybeEvent) {
-      const btn = maybeEvent.currentTarget || maybeEvent.target
-      if (btn) triggerConfetti(btn)
-    }
+    const maybeOrigin = arguments[1]
+    triggerConfetti(maybeOrigin)
   } catch (err) {
     console.warn('Confetti failed', err)
   }
@@ -337,11 +335,42 @@ async function finishMatch(p) {
 
 // avanzarFase ya no se usa — ahora `openOrganizeWithWinners` arma la lista de ganadores y emite `open-organize`.
 
-function triggerConfetti(originEl) {
-  if (!originEl || typeof window === 'undefined') return
-  const rect = originEl.getBoundingClientRect()
-  const originX = rect.left + rect.width / 2
-  const originY = rect.top + rect.height / 2
+function triggerConfetti(originArg) {
+  if (typeof window === 'undefined') return
+  // originArg may be: an Element, an Event, or falsy (use center)
+  let originX = window.innerWidth / 2
+  let originY = window.innerHeight / 2
+  try {
+    if (!originArg) {
+      // keep center
+    } else if (originArg instanceof Element) {
+      const rect = originArg.getBoundingClientRect()
+      originX = rect.left + rect.width / 2
+      originY = rect.top + rect.height / 2
+    } else if (originArg instanceof Event) {
+      originX = originArg.clientX || (window.innerWidth / 2)
+      originY = originArg.clientY || (window.innerHeight / 2)
+    } else if (originArg && (originArg.currentTarget || originArg.target)) {
+      const el = originArg.currentTarget || originArg.target
+      if (el && el.getBoundingClientRect) {
+        const rect = el.getBoundingClientRect()
+        originX = rect.left + rect.width / 2
+        originY = rect.top + rect.height / 2
+      } else if (originArg.clientX || originArg.clientY) {
+        originX = originArg.clientX || originX
+        originY = originArg.clientY || originY
+      }
+    } else if (originArg && originArg.$el && originArg.$el.getBoundingClientRect) {
+      // Vue component proxy
+      const rect = originArg.$el.getBoundingClientRect()
+      originX = rect.left + rect.width / 2
+      originY = rect.top + rect.height / 2
+    }
+  } catch {
+    // fallback to center
+    originX = window.innerWidth / 2
+    originY = window.innerHeight / 2
+  }
 
   const canvas = document.createElement('canvas')
   canvas.style.position = 'fixed'
@@ -349,7 +378,7 @@ function triggerConfetti(originEl) {
   canvas.style.top = '0'
   canvas.style.pointerEvents = 'none'
   // ensure confetti is rendered above the dialog overlay
-  canvas.style.zIndex = '999999'
+  canvas.style.zIndex = '2147483647'
   // support high-DPI displays
   const dpr = window.devicePixelRatio || 1
   canvas.width = Math.max(1, Math.floor(window.innerWidth * dpr))
@@ -360,21 +389,39 @@ function triggerConfetti(originEl) {
 
   const ctx = canvas.getContext('2d')
   if (dpr !== 1) ctx.scale(dpr, dpr)
-  const colors = ['#ff6b6b', '#ffd93d', '#6be4ff', '#9b8cff', '#6bff9b']
+  const colors = ['#ff6b6b', '#ffd93d', '#6be4ff', '#9b8cff', '#6bff9b', '#ff9f1c', '#7effa2']
   const particles = []
-  const count = 40
+  const count = 80
+  const secondCount = 60
+  const gravity = 0.12
 
+  // primary burst (bigger)
   for (let i = 0; i < count; i++) {
     particles.push({
       x: originX,
       y: originY,
-      vx: (Math.random() - 0.5) * 8,
-      vy: (Math.random() - 0.8) * 10 - 2,
-      size: 6 + Math.random() * 6,
-      life: 60 + Math.random() * 40,
+      vx: (Math.random() - 0.5) * 12,
+      vy: (Math.random() - 0.8) * 14 - 3,
+      size: 6 + Math.random() * 8,
+      life: 80 + Math.random() * 60,
       color: colors[Math.floor(Math.random() * colors.length)],
       rotation: Math.random() * Math.PI * 2,
-      vr: (Math.random() - 0.5) * 0.3
+      vr: (Math.random() - 0.5) * 0.4
+    })
+  }
+
+  // secondary softer burst
+  for (let i = 0; i < secondCount; i++) {
+    particles.push({
+      x: originX + (Math.random() - 0.5) * 30,
+      y: originY + (Math.random() - 0.5) * 30,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.6) * 8 - 1,
+      size: 4 + Math.random() * 6,
+      life: 100 + Math.random() * 80,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.35
     })
   }
 
@@ -384,12 +431,12 @@ function triggerConfetti(originEl) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i]
-      p.vy += 0.3 // gravity
+      p.vy += gravity
       p.x += p.vx
       p.y += p.vy
       p.rotation += p.vr
       p.life--
-      const alpha = Math.max(0, p.life / 100)
+      const alpha = Math.max(0, p.life / 140)
       ctx.save()
       ctx.globalAlpha = alpha
       ctx.translate(p.x, p.y)
@@ -397,15 +444,15 @@ function triggerConfetti(originEl) {
       ctx.fillStyle = p.color
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6)
       ctx.restore()
-      if (p.life <= 0 || p.y > canvas.height + 50) particles.splice(i, 1)
+      if (p.life <= 0 || p.y > window.innerHeight + 80) particles.splice(i, 1)
     }
-    if (particles.length > 0 && frame < 300) {
+    if (particles.length > 0 && frame < 600) {
       requestAnimationFrame(draw)
     } else {
       // cleanup
       setTimeout(() => {
         if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
-      }, 300)
+      }, 600)
     }
   }
   requestAnimationFrame(draw)
