@@ -27,7 +27,7 @@
               <div class="meta-item">
                 <q-icon name="event" size="16px" class="q-mr-xs" />
                 <span>{{ formatDateShort(displayTorneo?.fecha_inicio) }} → {{ formatDateShort(displayTorneo?.fecha_fin)
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -304,6 +304,22 @@ async function finishMatch(p) {
     Notify.create({ type: 'warning', message: 'No se puede finalizar un partido en empate. el partido debe volver a jugarse.' })
     return
   }
+  // Capturar la posición del origen (botón) antes de mutar el partido/esperar
+  let savedOrigin = null
+  try {
+    const maybeOrigin = arguments[1]
+    let el = null
+    if (maybeOrigin instanceof Element) el = maybeOrigin
+    else if (maybeOrigin && (maybeOrigin.currentTarget || maybeOrigin.target)) el = maybeOrigin.currentTarget || maybeOrigin.target
+    else if (maybeOrigin && maybeOrigin.$el) el = maybeOrigin.$el
+    if (el && el.getBoundingClientRect) {
+      const r = el.getBoundingClientRect()
+      savedOrigin = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }
+  } catch (e) {
+    // ignore errors obtaining bounding rect
+    void e
+  }
   let winnerId = null
   let winnerObj = null
   // determine team ids reliably
@@ -326,8 +342,7 @@ async function finishMatch(p) {
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
   // trigger confetti at the button location (try to use a DOM element passed), fallback to center
   try {
-    const maybeOrigin = arguments[1]
-    triggerConfetti(maybeOrigin)
+    triggerConfetti(savedOrigin)
   } catch (err) {
     console.warn('Confetti failed', err)
   }
@@ -341,6 +356,13 @@ function triggerConfetti(originArg) {
   let originX = window.innerWidth / 2
   let originY = window.innerHeight / 2
   try {
+    // If caller passed explicit coordinates, use them (saved before DOM changes)
+    if (originArg && typeof originArg.x === 'number' && typeof originArg.y === 'number') {
+      originX = originArg.x
+      originY = originArg.y
+      // skip other checks
+      originArg = null
+    }
     if (!originArg) {
       // keep center
     } else if (originArg instanceof Element) {
