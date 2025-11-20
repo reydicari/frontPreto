@@ -105,7 +105,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                        }})</template>
+                          }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
@@ -180,7 +180,7 @@
 
       <q-card-actions align="right">
         <q-btn flat label="Cerrar" color="secondary" @click="close" />
-        <q-btn color="primary" label="Confirmar generación" @click="confirm" :disable="matches.length === 0" />
+        <q-btn color="primary" label="Confirmar partidos" @click="confirm" :disable="matches.length === 0" />
       </q-card-actions>
     </q-card>
 
@@ -844,8 +844,10 @@ async function confirm() {
     // todo OK -> emitir y llamar al store. Emitimos generatedMatches primero, y solo cuando
     // confirmarInicioTorneo se resuelva emitimos 'started' para que el padre (Borradores) pueda
     // cerrar su diálogo, recargar la lista principal y abrir seguimiento de forma fiable.
+
     emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
     try {
+
       await confirmarInicioTorneo(props.torneoId, combined)
       Notify.create({ type: 'positive', message: 'Torneo iniciado' })
       // informar al padre que el torneo fue iniciado (persistido)
@@ -903,9 +905,13 @@ async function confirm() {
     // ok -> emitir y llamar al store (tipo 1). Emitir 'started' al resolverse.
     emit('generatedMatches', { torneoId: props.torneoId, matches: combined })
     try {
+      console.log('despues de generated matchesssssssssssssssssssssss dentro de rty');
+
       await confirmarInicioTorneo(props.torneoId, combined)
       Notify.create({ type: 'positive', message: 'Torneo iniciado' })
       emit('started', { torneoId: props.torneoId })
+      console.log('despues de started');
+
     } catch (err) {
       console.error('Error iniciando torneo', err)
       Notify.create({ type: 'negative', message: 'Error iniciando torneo' })

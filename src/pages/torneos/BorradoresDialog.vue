@@ -44,6 +44,9 @@
             <div class="text-subtitle1 q-mb-sm">Agregar nuevos equipos</div>
             <div class="text-caption q-mb-sm">Complete el nombre del equipo. Cuando termine uno se genera
               automáticamente otro campo vacío.</div>
+            <div v-if="torneoData && Number(torneoData.estado) === 2" class="q-mt-sm text-negative">
+              No se pueden agregar equipos: el torneo ya fue iniciado.
+            </div>
           </div>
 
           <div v-for="(card, idx) in newCards" :key="card._tempId" class="team-grid-item">
@@ -51,11 +54,12 @@
               <div class="row items-center">
                 <div class="col">
                   <q-input dense v-model="card.nombre" placeholder="Nombre del equipo" @input="onNewInput(idx)"
-                    @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)" :readonly="card.registered" />
+                    @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)"
+                    :readonly="card.registered || (torneoData && Number(torneoData.estado) === 2)" />
                 </div>
                 <div class="row items-center" style="gap:8px;">
-                  <q-btn v-if="!card.registered" dense round flat color="positive" icon="cloud_upload"
-                    @click="registerNew(idx)" title="Registrar equipo" />
+                  <q-btn v-if="!card.registered && !(torneoData && Number(torneoData.estado) === 2)" dense round flat
+                    color="positive" icon="cloud_upload" @click="registerNew(idx)" title="Registrar equipo" />
                   <!-- permitir quitar cualquier tarjeta, registrada o no -->
                   <q-btn dense round flat color="negative" icon="close" @click="removeNew(idx)" title="Quitar" />
                   <div v-if="card.registered" class="row items-center" style="gap:8px;">
@@ -218,6 +222,8 @@ function removeOriginal(item) {
 function onNewInput(idx) {
   const card = newCards.value[idx]
   if (!card) return
+  // Si el torneo ya fue iniciado, no permitir crear nuevas tarjetas
+  if (torneoData.value && Number(torneoData.value.estado) === 2) return
   // si estamos en la última tarjeta y se escribió algo, agregar otra vacía
   if (idx === newCards.value.length - 1 && card.nombre && card.nombre.trim() !== '') {
     // comprobar si al añadir otra tarjeta se supera el máximo final (16)
@@ -313,7 +319,6 @@ function handleOrganizeStarted(evt) {
   // El OrganizeMatchesDialog confirmó que el torneo fue iniciado en backend.
   // Cerramos el diálogo de organización (por si aún está abierto) y reenviamos al padre.
   showOrganizeDialog.value = false
-  Notify.create({ type: 'positive', message: 'Torneo iniciado — confirmación recibida' })
   emit('started', evt)
 }
 // handler when AsignarEncargadoDialog emits assigned
@@ -349,6 +354,11 @@ function removeNew(idx) {
 }
 
 async function registerNew(idx) {
+  // Si el torneo ya fue iniciado, impedir registro de nuevos equipos
+  if (torneoData.value && Number(torneoData.value.estado) === 2) {
+    Notify.create({ type: 'negative', message: 'No se pueden agregar equipos: el torneo ya fue iniciado' })
+    return
+  }
   const card = newCards.value[idx]
   if (!card) return
   if (!card.nombre || !card.nombre.trim()) {

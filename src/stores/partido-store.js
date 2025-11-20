@@ -51,3 +51,22 @@ export const agregarEncargadoTorneo = async (encargado) => {
     return error.response.data;
   }
 };
+export const reprogramarPartido = async (partido) => {
+  try {
+    const response = await api.post(URL_PART + "/reprogramar", partido);
+    Notify.create({
+      type: "info",
+      message: "Reprogramado con éxito",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al reprogramar el partido",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};
