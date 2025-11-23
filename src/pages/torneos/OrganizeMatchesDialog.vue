@@ -107,7 +107,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                        }})</template>
+                          }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
@@ -563,7 +563,10 @@ function setRondaForMatches(arr) {
     if (m.ronda) continue
     if (torneoType.value === 2) {
       const roundIndex = Math.floor(i / 2) + 1
-      const label = `${tipoLabel.value} ${roundIndex}`
+      // para tipo 2 recortamos el último caracter de la etiqueta (p.e. 'Jornadas' -> 'Jornada')
+      const baseLabelRaw = tipoLabel.value || ''
+      const baseLabel = baseLabelRaw && baseLabelRaw.length > 1 ? baseLabelRaw.slice(0, -1) : baseLabelRaw
+      const label = `${baseLabel} ${roundIndex}`
       m.ronda = label
       m._phaseName = label
     } else if (torneoType.value === 1) {
@@ -989,31 +992,55 @@ async function sortearAleatorio() {
       const j = Math.floor(Math.random() * (i + 1))
       const tmp = teams[i]; teams[i] = teams[j]; teams[j] = tmp
     }
+    // Construir opponentsMap: para cada equipo local, una lista aleatoria de visitantes (todos los demás)
+    const opponentsMap = new Map()
+    teams.forEach(t => {
+      const others = teams.filter(o => o.id !== t.id).map(o => o.id)
+      // shuffle opponents list
+      for (let a = others.length - 1; a > 0; a--) {
+        const b = Math.floor(Math.random() * (a + 1))
+        const tmp = others[a]; others[a] = others[b]; others[b] = tmp
+      }
+      opponentsMap.set(t.id, others)
+    })
 
+    // Interleave matches by columnas para que las apariciones de un mismo local queden espaciadas
+    const locals = teams.map(t => t.id)
+    // mezclar orden de locales para evitar siempre la misma secuencia
+    for (let a = locals.length - 1; a > 0; a--) {
+      const b = Math.floor(Math.random() * (a + 1))
+      const tmp = locals[a]; locals[a] = locals[b]; locals[b] = tmp
+    }
+
+    const maxLen = teams.length - 1
     const newMatches = []
-    // generar pares ordenados (i -> j) para i != j
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = 0; j < teams.length; j++) {
-        if (teams[i].id === teams[j].id) continue
-        newMatches.push({ id_equipo_local: teams[i].id, id_equipo_visitante: teams[j].id, id_fase: null, id_torneo: props.torneoId })
+    for (let k = 0; k < maxLen; k++) {
+      for (let li = 0; li < locals.length; li++) {
+        const localId = locals[li]
+        const opps = opponentsMap.get(localId) || []
+        const visit = opps[k]
+        if (visit != null) {
+          newMatches.push({ id_equipo_local: localId, id_equipo_visitante: visit, id_fase: null, id_torneo: props.torneoId })
+        }
       }
     }
 
-    // asignar fases/rondas agrupando partidos de a 2 por ronda. Si hay fases, mapear por ronda.
+    // asignar fases/rondas agrupando partidos de a 2 por ronda. Usar label base recortado para tipo 2
+    const baseLabelRaw = tipoLabel.value || ''
+    const baseLabel = baseLabelRaw && baseLabelRaw.length > 1 ? baseLabelRaw.slice(0, -1) : baseLabelRaw
     if (Array.isArray(fases) && fases.length > 0) {
       newMatches.forEach((m, idx) => {
         const roundIndex = Math.floor(idx / 2)
         const phase = fases[roundIndex] || fases[roundIndex % fases.length]
-        const label = `${tipoLabel.value} ${roundIndex + 1}`
+        const label = `${baseLabel} ${roundIndex + 1}`
         m.ronda = label
         m._phaseName = label
         m.id_fase = phase?.id ?? null
       })
     } else {
-      // si no hay fases, igualmente asignar ronda agrupada de a 2
       newMatches.forEach((m, idx) => {
         const roundIndex = Math.floor(idx / 2)
-        const label = `${tipoLabel.value} ${roundIndex + 1}`
+        const label = `${baseLabel} ${roundIndex + 1}`
         m.ronda = label
         m._phaseName = label
       })

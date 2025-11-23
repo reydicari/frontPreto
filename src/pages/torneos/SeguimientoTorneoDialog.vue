@@ -277,7 +277,8 @@ import trophyImg from 'src/assets/trofeo.png'
 import useDrive from 'src/composables/useDrive'
 
 const { startPosicionesTour, attachToIcon } = useDrive()
-
+// attach drive help icon when component mounts
+onMounted(() => attachToIcon('.help-posiciones'))
 // onMounted(() => {
 //   attachToIcon() // O llamar startPosicionesTour() directamente después de que la tabla se renderice
 // })
@@ -308,8 +309,7 @@ const tieDialogVisible = ref(false)
 const tieDialogMatch = ref(null)
 const finalWinnerNameRef = ref(null)
 const finalConfettiFired = ref(false)
-// attach drive help icon when component mounts
-onMounted(() => attachToIcon('.help-posiciones'))
+
 const tieDialogTitle = computed(() => {
   const m = tieDialogMatch.value
   if (!m) return 'Reprogramar partido'
@@ -1232,26 +1232,89 @@ function appendOrIncrementReprogram(p, label) {
       border-collapse: collapse;
     }
 
+    /* Tabla de posiciones: estilo visual más claro y legible */
+    .standings-table {
+      width: 100%;
+      border-collapse: separate;
+      /* menos separación entre filas para reducir alturas */
+      border-spacing: 0 4px;
+      background: transparent;
+      margin-top: 6px;
+    }
+
     .standings-table th,
     .standings-table td {
+      /* reducir padding para filas más compactas */
       padding: 8px 10px;
-      border-bottom: 1px solid #e9ecef;
+      border-bottom: none;
       text-align: left;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+      vertical-align: middle;
     }
 
     .standings-table thead th {
       font-weight: 700;
-      color: #333;
-      background: #fafafa;
+      color: #263238;
+      background: linear-gradient(180deg, #ffffff, #fbfbfc);
+      border-bottom: 2px solid rgba(0, 0, 0, 0.04);
+      padding: 12px 14px;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
     }
 
-    .standings-table tbody tr:nth-child(odd) {
-      background: #ffffff;
+    /* Estilo de las filas como tarjetas ligeras */
+    .standings-table tbody tr {
+      background: linear-gradient(180deg, #ffffff, #fcfdff);
+      border: 1px solid #eef2f5;
+      box-shadow: 0 1px 4px rgba(19, 38, 57, 0.02);
+      border-radius: 6px;
+      display: table-row;
+      transition: box-shadow .12s ease, background .12s ease;
     }
 
+    /* Hover: no levantar demasiado, pero pintar fondo pastel púrpura */
+    .standings-table tbody tr:hover {
+      transform: none;
+      box-shadow: 0 4px 10px rgba(19, 38, 57, 0.05);
+      background: linear-gradient(90deg, rgba(230, 225, 255, 0.9), rgba(245, 240, 255, 0.95));
+    }
+
+    /* quitar fondos alternos, ya manejamos el estilo de fila */
+    .standings-table tbody tr:nth-child(odd),
     .standings-table tbody tr:nth-child(even) {
-      background: #fbfbfb;
+      background: transparent;
+    }
+
+    /* Equipo - columna 2: quitar estilo pesado, usar peso normal */
+    .standings-table td:nth-child(2) {
+      font-weight: 400;
+      color: inherit;
+      padding-left: 18px;
+      width: 100%;
+    }
+
+    /* Al hacer hover, el nombre del equipo toma un color suave para destacarlo */
+    .standings-table tbody tr:hover td:nth-child(2) {
+      color: #0b5563;
+      font-weight: 600;
+    }
+
+    /* Columna de puntos: derecha y destacada */
+    .standings-table td:nth-child(10),
+    .standings-table th.PTS {
+      text-align: right;
+      font-weight: 900;
+      color: #0f5132;
+      background: transparent;
+    }
+
+    /* eliminar medallas decorativas en la columna de posición para estilo más limpio */
+
+    /* Small tweak: make table cells behave like row-cells when using border-spacing */
+    .standings-table tbody td {
+      display: table-cell;
+      padding: 12px 14px;
     }
 
     .advance-center {

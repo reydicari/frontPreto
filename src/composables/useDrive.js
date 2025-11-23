@@ -50,7 +50,7 @@ export function useDrive() {
           popover: {
             title: "Tabla de Posiciones",
             description:
-              "Aquí se muestra la clasificación: cada victoria suma 3 puntos, empate 1 punto, derrota 0 puntos. La tabla resume PJ, victorias, empates, derrotas, goles, diferencia y puntos.",
+              "Aquí se muestra la clasificación: cada victoria suma 3 puntos, empate 1 punto, derrota 0 puntos. La tabla resume Partidos jugados, victorias, empates, derrotas, goles, diferencia y puntos.",
             side: "bottom",
             align: "start",
           },
