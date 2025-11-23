@@ -29,7 +29,7 @@
                   <q-icon name="event" size="16px" class="q-mr-xs" />
                   <span>{{ formatDateShort(displayTorneo?.fecha_inicio) }} → {{
                     formatDateShort(displayTorneo?.fecha_fin)
-                    }}</span>
+                  }}</span>
                 </div>
               </div>
 
@@ -75,12 +75,51 @@
                   <q-badge color="primary" rounded class="q-mr-sm">{{ filteredPartidos.length }} partido(s)</q-badge>
                   <q-tabs v-model="filterMode" dense class="tabs-switch">
                     <q-tab name="en_marcha" label="En marcha" />
+                    <q-tab v-if="displayTorneo?.id_tipo_torneo === 2" name="posiciones" label="Posiciones" />
                     <q-tab name="finalizados" label="Finalizados" />
                   </q-tabs>
                 </div>
               </div>
 
               <div class="partidos-list">
+                <template v-if="filterMode === 'posiciones'">
+                  <div class="posiciones-table q-mt-sm">
+                    <div class="posiciones-header row items-center q-mb-sm" style="justify-content:flex-end;">
+                      <q-icon name="help_outline" class="help-posiciones cursor-pointer" size="24px" color="primary"
+                        @click.stop="() => startPosicionesTour()" />
+                    </div>
+                    <table class="standings-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Equipo</th>
+                          <th class="PJ">PJ</th>
+                          <th class="G">G</th>
+                          <th class="E">E</th>
+                          <th class="P">P</th>
+                          <th class="GF">GF</th>
+                          <th class="GC">GC</th>
+                          <th class="DG">DG</th>
+                          <th class="PTS">PTS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(t, idx) in posiciones" :key="t.id">
+                          <td>{{ idx + 1 }}</td>
+                          <td>{{ t.nombre }}</td>
+                          <td>{{ t.PJ }}</td>
+                          <td>{{ t.W }}</td>
+                          <td>{{ t.E }}</td>
+                          <td>{{ t.L }}</td>
+                          <td>{{ t.GF }}</td>
+                          <td>{{ t.GC }}</td>
+                          <td>{{ t.DG }}</td>
+                          <td>{{ t.PTS }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </template>
                 <template v-if="filterMode === 'en_marcha' && enMarchaCount === 0 && finalWinner">
                   <q-card class="partido-card finalizado special-final-winner">
                     <q-card-section class="partido-content" style="justify-content:center; text-align:center;">
@@ -233,8 +272,15 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import trophyImg from 'src/assets/trofeo.png'
+import useDrive from 'src/composables/useDrive'
+
+const { startPosicionesTour, attachToIcon } = useDrive()
+
+// onMounted(() => {
+//   attachToIcon() // O llamar startPosicionesTour() directamente después de que la tabla se renderice
+// })
 import OrganizeMatchesDialog from 'src/pages/torneos/OrganizeMatchesDialog.vue'
 import MobileSeguimientoDialog from 'src/pages/torneos/MobileSeguimientoDialog.vue'
 import { actualizarPartido, listarPartidos, reprogramarPartido } from 'src/stores/partido-store'
@@ -262,6 +308,8 @@ const tieDialogVisible = ref(false)
 const tieDialogMatch = ref(null)
 const finalWinnerNameRef = ref(null)
 const finalConfettiFired = ref(false)
+// attach drive help icon when component mounts
+onMounted(() => attachToIcon('.help-posiciones'))
 const tieDialogTitle = computed(() => {
   const m = tieDialogMatch.value
   if (!m) return 'Reprogramar partido'
@@ -769,6 +817,80 @@ const finalWinner = computed(() => {
   return w ? { team: w, partido: p } : null
 })
 
+const posiciones = computed(() => {
+  // solo para torneos tipo 2
+  if (displayTorneo.value?.id_tipo_torneo !== 2) return []
+  const map = new Map()
+  const addTeam = (id, nombre) => {
+    const key = String(id || nombre || 'x_' + nombre)
+    if (!map.has(key)) {
+      map.set(key, {
+        id: id || key,
+        nombre: nombre || '—',
+        PJ: 0,
+        W: 0,
+        E: 0,
+        L: 0,
+        GF: 0,
+        GC: 0,
+        PTS: 0,
+      })
+    }
+    return map.get(key)
+  }
+
+  for (const p of partidos.value || []) {
+    if (!p) continue
+    // considerar solo partidos finalizados y no reprogramados
+    if (!p.finalizado) continue
+    const ronda = String(p.ronda || '').toLowerCase()
+    if (ronda.includes('reprogramado')) continue
+
+    const localId = p.id_equipo_local || (p.equipoLocal && (p.equipoLocal.id || p.equipoLocal.id_equipo)) || (p.equipo_local && p.equipo_local.id)
+    const visitId = p.id_equipo_visitante || (p.equipoVisitante && (p.equipoVisitante.id || p.equipoVisitante.id_equipo)) || (p.equipo_visitante && p.equipo_visitante.id)
+    const localName = p.equipoLocal?.nombre || p.equipo_local?.nombre || nameOf(p, 'local')
+    const visitName = p.equipoVisitante?.nombre || p.equipo_visitante?.nombre || nameOf(p, 'visitante')
+
+    const teamL = addTeam(localId, localName)
+    const teamV = addTeam(visitId, visitName)
+
+    const gl = Number(p.goles_local || p.golesLocal || 0)
+    const gv = Number(p.goles_visitante || p.golesVisitante || 0)
+
+    teamL.PJ += 1
+    teamV.PJ += 1
+    teamL.GF += gl
+    teamL.GC += gv
+    teamV.GF += gv
+    teamV.GC += gl
+
+    if (gl > gv) {
+      teamL.W += 1
+      teamV.L += 1
+      teamL.PTS += 3
+    } else if (gv > gl) {
+      teamV.W += 1
+      teamL.L += 1
+      teamV.PTS += 3
+    } else {
+      // empate
+      teamL.E += 1
+      teamV.E += 1
+      teamL.PTS += 1
+      teamV.PTS += 1
+    }
+  }
+
+  const arr = Array.from(map.values())
+  arr.forEach(t => { t.DG = (t.GF || 0) - (t.GC || 0) })
+  arr.sort((a, b) => {
+    if (b.PTS !== a.PTS) return b.PTS - a.PTS
+    if (b.DG !== a.DG) return b.DG - a.DG
+    return (b.GF || 0) - (a.GF || 0)
+  })
+  return arr
+})
+
 function shouldPaintFinal(p) {
   if (!p) return false
   const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
@@ -1103,6 +1225,33 @@ function appendOrIncrementReprogram(p, label) {
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .standings-table th,
+    .standings-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e9ecef;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .standings-table thead th {
+      font-weight: 700;
+      color: #333;
+      background: #fafafa;
+    }
+
+    .standings-table tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+
+    .standings-table tbody tr:nth-child(even) {
+      background: #fbfbfb;
     }
 
     .advance-center {
