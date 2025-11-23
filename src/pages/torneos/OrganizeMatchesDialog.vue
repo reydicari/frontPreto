@@ -2,11 +2,15 @@
   <q-dialog v-model="localVisible" persistent>
     <q-card style="width: min(920px, 96vw); max-width: 920px;">
       <q-card-section>
+        <!-- Encabezado único: título + nombre del torneo (centrados) -->
+        <div class="organize-header column items-center justify-center q-pa-sm text-center">
+          <div class="text-h6">Ordenar partidos</div>
+          <div class="text-h5 text-primary q-mt-xs"><strong>{{ torneoNombre || '—' }}</strong></div>
+        </div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-8 d-flex">
             <q-card flat bordered class="matches-container q-pa-sm">
               <q-card-section>
-                <div class="text-h6">Organizar partidos</div>
                 <div class="q-mt-xs">
                   <div class="text-h5 text-primary q-mt-xs"><strong>{{ phaseName || 'No especificada' }}</strong></div>
                 </div>
@@ -21,7 +25,6 @@
                 <div v-if="loading" class="row items-center justify-center q-pa-md">
                   <q-spinner-dots size="28px" />
                 </div>
-
                 <div v-else>
                   <div v-if="!matches.length" class="text-caption">
                     <div v-if="torneoType === 4" class="row column items-center justify-center q-pa-xl">
@@ -31,7 +34,6 @@
                     </div>
                     <div v-else>No se generaron partidos.</div>
                   </div>
-
                   <div v-else class="matches-grid q-gutter-sm">
                     <q-card v-for="(m, idx) in displayedMatches" :key="`m-${idx}`" flat bordered
                       class="q-pa-xs small-match-card bg-grey-1">
@@ -105,7 +107,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                          }})</template>
+                        }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
@@ -253,6 +255,7 @@ const emit = defineEmits(['update:modelValue', 'generatedMatches', 'started'])
 const loading = ref(false)
 const matches = ref([])
 const phaseName = ref('')
+const torneoNombre = ref('')
 const phaseId = ref(null)
 const tipoLabel = ref('Jornada')
 const borradores = ref([])
@@ -316,6 +319,7 @@ async function prepareOrganization() {
   try {
     const t = await obtenerTorneo(props.torneoId).catch(() => null)
     const tor = t || null
+    torneoNombre.value = tor?.nombre || ''
     // etiqueta para las rondas: usar el nombre del tipo de torneo si está disponible
     tipoLabel.value = (tor && tor.tipo_torneo && tor.tipo_torneo.nombre) ? tor.tipo_torneo.nombre : 'Jornada'
     // cargar borradores. Si se pasaron equipos iniciales, úsalos como borradores

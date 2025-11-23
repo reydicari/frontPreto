@@ -53,6 +53,7 @@ export const agregarEncargadoTorneo = async (encargado) => {
 };
 export const reprogramarPartido = async (partido) => {
   try {
+    console.log("partido a reprogramar", partido);
     const response = await api.post(URL_PART + "/reprogramar", partido);
     Notify.create({
       type: "info",
