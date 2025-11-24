@@ -7,7 +7,10 @@ import "driver.js/dist/driver.css";
 
 export function useDrive() {
   // Inicia la guía para la tabla de posiciones usando la API factory `driver()`
-  async function startPosicionesTour(targetSelector = ".standings-table") {
+  async function startPosicionesTour(
+    targetSelector = ".standings-table",
+    mode = undefined,
+  ) {
     // Si se recibe un Event (p. ej. por binding directo @click), ignorarlo
     try {
       if (typeof Event !== "undefined" && targetSelector instanceof Event) {
@@ -44,13 +47,21 @@ export function useDrive() {
       // Primero esperar a que la tabla exista
       await waitForElement(targetSelector);
 
+      const mainTitle =
+        mode === "tipo4"
+          ? "Tabla de Posiciones (Tipo desafío - Victorias)"
+          : "Tabla de Posiciones";
+      const mainDesc =
+        mode === "tipo4"
+          ? "En este torneo la clasificación se basa en número de victorias. Las empates no cuentan. La tabla muestra Partidos Jugados, Goles, Diferencia y el total de victorias (VICTS)."
+          : "Aquí se muestra la clasificación: cada victoria suma 3 puntos, empate 1 punto, derrota 0 puntos. La tabla resume Partidos jugados, victorias, empates, derrotas, goles, diferencia y puntos.";
+
       const steps = [
         {
           element: targetSelector,
           popover: {
-            title: "Tabla de Posiciones",
-            description:
-              "Aquí se muestra la clasificación: cada victoria suma 3 puntos, empate 1 punto, derrota 0 puntos. La tabla resume Partidos jugados, victorias, empates, derrotas, goles, diferencia y puntos.",
+            title: mainTitle,
+            description: mainDesc,
             side: "bottom",
             align: "start",
           },
@@ -58,48 +69,80 @@ export function useDrive() {
       ];
 
       // Definir las columnas a explicar - usando las clases exactas que tienes
-      const columns = [
-        {
-          cls: "PJ",
-          title: "PJ",
-          text: "Partidos Jugados: total de partidos contabilizados para el equipo.",
-        },
-        {
-          cls: "G",
-          title: "G",
-          text: "Ganados: número de victorias (3 puntos cada una).",
-        },
-        {
-          cls: "E",
-          title: "E",
-          text: "Empates: número de empates (1 punto cada uno).",
-        },
-        {
-          cls: "P",
-          title: "P",
-          text: "Perdidos: número de derrotas (0 puntos).",
-        },
-        {
-          cls: "GF",
-          title: "GF",
-          text: "Goles a Favor: total de goles marcados por el equipo.",
-        },
-        {
-          cls: "GC",
-          title: "GC",
-          text: "Goles en Contra: total de goles recibidos por el equipo.",
-        },
-        {
-          cls: "DG",
-          title: "DG",
-          text: "Diferencia de Goles: GF - GC (criterio de desempate secundario).",
-        },
-        {
-          cls: "PTS",
-          title: "PTS",
-          text: "Puntos: total (3 × Ganados + 1 × Empates).",
-        },
-      ];
+      // Column definitions adapt según el modo. Para 'tipo4' incluimos la columna VICTS
+      let columns = [];
+      if (mode === "tipo4") {
+        columns = [
+          {
+            cls: "PJ",
+            title: "PJ",
+            text: "Partidos Jugados: total de partidos contabilizados para el equipo.",
+          },
+          {
+            cls: "GF",
+            title: "GF",
+            text: "Goles a Favor: total de goles marcados por el equipo.",
+          },
+          {
+            cls: "GC",
+            title: "GC",
+            text: "Goles en Contra: total de goles recibidos por el equipo.",
+          },
+          {
+            cls: "DG",
+            title: "DG",
+            text: "Diferencia de Goles: GF - GC (criterio de desempate secundario).",
+          },
+          {
+            cls: "VICTS",
+            title: "VICTS",
+            text: "Victorias: número de partidos ganados (criterio principal de clasificación en torneos tipo desafio).",
+          },
+        ];
+      } else {
+        columns = [
+          {
+            cls: "PJ",
+            title: "PJ",
+            text: "Partidos Jugados: total de partidos contabilizados para el equipo.",
+          },
+          {
+            cls: "G",
+            title: "G",
+            text: "Ganados: número de victorias (3 puntos cada una).",
+          },
+          {
+            cls: "E",
+            title: "E",
+            text: "Empates: número de empates (1 punto cada uno).",
+          },
+          {
+            cls: "P",
+            title: "P",
+            text: "Perdidos: número de derrotas (0 puntos).",
+          },
+          {
+            cls: "GF",
+            title: "GF",
+            text: "Goles a Favor: total de goles marcados por el equipo.",
+          },
+          {
+            cls: "GC",
+            title: "GC",
+            text: "Goles en Contra: total de goles recibidos por el equipo.",
+          },
+          {
+            cls: "DG",
+            title: "DG",
+            text: "Diferencia de Goles: GF - GC (criterio de desempate secundario).",
+          },
+          {
+            cls: "PTS",
+            title: "PTS",
+            text: "Puntos: total (3 × Ganados + 1 × Empates).",
+          },
+        ];
+      }
 
       // Buscar cada elemento por su clase específica
       for (const column of columns) {

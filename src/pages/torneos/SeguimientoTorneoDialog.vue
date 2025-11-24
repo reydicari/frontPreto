@@ -82,15 +82,16 @@
               </div>
 
               <div class="partidos-list">
-                <template v-if="filterMode === 'posiciones'">
+                <template
+                  v-if="filterMode === 'posiciones' || (filterMode === 'finalizados' && displayTorneo?.id_tipo_torneo === 4)">
                   <div class="posiciones-table q-mt-sm">
                     <div class="posiciones-header row items-center q-mb-sm" style="justify-content:flex-end;">
                       <q-icon name="help_outline" class="help-posiciones cursor-pointer" size="24px" color="primary"
-                        @click.stop="() => startPosicionesTour()" />
+                        @click.stop="onPosicionesHelpClick" />
                     </div>
                     <table class="standings-table">
                       <thead>
-                        <tr>
+                        <tr v-if="displayTorneo?.id_tipo_torneo === 2">
                           <th>#</th>
                           <th>Equipo</th>
                           <th class="PJ">PJ</th>
@@ -102,41 +103,114 @@
                           <th class="DG">DG</th>
                           <th class="PTS">PTS</th>
                         </tr>
+                        <tr v-else-if="displayTorneo?.id_tipo_torneo === 4">
+                          <th>#</th>
+                          <th>Equipo</th>
+                          <th class="PJ">PJ</th>
+                          <th class="GF">GF</th>
+                          <th class="GC">GC</th>
+                          <th class="DG">DG</th>
+                          <th class="VICTS">VICTS</th>
+                        </tr>
+                        <tr v-else>
+                          <th>#</th>
+                          <th>Equipo</th>
+                          <th class="PJ">PJ</th>
+                          <th class="W">W</th>
+                          <th class="E">E</th>
+                          <th class="L">L</th>
+                          <th class="GF">GF</th>
+                          <th class="GC">GC</th>
+                          <th class="DG">DG</th>
+                          <th class="PTS">PTS</th>
+                        </tr>
                       </thead>
                       <tbody>
                         <tr v-for="(t, idx) in posiciones" :key="t.id">
                           <td>{{ idx + 1 }}</td>
                           <td>{{ t.nombre }}</td>
-                          <td>{{ t.PJ }}</td>
-                          <td>{{ t.W }}</td>
-                          <td>{{ t.E }}</td>
-                          <td>{{ t.L }}</td>
-                          <td>{{ t.GF }}</td>
-                          <td>{{ t.GC }}</td>
-                          <td>{{ t.DG }}</td>
-                          <td>{{ t.PTS }}</td>
+                          <template v-if="displayTorneo?.id_tipo_torneo === 2">
+                            <td>{{ t.PJ }}</td>
+                            <td>{{ t.W }}</td>
+                            <td>{{ t.E }}</td>
+                            <td>{{ t.L }}</td>
+                            <td>{{ t.GF }}</td>
+                            <td>{{ t.GC }}</td>
+                            <td>{{ t.DG }}</td>
+                            <td>{{ t.PTS }}</td>
+                          </template>
+                          <template v-else-if="displayTorneo?.id_tipo_torneo === 4">
+                            <td>{{ t.PJ }}</td>
+                            <td>{{ t.GF }}</td>
+                            <td>{{ t.GC }}</td>
+                            <td>{{ t.DG }}</td>
+                            <td>{{ t.W }}</td>
+                          </template>
+                          <template v-else>
+                            <td>{{ t.PJ }}</td>
+                            <td>{{ t.W }}</td>
+                            <td>{{ t.E }}</td>
+                            <td>{{ t.L }}</td>
+                            <td>{{ t.GF }}</td>
+                            <td>{{ t.GC }}</td>
+                            <td>{{ t.DG }}</td>
+                            <td>{{ t.PTS }}</td>
+                          </template>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </template>
-                <template v-if="filterMode === 'en_marcha' && enMarchaCount === 0 && finalWinner">
-                  <q-card class="partido-card finalizado special-final-winner">
-                    <q-card-section class="partido-content" style="justify-content:center; text-align:center;">
-                      <div class="equipo equipo-center winner-final"
-                        style="display:flex; align-items:center; gap:12px; justify-content:center;">
-                        <img :src="trophyImg" alt="Trofeo" class="trophy-img" />
-                        <div>
-                          <div ref="finalWinnerNameRef" class="equipo-nombre" style="font-size:1.25rem;">{{
-                            finalWinner.team.nombre }}</div>
-                          <div class="text-caption q-mt-xs">Ganador definitivo</div>
+                <template v-if="filterMode === 'en_marcha' && enMarchaCount === 0">
+                  <!-- Para ligas (tipo 2) mostramos podio de 3 puestos; si no es liga, mostramos ganador final si existe -->
+                  <template
+                    v-if="(displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && posiciones && posiciones.length > 0">
+                    <q-card class="partido-card podium-card">
+                      <q-card-section class="podium-content row items-center" style="justify-content:center;">
+                        <div class="podium-col second" v-if="top3.length >= 2">
+                          <div class="pos-number">2</div>
+                          <div class="equipo-nombre small">{{ top3[1].nombre }}</div>
+                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[1].W + ' victorias' :
+                            top3[1].PTS + ' pts' }}</div>
                         </div>
-                      </div>
-                    </q-card-section>
-                  </q-card>
+
+                        <div class="podium-col first" v-if="top3.length >= 1" :class="{ 'podium-active': allFinished }">
+                          <img :src="trophyImg" alt="Trofeo" class="trophy-img podium-trophy"
+                            :class="{ 'pulse-trophy': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }"
+                            ref="podiumTrophyRef" />
+                          <div ref="finalWinnerNameRef" class="equipo-nombre">{{ top3[0].nombre }}</div>
+                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[0].W + ' victorias' :
+                            top3[0].PTS + ' pts' }}</div>
+                        </div>
+
+                        <div class="podium-col third" v-if="top3.length >= 3">
+                          <div class="pos-number">3</div>
+                          <div class="equipo-nombre small">{{ top3[2].nombre }}</div>
+                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[2].W + ' victorias' :
+                            top3[2].PTS + ' pts' }}</div>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </template>
+                  <template v-else-if="finalWinner">
+                    <q-card class="partido-card finalizado special-final-winner">
+                      <q-card-section class="partido-content" style="justify-content:center; text-align:center;">
+                        <div class="equipo equipo-center winner-final"
+                          style="display:flex; align-items:center; gap:12px; justify-content:center;">
+                          <img :src="trophyImg" alt="Trofeo" class="trophy-img" />
+                          <div>
+                            <div ref="finalWinnerNameRef" class="equipo-nombre" style="font-size:1.25rem;">{{
+                              finalWinner.team.nombre }}</div>
+                            <div class="text-caption q-mt-xs">Ganador definitivo</div>
+                          </div>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </template>
                 </template>
                 <q-card v-for="p in filteredPartidos" :key="p.id || `${p.id_equipo_local}-${p.id_equipo_visitante}`"
-                  class="partido-card" :class="{ 'finalizado': p.finalizado === true }">
+                  class="partido-card"
+                  :class="{ 'finalizado': p.finalizado === true, 'tipo-2or4': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }">
                   <q-card-section class="partido-content">
                     <!-- Equipo local -->
                     <div class="equipo equipo-local" :class="{
@@ -145,7 +219,8 @@
                       'winner-semifinal': isWinner(p, 'local') && getWinnerPhase(p) === 'semifinal',
                       'winner-cuartos': isWinner(p, 'local') && getWinnerPhase(p) === 'cuartos',
                       'winner-octavos': isWinner(p, 'local') && getWinnerPhase(p) === 'octavos',
-                      'empate': (displayTorneo?.id_tipo_torneo === 2) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) > 0)
+                      'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
+                      [winnerAltClass(p)]: isWinner(p, 'local') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
                     }">
                       <div class="equipo-info">
                         <div class="equipo-nombre">{{ nameOf(p, 'local') }}</div>
@@ -155,12 +230,12 @@
                         <template v-if="isEncargado && !p.finalizado">
                           <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'local')"
                             :disable="Number(p.goles_local || 0) <= 0" class="goal-btn" />
-                          <div class="goles">{{ Number(p.goles_local || 0) }}</div>
+                          <div class="goles">{{ displayGoal(p, 'local') }}</div>
                           <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'local')"
                             class="goal-btn" />
                         </template>
                         <template v-else>
-                          <div class="goles">{{ Number(p.goles_local || 0) }}</div>
+                          <div class="goles">{{ displayGoal(p, 'local') }}</div>
                         </template>
                       </div>
                     </div>
@@ -178,18 +253,19 @@
                       'winner-semifinal': isWinner(p, 'visitante') && getWinnerPhase(p) === 'semifinal',
                       'winner-cuartos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'cuartos',
                       'winner-octavos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'octavos',
-                      'empate': (displayTorneo?.id_tipo_torneo === 2) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) > 0)
+                      'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
+                      [winnerAltClass(p)]: isWinner(p, 'visitante') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
                     }">
                       <div class="marcador">
                         <template v-if="isEncargado && !p.finalizado">
                           <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'visitante')"
                             :disable="Number(p.goles_visitante || 0) <= 0" class="goal-btn" />
-                          <div class="goles">{{ Number(p.goles_visitante || 0) }}</div>
+                          <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
                           <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'visitante')"
                             class="goal-btn" />
                         </template>
                         <template v-else>
-                          <div class="goles">{{ Number(p.goles_visitante || 0) }}</div>
+                          <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
                         </template>
                       </div>
                       <div class="equipo-info">
@@ -272,7 +348,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import trophyImg from 'src/assets/trofeo.png'
 import useDrive from 'src/composables/useDrive'
 
@@ -309,13 +385,16 @@ const tieDialogVisible = ref(false)
 const tieDialogMatch = ref(null)
 const finalWinnerNameRef = ref(null)
 const finalConfettiFired = ref(false)
+const podiumTrophyRef = ref(null)
 
 const tieDialogTitle = computed(() => {
   const m = tieDialogMatch.value
   if (!m) return 'Reprogramar partido'
   const gl = Number(m.goles_local || m.golesLocal || 0)
   const gv = Number(m.goles_visitante || m.golesVisitante || 0)
-  return (gl === 0 && gv === 0) ? 'Reprogramar partido' : 'Partido empatado'
+  // si ambos son -1 (valores nulos desde el backend para tipo 2/4), mostrar reprogramar
+  if (gl < 0 && gv < 0) return 'Reprogramar partido'
+  return (gl === 0 && gv === 0) ? 'Partido empatado' : 'Partido empatado'
 })
 
 const filteredPartidos = computed(() => {
@@ -383,6 +462,8 @@ watch(() => props.torneo, async (t) => {
 
 watch(localVisible, async (v) => {
   if (!v) return
+  // Al abrir siempre mostrar la pestaña 'en_marcha'
+  filterMode.value = 'en_marcha'
   const id = props.torneo?.id || props.torneoId
   if (!id) return
 
@@ -398,6 +479,23 @@ watch(localVisible, async (v) => {
     Notify.create({ type: 'negative', message: 'Error al cargar partidos' })
   } finally {
     loading.value = false
+  }
+
+  // Si el diálogo se abre y ya están todos los partidos finalizados, lanzar confetti una vez
+  try {
+    if (allFinished.value && top3.value && top3.value.length > 0 && !finalConfettiFired.value) {
+      await nextTick()
+      try {
+        const el = podiumTrophyRef.value && (podiumTrophyRef.value.$el || podiumTrophyRef.value)
+        triggerConfetti(el)
+      } catch {
+        triggerConfetti(null)
+      }
+      finalConfettiFired.value = true
+    }
+  } catch (e) {
+    // ignore
+    void e
   }
 })
 
@@ -467,10 +565,16 @@ async function finishMatch(p) {
   // el segundo argumento puede ser un event o un elemento DOM; lo procesamos abajo
   const golesLocal = Number(p.goles_local || p.golesLocal || 0)
   const golesVisit = Number(p.goles_visitante || p.golesVisitante || 0)
+  // Si ambos son -1 y es torneo tipo 2 o 4 -> mostrar diálogo de reprogramar (visual nulo)
+  if ((displayTorneo.value?.id_tipo_torneo === 2 || displayTorneo.value?.id_tipo_torneo === 4) && golesLocal < 0 && golesVisit < 0) {
+    tieDialogMatch.value = p
+    tieDialogVisible.value = true
+    return
+  }
+
   if (golesLocal === golesVisit) {
-    // Para torneos tipo 2: los empates (excepto 0-0) se registran como partidos finales empatados
-    if (displayTorneo.value?.id_tipo_torneo === 2 && !(golesLocal === 0 && golesVisit === 0)) {
-      // Registrar empate: no hay equipo ganador, marcar como finalizado
+    // Para torneos tipo 2 o 4: cualquier empate (incluyendo 0-0) se registra como empate finalizado
+    if (displayTorneo.value?.id_tipo_torneo === 2 || displayTorneo.value?.id_tipo_torneo === 4) {
       p.equipoGanador = null
       p.id_equipo_ganador = null
       p.estado_partido = 'Finalizado'
@@ -485,7 +589,7 @@ async function finishMatch(p) {
       }
       return
     }
-    // Comportamiento anterior: abrir diálogo de reprogramación para empates (incluyendo 0-0)
+    // Comportamiento anterior para otros tipos: abrir diálogo de reprogramación
     tieDialogMatch.value = p
     tieDialogVisible.value = true
     return
@@ -817,9 +921,18 @@ const finalWinner = computed(() => {
   return w ? { team: w, partido: p } : null
 })
 
+const top3 = computed(() => {
+  const arr = posiciones.value || []
+  return arr.slice(0, 3)
+})
+
+const allFinished = computed(() => {
+  return (partidos.value || []).length > 0 && (partidos.value || []).every(x => x.finalizado === true)
+})
+
 const posiciones = computed(() => {
-  // solo para torneos tipo 2
-  if (displayTorneo.value?.id_tipo_torneo !== 2) return []
+  const tipo = displayTorneo.value?.id_tipo_torneo
+  if (!tipo) return []
   const map = new Map()
   const addTeam = (id, nombre) => {
     const key = String(id || nombre || 'x_' + nombre)
@@ -854,40 +967,77 @@ const posiciones = computed(() => {
     const teamL = addTeam(localId, localName)
     const teamV = addTeam(visitId, visitName)
 
-    const gl = Number(p.goles_local || p.golesLocal || 0)
-    const gv = Number(p.goles_visitante || p.golesVisitante || 0)
+    const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
+    const gv = Number(p.goles_visitante ?? p.golesVisitante ?? 0)
 
-    teamL.PJ += 1
-    teamV.PJ += 1
-    teamL.GF += gl
-    teamL.GC += gv
-    teamV.GF += gv
-    teamV.GC += gl
+    // Excluir partidos no inicializados (ej: goles = -1)
+    if (gl < 0 || gv < 0) continue
 
-    if (gl > gv) {
-      teamL.W += 1
-      teamV.L += 1
-      teamL.PTS += 3
-    } else if (gv > gl) {
-      teamV.W += 1
-      teamL.L += 1
-      teamV.PTS += 3
-    } else {
-      // empate
-      teamL.E += 1
-      teamV.E += 1
-      teamL.PTS += 1
-      teamV.PTS += 1
+    // Tipo 2: liga por puntos (comportamiento previo)
+    if (tipo === 2) {
+      teamL.PJ += 1
+      teamV.PJ += 1
+      teamL.GF += gl
+      teamL.GC += gv
+      teamV.GF += gv
+      teamV.GC += gl
+
+      if (gl > gv) {
+        teamL.W += 1
+        teamV.L += 1
+        teamL.PTS += 3
+      } else if (gv > gl) {
+        teamV.W += 1
+        teamL.L += 1
+        teamV.PTS += 3
+      } else {
+        // empate
+        teamL.E += 1
+        teamV.E += 1
+        teamL.PTS += 1
+        teamV.PTS += 1
+      }
+      continue
     }
+
+    // Tipo 4: clasificación por número de victorias
+    if (tipo === 4) {
+      // empates no cuentan; solo contar partidos decisivos
+      if (gl === gv) continue
+      teamL.GF += gl
+      teamL.GC += gv
+      teamV.GF += gv
+      teamV.GC += gl
+      teamL.PJ += 1
+      teamV.PJ += 1
+      if (gl > gv) {
+        teamL.W += 1
+        teamV.L += 1
+      } else if (gv > gl) {
+        teamV.W += 1
+        teamL.L += 1
+      }
+      continue
+    }
+
+    // Otros tipos: no incluir
   }
 
   const arr = Array.from(map.values())
   arr.forEach(t => { t.DG = (t.GF || 0) - (t.GC || 0) })
-  arr.sort((a, b) => {
-    if (b.PTS !== a.PTS) return b.PTS - a.PTS
-    if (b.DG !== a.DG) return b.DG - a.DG
-    return (b.GF || 0) - (a.GF || 0)
-  })
+  if (tipo === 2) {
+    arr.sort((a, b) => {
+      if (b.PTS !== a.PTS) return b.PTS - a.PTS
+      if (b.DG !== a.DG) return b.DG - a.DG
+      return (b.GF || 0) - (a.GF || 0)
+    })
+  } else if (tipo === 4) {
+    arr.sort((a, b) => {
+      if (b.W !== a.W) return b.W - a.W
+      if (b.DG !== a.DG) return b.DG - a.DG
+      return (b.GF || 0) - (a.GF || 0)
+    })
+  }
   return arr
 })
 
@@ -895,10 +1045,21 @@ function shouldPaintFinal(p) {
   if (!p) return false
   const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
   if (!hasWinner) return false
-  const fid = finalWinnerMatchId.value
-  if (!fid) return false
-  const pid = Number(p.id || p.id_partido || 0)
-  return pid === fid
+
+  // Solo mostrar el estilo dorado cuando TODOS los partidos estén finalizados
+  const allFinished = (partidos.value || []).every(x => x.finalizado === true)
+  if (!allFinished) return false
+
+  // Obtener el primer puesto de la tabla de posiciones (si existe)
+  const tabla = posiciones.value || []
+  if (!tabla || tabla.length === 0) return false
+  const first = tabla[0]
+  if (!first) return false
+
+  // Comparar con el ganador del partido
+  const winner = getWinnerEquipo(p)
+  if (!winner) return false
+  return String(winner.id) === String(first.id)
 }
 
 // Mostrar u ocultar el botón "Avanzar fase". Si ya estamos en la fase de
@@ -950,12 +1111,42 @@ function nameOf(p, side) {
   return p.equipoVisitante?.nombre || p.equipo_visitante?.nombre || '-'
 }
 
+function displayGoal(p, side) {
+  if (!p) return 0
+  // Para torneos tipo 2 y 4, el backend usa -1 para indicar "sin iniciar".
+  // Mostrar '-' visualmente en esos casos.
+  if (displayTorneo.value && (displayTorneo.value.id_tipo_torneo === 2 || displayTorneo.value.id_tipo_torneo === 4)) {
+    const val = side === 'local'
+      ? Number(p.goles_local ?? p.golesLocal ?? 0)
+      : Number(p.goles_visitante ?? p.golesVisitante ?? 0)
+    if (val < 0) return '-'
+    return val || 0
+  }
+  return side === 'local'
+    ? Number(p.goles_local ?? p.golesLocal ?? 0)
+    : Number(p.goles_visitante ?? p.golesVisitante ?? 0)
+}
+
 function statusLabelColor(p) {
   if (!p) return { label: '-', color: 'grey' }
-  const gl = Number(p.goles_local || p.golesLocal || 0)
-  const gv = Number(p.goles_visitante || p.golesVisitante || 0)
+  const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
+  const gv = Number(p.goles_visitante ?? p.golesVisitante ?? 0)
   const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
   if (hasWinner) return { label: 'Finalizado', color: 'positive' }
+
+  // Reglas especiales para torneos tipo 2 y 4
+  const tipo = displayTorneo.value?.id_tipo_torneo
+  if (tipo === 2 || tipo === 4) {
+    // Si alguno es < 0, considerarlo reprogramado
+    if (gl < 0 || gv < 0) return { label: 'Reprogramado', color: 'grey' }
+    // Empates (incluyendo 0-0) se muestran como Empate en color azul
+    if (gl === gv) return { label: 'Empate', color: 'info' }
+    if (p.finalizado) return { label: 'Finalizado', color: 'positive' }
+    return { label: '-', color: 'grey' }
+  }
+
+  // Comportamiento por defecto para otros tipos
+  if (gl < 0 || gv < 0) return { label: '-', color: 'grey' }
   if (gl === 0 && gv === 0) return { label: 'Reprogramado', color: 'grey' }
   if (gl === gv && gl > 0) return { label: 'Empate', color: 'amber' }
   if (p.finalizado) return { label: 'Finalizado', color: 'positive' }
@@ -991,6 +1182,36 @@ function incrementGoal(p, side) {
     return
   }
   // Limitar silenciosamente a 10 goles por equipo
+  // Si backend usa -1 para partidos sin iniciar (tipo 2/4), la primera pulsación
+  // convierte -1 -> 0 (no incrementa). Pulsaciones siguientes incrementan.
+  if (displayTorneo.value && (displayTorneo.value.id_tipo_torneo === 2 || displayTorneo.value.id_tipo_torneo === 4)) {
+    if (side === 'local') {
+      if (Number(p.goles_local) < 0) {
+        // Al activar el marcador (primer toque), habilitar ambos equipos a 0
+        p.goles_local = 0
+        if (Number(p.goles_visitante) < 0) p.goles_visitante = 0
+        emit('partido-updated', JSON.parse(JSON.stringify(p)))
+        return
+      }
+      const curr = Number(p.goles_local) || 0
+      if (curr >= 10) return
+      p.goles_local = curr + 1
+    } else {
+      if (Number(p.goles_visitante) < 0) {
+        // Al activar el marcador (primer toque), habilitar ambos equipos a 0
+        p.goles_visitante = 0
+        if (Number(p.goles_local) < 0) p.goles_local = 0
+        emit('partido-updated', JSON.parse(JSON.stringify(p)))
+        return
+      }
+      const curr = Number(p.goles_visitante) || 0
+      if (curr >= 10) return
+      p.goles_visitante = curr + 1
+    }
+    emit('partido-updated', JSON.parse(JSON.stringify(p)))
+    return
+  }
+
   if (side === 'local') {
     const curr = Number(p.goles_local) || 0
     if (curr >= 10) return
@@ -1013,9 +1234,12 @@ function decrementGoal(p, side) {
     Notify.create({ type: 'warning', message: 'No se pueden cambiar los goles de un partido finalizado' })
     return
   }
+  // Si valor es -1 (unset) no decrementar
   if (side === 'local') {
+    if (Number(p.goles_local) < 0) return
     p.goles_local = Math.max(0, (Number(p.goles_local) || 0) - 1)
   } else {
+    if (Number(p.goles_visitante) < 0) return
     p.goles_visitante = Math.max(0, (Number(p.goles_visitante) || 0) - 1)
   }
   emit('partido-updated', JSON.parse(JSON.stringify(p)))
@@ -1040,6 +1264,21 @@ function getInitials(text) {
   return text.charAt(0).toUpperCase()
 }
 
+function extractRondaNumber(p) {
+  if (!p || !p.ronda) return null
+  const m = String(p.ronda).match(/(\d+)/)
+  if (!m) return null
+  const n = Number(m[1])
+  return Number.isNaN(n) ? null : n
+}
+
+function winnerAltClass(p) {
+  const n = extractRondaNumber(p)
+  if (n == null) return ''
+  // pares -> azul, impares -> verde (primary)
+  return (n % 2 === 0) ? 'winner-alt-blue' : 'winner-alt-green'
+}
+
 function badgeColor(key) {
   if (!key) return 'grey'
   const name = String(key).toLowerCase()
@@ -1054,6 +1293,21 @@ function goToUbicacion(id) {
   router.push({ path: '/ubicaciones', query: { focus: id } })
 }
 
+// Handler para el icono de ayuda de la tabla de posiciones.
+// Si el torneo es tipo 4, activamos la guía en modo 'tipo4' para explicar la columna VICTS.
+async function onPosicionesHelpClick() {
+  try {
+    const tipo = displayTorneo.value?.id_tipo_torneo
+    if (tipo === 4) {
+      await startPosicionesTour('.standings-table', 'tipo4')
+      return
+    }
+    await startPosicionesTour('.standings-table')
+  } catch (err) {
+    console.warn('No se pudo iniciar la guía de posiciones', err)
+  }
+}
+
 // Manejo del diálogo de empate: confirmar reprogramación
 async function confirmReprogram() {
   if (!tieDialogMatch.value) {
@@ -1064,14 +1318,18 @@ async function confirmReprogram() {
     // Asegurar que no quede ganador y marcar la ronda como reprogramada
     tieDialogMatch.value.equipoGanador = null
     tieDialogMatch.value.id_equipo_ganador = null
-    const gl = Number(tieDialogMatch.value.goles_local || tieDialogMatch.value.golesLocal || 0)
-    const gv = Number(tieDialogMatch.value.goles_visitante || tieDialogMatch.value.golesVisitante || 0)
-    if (gl === 0 && gv === 0) {
-      const vieja = tieDialogMatch.value.ronda || ''
+    const gl = Number(tieDialogMatch.value.goles_local ?? tieDialogMatch.value.golesLocal ?? 0)
+    const gv = Number(tieDialogMatch.value.goles_visitante ?? tieDialogMatch.value.golesVisitante ?? 0)
+    const vieja = tieDialogMatch.value.ronda || ''
+    // Si ambos eran no iniciados (-1) o 0-0, usar etiqueta simple 'Reprogramado'.
+    // Solo usar 'Reprogramado por empate' cuando hay un empate con goles > 0.
+    if (gl < 0 && gv < 0) {
+      appendOrIncrementReprogram(tieDialogMatch.value, 'Reprogramado')
+      tieDialogMatch.value.ronda_antigua = vieja
+    } else if (gl === 0 && gv === 0) {
       appendOrIncrementReprogram(tieDialogMatch.value, 'Reprogramado')
       tieDialogMatch.value.ronda_antigua = vieja
     } else {
-      const vieja = tieDialogMatch.value.ronda || ''
       appendOrIncrementReprogram(tieDialogMatch.value, 'Reprogramado por empate')
       tieDialogMatch.value.ronda_antigua = vieja
     }
@@ -1512,6 +1770,7 @@ function appendOrIncrementReprogram(p, label) {
 
     .partido-card.finalizado .equipo.winner-final {
       position: relative;
+      overflow: hidden;
     }
 
     .partido-card.finalizado .equipo.winner-final .goles {
@@ -1646,6 +1905,219 @@ function appendOrIncrementReprogram(p, label) {
 
     .partido-card .equipo.empate .equipo-nombre {
       color: #92400e;
+      font-weight: 700;
+    }
+
+    /* Podio para ligas (tipo 2) */
+    .podium-card {
+      padding: 12px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .podium-content {
+      gap: 18px;
+      align-items: end;
+    }
+
+    .podium-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 120px;
+    }
+
+    .podium-col.first {
+      transform: translateY(-6px);
+    }
+
+    .podium-col.second {
+      transform: translateY(6px);
+    }
+
+    .podium-col.third {
+      transform: translateY(12px);
+    }
+
+    .podium-trophy {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      margin-bottom: 6px;
+    }
+
+    /* Trophy pulse + larger for tipo 2 and 4 */
+    .podium-trophy.pulse-trophy {
+      width: 74px;
+      height: 74px;
+      transition: transform 0.2s ease;
+      animation: podiumPulse 1s ease-in-out infinite;
+      margin-bottom: 8px;
+    }
+
+    @keyframes podiumPulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.08);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .pos-number {
+      font-weight: 800;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .pos-stats {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    /* Marcos y estilos para los puestos del podio */
+    .podium-col {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 24, 40, 0.06);
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* First place - dorado (estático) */
+    .podium-col.first {
+      background: linear-gradient(180deg, #fff8e6, #fff3c1);
+      border: 1px solid #ffb300;
+      color: #8b5e00;
+      transform: translateY(-8px);
+    }
+
+    .podium-col.first .equipo-nombre {
+      color: #8b5e00;
+      font-weight: 800
+    }
+
+    /* Second place - plateado sutil */
+    .podium-col.second {
+      background: linear-gradient(180deg, #f6f7f9, #eef0f3);
+      border: 1px solid #cfcfcf;
+    }
+
+    .podium-col.second .equipo-nombre {
+      color: #374151;
+      font-weight: 700
+    }
+
+    /* Third place - bronce sutil */
+    .podium-col.third {
+      background: linear-gradient(180deg, #fff6f0, #fff0e6);
+      border: 1px solid #e0a96b;
+    }
+
+    .podium-col.third .equipo-nombre {
+      color: #7a4a2a;
+      font-weight: 700
+    }
+
+    /* Reluciente y pulso removidos: el primer puesto sigue dorado pero estático */
+
+    /* Marcos y borde para los puestos del podio */
+    .podium-col {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 24, 40, 0.06);
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* First place - dorado (estático) */
+    .podium-col.first {
+      background: linear-gradient(180deg, #fff8e6, #fff3c1);
+      border: 1px solid #ffb300;
+      color: #8b5e00;
+      transform: translateY(-8px);
+    }
+
+    .podium-col.first .equipo-nombre {
+      color: #8b5e00;
+      font-weight: 800
+    }
+
+    /* Second place - plateado sutil */
+    .podium-col.second {
+      background: linear-gradient(180deg, #f6f7f9, #eef0f3);
+      border: 1px solid #cfcfcf;
+    }
+
+    .podium-col.second .equipo-nombre {
+      color: #374151;
+      font-weight: 700
+    }
+
+    /* Third place - bronce sutil */
+    .podium-col.third {
+      background: linear-gradient(180deg, #fff6f0, #fff0e6);
+      border: 1px solid #e0a96b;
+    }
+
+    .podium-col.third .equipo-nombre {
+      color: #7a4a2a;
+      font-weight: 700
+    }
+
+    /* Cuando el torneo es tipo 2/4, empates deben mostrarse en púrpura */
+    .partido-card.tipo-2or4 .equipo.empate .goles {
+      background: linear-gradient(180deg, #f3e8ff, #efe6ff);
+      border: 1px solid #8b5cf6;
+      color: #3c096c;
+      font-weight: 800;
+    }
+
+    .partido-card.tipo-2or4 .equipo.empate .equipo-nombre {
+      color: #3c096c;
+      font-weight: 700;
+    }
+
+    /* Alternancia: clases para ganadores según paridad de ronda */
+    .partido-card.finalizado .equipo.winner-alt-green .goles {
+      background: #d1e7dd;
+      border: 1px solid #0f5132;
+      color: #0f5132;
+      font-weight: 900;
+    }
+
+    .partido-card.finalizado .equipo.winner-alt-green .equipo-nombre {
+      color: #0f5132;
+      font-weight: 800;
+    }
+
+    .partido-card.finalizado .equipo.winner-alt-blue .goles {
+      background: linear-gradient(180deg, #e8f0ff, #dbe9ff);
+      border: 1px solid #2563eb;
+      color: #0b3d91;
+      font-weight: 800;
+      animation: glowSemi 2.2s infinite ease-in-out;
+    }
+
+    .partido-card.finalizado .equipo.winner-alt-blue .equipo-nombre {
+      color: #0b3d91;
       font-weight: 700;
     }
 

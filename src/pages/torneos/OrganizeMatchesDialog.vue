@@ -107,7 +107,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                          }})</template>
+                        }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
