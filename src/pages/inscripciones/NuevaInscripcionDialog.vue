@@ -14,8 +14,9 @@
             <!-- Selección de estudiante -->
             <div class="row items-center q-gutter-sm">
               <div class="col-md-3">
-                <q-select ref="nivelSelect" v-model="localInscripcion.id_nivel" :options="nivelOptions" label="Nivel" option-label="label"
-                  option-value="value" emit-value map-options outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
+                <q-select ref="nivelSelect" v-model="localInscripcion.id_nivel" :options="nivelOptions" label="Nivel"
+                  option-label="label" option-value="value" emit-value map-options outlined dense clearable
+                  :rules="[val => !!val || 'Seleccione un nivel']" />
               </div>
               <div class="col-md-7">
                 <q-select ref="estudianteSelect" v-model="selectedEstudiante" :options="displayedEstudiantes"
