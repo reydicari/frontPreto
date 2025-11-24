@@ -1,9 +1,15 @@
 <template>
   <q-dialog v-model="isDialogVisible" persistent>
     <q-card style="min-width: 800px; max-width: 900px">
-      <q-card-section>
-        <div class="text-h6">
-          {{ editMode ? 'Editar Inscripción' : 'Nueva Inscripción' }}
+      <q-card-section class="row items-center justify-between">
+        <div class="text-h6 q-mr-sm">
+          {{ editMode ? 'Modificar Inscripción' : 'Nueva Inscripción' }}
+        </div>
+        <div>
+          <q-btn flat dense round color="primary" class="help-nueva-inscripcion" aria-label="Ayuda" title="Ayuda"
+            @click.stop="onInscripcionHelpClick">
+            <q-icon name="help_outline" />
+          </q-btn>
         </div>
       </q-card-section>
 
@@ -14,15 +20,15 @@
             <!-- Selección de estudiante -->
             <div class="row items-center q-gutter-sm">
               <div class="col-md-3">
-                <q-select ref="nivelSelect" v-model="localInscripcion.id_nivel" :options="nivelOptions" label="Nivel"
-                  option-label="label" option-value="value" emit-value map-options outlined dense clearable
-                  :rules="[val => !!val || 'Seleccione un nivel']" />
+                <q-select ref="nivelSelect" data-driver="nivel-select" v-model="localInscripcion.id_nivel"
+                  :options="nivelOptions" label="Nivel" option-label="label" option-value="value" emit-value map-options
+                  outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
               </div>
               <div class="col-md-7">
-                <q-select ref="estudianteSelect" v-model="selectedEstudiante" :options="displayedEstudiantes"
-                  option-label="displayName" label="Estudiante *" outlined :use-input="!props.editMode"
-                  @filter="filterEstudiantes" @input-value="updateNewEstudianteName" @click.stop
-                  @popup-show="onPopupShow" :readonly="props.editMode" :clearable="!props.editMode"
+                <q-select ref="estudianteSelect" data-driver="estudiante-select" v-model="selectedEstudiante"
+                  :options="displayedEstudiantes" option-label="displayName" label="Estudiante *" outlined
+                  :use-input="!props.editMode" @filter="filterEstudiantes" @input-value="updateNewEstudianteName"
+                  @click.stop @popup-show="onPopupShow" :readonly="props.editMode" :clearable="!props.editMode"
                   :rules="[val => !!val || 'Seleccione un estudiante']">
                   <template v-slot:no-option>
                     <q-item>
@@ -46,7 +52,8 @@
                 </q-select>
               </div>
               <div class="col-auto">
-                <q-btn icon="person_add" color="secondary" label="Nuevo" @click="showNewStudentDialog = true" />
+                <q-btn icon="person_add" color="secondary" label="Nuevo" data-driver="new-student-btn"
+                  @click="showNewStudentDialog = true" />
               </div>
             </div>
 
@@ -56,7 +63,7 @@
               <div class="col-12">
                 <!-- Paquetes: scroller horizontal -->
                 <div class="packages-row">
-                  <div class="packages-scroll" ref="packagesContainer">
+                  <div class="packages-scroll" data-driver="packages-scroll" ref="packagesContainer">
                     <div v-for="(pkg, i) in visiblePaquetes" :key="pkg.id" class="package-item" :data-pkg-id="pkg.id"
                       :style="{ animationDelay: (i * 60) + 'ms' }"
                       :class="{ recommended: recommendationReason(pkg) !== null, selected: localInscripcion.id_paquete === pkg.id, taken: studentPackageIds.includes(pkg.id), overlap: hasHorarioOverlap(pkg) }">
@@ -184,10 +191,29 @@ import { listar } from 'src/stores/persona-store.js'
 import { listarPaquetes } from 'src/stores/paquete-store'
 import { listarNiveles } from 'src/stores/nivel'
 import { listar as listarInscripciones } from 'src/stores/inscripcion-store'
+import useDrive from 'src/composables/useDrive'
 import PersonaDialog from "pages/estudiantes/PersonaDialog.vue";
 import { agregarIscripcionPersona } from 'src/stores/inscripcion-store';
 
 const $q = useQuasar()
+
+// drive tour helpers
+const { startInscripcionTour, attachToIconInscripcion } = useDrive()
+
+async function onInscripcionHelpClick() {
+  try {
+    // Intentar iniciar la guía y loguear fallos para facilitar depuración cliente
+    const drv = await startInscripcionTour().catch((err) => {
+      console.warn('startInscripcionTour rejected:', err)
+      return null
+    })
+    if (!drv) {
+      console.warn('startInscripcionTour: no se pudo iniciar la guía (drv falsy)')
+    }
+  } catch (err) {
+    console.error('Error iniciando guía de inscripción:', err)
+  }
+}
 
 const props = defineProps({
   modelValue: {
@@ -460,6 +486,13 @@ async function loadNiveles() {
 onMounted(async () => {
   await loadOptions()
   await loadPaquetes()
+  // attach the tour icon listener if available
+  try {
+    const { attachToIconInscripcion } = useDrive()
+    attachToIconInscripcion('.help-nueva-inscripcion')
+  } catch {
+    // ignore
+  }
 })
 // Cargar estudiantes y disciplinas
 async function loadOptions() {

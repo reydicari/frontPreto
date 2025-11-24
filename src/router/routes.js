@@ -53,6 +53,10 @@ const routes = [
           import("pages/reportes/ReporteEntrenamientos-Page.vue"),
       },
       {
+        path: "/reporteTorneos",
+        component: () => import("pages/reportes/reportesTorneo-page.vue"),
+      },
+      {
         path: "/paisaje",
         component: () => import("pages/vista/paisaje-Page.vue"),
       },

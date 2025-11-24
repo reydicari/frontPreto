@@ -212,7 +212,183 @@ export function useDrive() {
     }
   }
 
-  return { startPosicionesTour, attachToIcon };
+  // Attach helper for the nueva-inscripcion dialog tour
+  function attachToIconInscripcion(iconSelector = ".help-nueva-inscripcion") {
+    if (typeof document === "undefined") return;
+
+    // Use event delegation so clicks are caught even if the icon
+    // is rendered later (e.g. teleport/portal from Quasar dialogs).
+    const delegatedHandler = (ev) => {
+      try {
+        const target =
+          ev.target && ev.target.closest && ev.target.closest(iconSelector);
+        if (target) {
+          ev.preventDefault();
+          // start tour but don't block the UI
+          startInscripcionTour().catch((err) => {
+            console.warn("startInscripcionTour failed:", err);
+          });
+        }
+      } catch (err) {
+        console.warn(
+          "Error in delegated handler for inscripcion help icon:",
+          err,
+        );
+      }
+    };
+
+    // Ensure delegation is registered once
+    document.addEventListener("click", delegatedHandler, true);
+
+    // Also attempt a direct attach if element already exists (backwards compat)
+    try {
+      const el = document.querySelector(iconSelector);
+      if (el) {
+        el.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          startInscripcionTour().catch((err) =>
+            console.warn("startInscripcionTour failed:", err),
+          );
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Guía para el diálogo de nueva inscripción: enfocar paquetes, nivel, estudiante y botón nuevo
+  async function startInscripcionTour() {
+    try {
+      const config = {
+        showProgress: true,
+        animate: true,
+        overlayColor: "rgba(0,0,0,0.6)",
+        closeBtnText: "Cerrar",
+        nextBtnText: "Siguiente",
+        prevBtnText: "Anterior",
+        doneBtnText: "Listo",
+        allowClose: true,
+        overlayClickNext: false,
+      };
+
+      const drv = driver(config);
+
+      const waitForElement = async (selector, maxAttempts = 50) => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const element = document.querySelector(selector);
+          if (element) return element;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        throw new Error(`Elemento no encontrado: ${selector}`);
+      };
+
+      const steps = [];
+
+      // Paquetes (usar selector en vez de nodo para evitar popovers persistentes)
+      try {
+        await waitForElement(
+          "[data-driver='packages-scroll'], .packages-scroll",
+        );
+        steps.push({
+          element: "[data-driver='packages-scroll'], .packages-scroll",
+          popover: {
+            title: "Paquetes disponibles",
+            description:
+              "Aquí verás los paquetes disponibles según el nivel y el estudiante seleccionado. Los paquetes ya tomados o con solapamiento aparecerán plomeados y no se pueden elegir.",
+            side: "bottom",
+            align: "center",
+          },
+        });
+      } catch {
+        steps.push({
+          popover: {
+            title: "Paquetes",
+            description: "Ver paquetes disponibles en esta vista.",
+          },
+        });
+      }
+
+      // Nivel select
+      try {
+        await waitForElement("[data-driver='nivel-select']");
+        steps.push({
+          element: "[data-driver='nivel-select']",
+          popover: {
+            title: "Seleccionar Nivel",
+            description:
+              "El nivel ayuda a filtrar y recomendar paquetes. Selecciona el nivel antes de elegir un paquete para ver las opciones adecuadas.",
+            side: "right",
+            align: "start",
+          },
+        });
+      } catch {
+        steps.push({
+          popover: {
+            title: "Nivel",
+            description: "Selecciona un nivel para filtrar paquetes.",
+          },
+        });
+      }
+
+      // Estudiante select
+      try {
+        await waitForElement("[data-driver='estudiante-select']");
+        steps.push({
+          element: "[data-driver='estudiante-select']",
+          popover: {
+            title: "Buscar/Seleccionar Estudiante",
+            description:
+              "Puedes buscar un estudiante aquí. Si el estudiante ya está inscrito en un paquete, ese paquete se plomeará. También se detectarán solapamientos de horario.",
+            side: "right",
+            align: "start",
+          },
+        });
+      } catch {
+        steps.push({
+          popover: {
+            title: "Estudiante",
+            description: "Busca o selecciona un estudiante.",
+          },
+        });
+      }
+
+      // Nuevo estudiante
+      try {
+        await waitForElement("[data-driver='new-student-btn']");
+        steps.push({
+          element: "[data-driver='new-student-btn']",
+          popover: {
+            title: "Crear Estudiante",
+            description:
+              "Si el estudiante no existe, crea uno rápidamente con este botón para inscribirlo al instante.",
+            side: "left",
+            align: "center",
+          },
+        });
+      } catch {
+        steps.push({
+          popover: {
+            title: "Nuevo",
+            description: "Agrega un nuevo estudiante aquí.",
+          },
+        });
+      }
+
+      drv.setSteps(steps);
+      drv.drive();
+      return drv;
+    } catch (err) {
+      console.warn("No se pudo iniciar la guía de inscripción:", err);
+      return null;
+    }
+  }
+
+  return {
+    startPosicionesTour,
+    attachToIcon,
+    startInscripcionTour,
+    attachToIconInscripcion,
+  };
 }
 
 export default useDrive;

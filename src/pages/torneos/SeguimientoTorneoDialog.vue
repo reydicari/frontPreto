@@ -554,6 +554,21 @@ async function onOrganizeStarted(evt) {
   }
 }
 
+// Helper: devuelve la fecha y hora actuales formateadas según el requerimiento
+function getTodayDateAndTime() {
+  const d = new Date()
+  const dd = String(d.getDate()).padStart(2, '0')
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  const month = months[d.getMonth()] || ''
+  const yyyy = d.getFullYear()
+  const fecha = `${dd} ${month} ${yyyy}`
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  const hora = `${hh}:${mm}:${ss}`
+  return { fecha, hora }
+}
+
 async function finishMatch(p) {
   // old signature: finishMatch(p)
   // new: may receive event as second arg, so allow either
@@ -580,6 +595,14 @@ async function finishMatch(p) {
       p.estado_partido = 'Finalizado'
       p.finalizado = true
       try {
+        // asignar fecha_fin (fecha + hora) con formato solicitado
+        try {
+          const now = getTodayDateAndTime()
+          p.fecha_fin = `${now.fecha} ${now.hora}`
+        } catch (e) {
+          // ignore format errors
+          console.warn('Error al asignar fecha_fin', e)
+        }
         await actualizarPartido(p)
         emit('partido-updated', JSON.parse(JSON.stringify(p)))
         Notify.create({ type: 'positive', message: 'Empate registrado' })
@@ -629,6 +652,12 @@ async function finishMatch(p) {
   // marcar flag explícita para UI
   p.finalizado = true
   console.log('Finalizando partido:', JSON.parse(JSON.stringify(p)))
+  try {
+    const now = getTodayDateAndTime()
+    p.fecha_fin = `${now.fecha} ${now.hora}`
+  } catch (e) {
+    console.warn('Error al asignar fecha_fin', e)
+  }
   await actualizarPartido(p)
   emit('partido-updated', JSON.parse(JSON.stringify(p)))
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
@@ -957,7 +986,7 @@ const posiciones = computed(() => {
     // considerar solo partidos finalizados y no reprogramados
     if (!p.finalizado) continue
     const ronda = String(p.ronda || '').toLowerCase()
-    if (ronda.includes('reprogramado')) continue
+    if (ronda.includes('reprogramado') && tipo === 1) continue
 
     const localId = p.id_equipo_local || (p.equipoLocal && (p.equipoLocal.id || p.equipoLocal.id_equipo)) || (p.equipo_local && p.equipo_local.id)
     const visitId = p.id_equipo_visitante || (p.equipoVisitante && (p.equipoVisitante.id || p.equipoVisitante.id_equipo)) || (p.equipo_visitante && p.equipo_visitante.id)
@@ -970,8 +999,8 @@ const posiciones = computed(() => {
     const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
     const gv = Number(p.goles_visitante ?? p.golesVisitante ?? 0)
 
-    // Excluir partidos no inicializados (ej: goles = -1)
-    if (gl < 0 || gv < 0) continue
+    // Excluir solo partidos claramente no iniciados: ambos goles == -1 y sin ganador
+    if (gl === -1 || gv === -1) continue
 
     // Tipo 2: liga por puntos (comportamiento previo)
     if (tipo === 2) {
@@ -1002,8 +1031,8 @@ const posiciones = computed(() => {
 
     // Tipo 4: clasificación por número de victorias
     if (tipo === 4) {
-      // empates no cuentan; solo contar partidos decisivos
-      if (gl === gv) continue
+      // Ahora los empates cuentan: suman a PJ y a la columna E (empates).
+      // Solo se excluyen los partidos no iniciados (manejado arriba).
       teamL.GF += gl
       teamL.GC += gv
       teamV.GF += gv
@@ -1016,6 +1045,10 @@ const posiciones = computed(() => {
       } else if (gv > gl) {
         teamV.W += 1
         teamL.L += 1
+      } else {
+        // empate ahora cuenta como empate, no como derrota
+        teamL.E += 1
+        teamV.E += 1
       }
       continue
     }
@@ -1336,6 +1369,12 @@ async function confirmReprogram() {
     // marcar como finalizado
     tieDialogMatch.value.finalizado = true
     tieDialogMatch.value.estado_partido = 'Finalizado'
+    try {
+      const now = getTodayDateAndTime()
+      tieDialogMatch.value.fecha_fin = `${now.fecha} ${now.hora}`
+    } catch (e) {
+      console.warn('Error al asignar fecha_fin en reprogramación', e)
+    }
     await reprogramarPartido(tieDialogMatch.value)
     Notify.create({ type: 'positive', message: 'Partido reprogramado' })
     const id = displayTorneo.value?.id || props.torneoId
