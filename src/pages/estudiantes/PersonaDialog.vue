@@ -82,10 +82,7 @@
                     <q-select emit-value option-value="value" map-options option-label="label"
                       v-model="localPersona.genero" :options="generoOptions" label="Género" outlined dense
                       class="col-md-4 col-6" :rules="[rules.required]" />
-                    <q-select v-model="localPersona.id_nivel" :options="nivelOptions" option-label="label"
-                      option-value="value" emit-value label="Nivel" map-options outlined dense clearable
-                      class="col-6 col-md-3 q-ml-sm col-sm-6 col-xs-12"
-                      :rules="[val => !!val || 'Debe seleccionar un nivel']" />
+                    <!-- Nivel removed: backend no longer provides nivel object -->
 
                   </div>
                 </div>
@@ -238,7 +235,6 @@
 import { ref, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useValidation } from 'src/composables/useValidation'
-import { listarNiveles } from 'src/stores/nivel'
 const $q = useQuasar()
 const rules = useValidation()
 const props = defineProps({
@@ -260,7 +256,7 @@ const profilePhoto = ref(null)
 const additionalFiles = ref([])
 const profilePhotoFile = ref(null)
 const formStep1 = ref(null)
-const nivelOptions = ref([])
+// nivel removed: no options required
 const generoOptions = ref([
   { label: 'Masculino', value: 'M' },
   { label: 'Femenino', value: 'F' },
@@ -290,11 +286,6 @@ watch(() => props.persona, async (newVal) => {
   } else {
     profilePhoto.value = null
   }
-  const responseNivel = await listarNiveles()
-  nivelOptions.value = responseNivel.map(nivel => ({
-    label: nivel.nombre_nivel,
-    value: nivel.id
-  }))
 }, { immediate: true })
 function checkFileType(files) {
   const validTypes = ['image/jpeg', 'image/png', 'application/pdf']

@@ -97,9 +97,7 @@
 
                     <q-input v-model.number="localPersona.grupos_maximo" label="Máximo de grupos" type="number" outlined
                       dense class="col-md-6 col-6" />
-                    <q-select v-model="localPersona.id_nivel" map-options emit-value :options="nivelOptions"
-                      option-label="label" option-value="value" label="Nivel" outlined dense class="col-md-6 col-6"
-                      :rules="[val => !!val || 'Debe seleccionar un nivel']" />
+                    <!-- Nivel removed: backend no longer provides nivel for entrenadores -->
                   </div>
                 </div>
                 <!-- Columna derecha - Foto de perfil -->
@@ -248,7 +246,6 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { listarNiveles } from 'src/stores/nivel'
 import { useQuasar } from 'quasar'
 import { useValidation } from 'src/composables/useValidation'
 import { listarRoles } from 'src/stores/rol-store'
@@ -272,7 +269,7 @@ const profilePhoto = ref(null)
 const additionalFiles = ref([])
 const profilePhotoFile = ref(null)
 const formStep1 = ref(null)
-const nivelOptions = ref([])
+// nivel removed: no options required for entrenadores
 const generoOptions = ref([
   { label: 'Masculino', value: 'M' },
   { label: 'Femenino', value: 'F' },
@@ -291,12 +288,6 @@ onMounted(async () => {
   // Llamá esta función con tu URL
   console.log('ONMOUTED DE PERDONA DIALOGGGGGGGGGGGGGGGGG');
 
-  // Cargar niveles para el select
-  listarNiveles().then(resp => {
-    if (Array.isArray(resp)) {
-      nivelOptions.value = resp.map(n => ({ label: n.nombre_nivel || n.nombre, value: n.id }))
-    }
-  }).catch(e => console.error('Error cargando niveles', e))
   roles.value = await listarRoles()
 
   // cargarImagenDesdeUrl(host + localPersona.value.fotografia);

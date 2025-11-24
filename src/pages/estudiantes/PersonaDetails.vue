@@ -62,14 +62,7 @@
             </div>
           </div>
 
-          <div class="col-md-6">
-            <div class="row items-center">
-              <div class="text-weight-bold q-mr-sm">Nivel:</div>
-              <q-badge class="q-pa-sm" color="info">
-                {{ persona.nivel.nombre_nivel }}
-              </q-badge>
-            </div>
-          </div>
+          <!-- Nivel removed: backend no longer provides nivel object -->
 
           <div class="col-md-6">
             <div class="row items-center">

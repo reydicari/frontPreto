@@ -13,7 +13,11 @@
           <div class="q-gutter-y-md">
             <!-- Selección de estudiante -->
             <div class="row items-center q-gutter-sm">
-              <div class="col-grow">
+              <div class="col-md-3">
+                <q-select ref="nivelSelect" v-model="localInscripcion.id_nivel" :options="nivelOptions" label="Nivel" option-label="label"
+                  option-value="value" emit-value map-options outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
+              </div>
+              <div class="col-md-7">
                 <q-select ref="estudianteSelect" v-model="selectedEstudiante" :options="displayedEstudiantes"
                   option-label="displayName" label="Estudiante *" outlined :use-input="!props.editMode"
                   @filter="filterEstudiantes" @input-value="updateNewEstudianteName" @click.stop
@@ -40,7 +44,9 @@
                   </template>
                 </q-select>
               </div>
-              <q-btn icon="person_add" color="secondary" label="Nuevo" @click="showNewStudentDialog = true" />
+              <div class="col-auto">
+                <q-btn icon="person_add" color="secondary" label="Nuevo" @click="showNewStudentDialog = true" />
+              </div>
             </div>
 
 
@@ -158,6 +164,7 @@ import { useQuasar } from 'quasar'
 
 import { listar } from 'src/stores/persona-store.js'
 import { listarPaquetes } from 'src/stores/paquete-store'
+import { listarNiveles } from 'src/stores/nivel'
 import PersonaDialog from "pages/estudiantes/PersonaDialog.vue";
 import { agregarIscripcionPersona } from 'src/stores/inscripcion-store';
 
@@ -187,11 +194,13 @@ const inscripcionIndefinida = ref(false)
 
 //para el despleagable del select de estudiantes
 const estudianteSelect = ref(null)
+const nivelSelect = ref(null)
 
 // Datos del formulario para una nueva inscripción
 const localInscripcion = reactive({
   id_persona: null,
   id_paquete: null,
+  id_nivel: null,
   fecha_inicio: new Date().toISOString().split('T')[0],
   fecha_fin: '',
   meses_duracion: 1,
@@ -231,6 +240,7 @@ const stepPago = () => {
   // Validar que haya un estudiante seleccionado y una fecha de inicio
   const estudianteOk = selectedEstudiante.value && (selectedEstudiante.value.id || selectedEstudiante.value.id_persona)
   const fechaOk = !!localInscripcion.fecha_inicio
+  const nivelOk = !!localInscripcion.id_nivel
 
   if (!estudianteOk || !fechaOk) {
     if (!estudianteOk) {
@@ -246,6 +256,14 @@ const stepPago = () => {
     }
     if (!fechaOk) {
       $q.notify({ type: 'negative', message: 'Ingrese la fecha de inicio de la inscripción.' })
+    }
+    if (!nivelOk) {
+      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de continuar.' })
+      try {
+        if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus()
+      } catch (err) {
+        console.warn('No se pudo enfocar select nivel', err)
+      }
     }
     return
   }
@@ -281,6 +299,7 @@ const estudiantesOptions = ref([])
 const allEstudiantes = ref([])
 const paquetesAvailable = ref([])
 const packagesContainer = ref(null)
+const nivelOptions = ref([])
 // Estado del componente
 const selectedEstudiante = ref({})
 const newEstudianteName = ref('')
@@ -309,6 +328,7 @@ function onPopupShow() {
 watch(isDialogVisible, (visible) => {
   if (visible) {
     loadPaquetes()
+    loadNiveles()
   }
 });
 // const loadStudents = async () => {
@@ -398,6 +418,17 @@ watch(() => localInscripcion.meses_duracion, (newVal) => {
 
 
 // Cargar opciones iniciales
+async function loadNiveles() {
+  try {
+    const niveles = await listarNiveles()
+    // formatear a { label, value } para usar con map-options + emit-value
+    nivelOptions.value = (niveles || []).map(n => ({ value: n.id, label: n.nombre_nivel || n.nombre || n.label }))
+  } catch (err) {
+    console.error('Error cargando niveles', err)
+    nivelOptions.value = []
+  }
+}
+
 onMounted(async () => {
   await loadOptions()
   await loadPaquetes()
@@ -593,6 +624,7 @@ async function saveInscripcion() {
   // Validar que haya estudiante y fecha de inicio antes de guardar
   const estudianteOk = selectedEstudiante.value
   const fechaOk = !!localInscripcion.fecha_inicio
+  const nivelOk = !!localInscripcion.id_nivel
   if (!estudianteOk || !fechaOk) {
     if (!estudianteOk) {
       $q.notify({ type: 'negative', message: 'Seleccione un estudiante antes de guardar la inscripción.' })
@@ -601,6 +633,10 @@ async function saveInscripcion() {
     if (!fechaOk) {
       $q.notify({ type: 'negative', message: 'Ingrese la fecha de inicio antes de guardar la inscripción.' })
       try { if (fechaInicioInput.value && typeof fechaInicioInput.value.focus === 'function') fechaInicioInput.value.focus() } catch (err) { console.warn('No se pudo enfocar fecha inicio', err) }
+    }
+    if (!nivelOk) {
+      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de guardar la inscripción.' })
+      try { if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus() } catch (err) { console.warn('No se pudo enfocar select nivel', err) }
     }
     return
   }
@@ -682,6 +718,7 @@ function resetForm() {
   Object.assign(localInscripcion, {
     id_persona: null,
     id_paquete: null,
+    id_nivel: null,
     fecha_inicio: new Date().toISOString().split('T')[0],
     fecha_fin: '',
     meses_duracion: 1,
@@ -703,6 +740,7 @@ watch(() => props.currentInscripcion, (newVal) => {
     Object.assign(localInscripcion, {
       id_persona: newVal.id_persona,
       id_paquete: newVal.id_paquete ?? null,
+      id_nivel: (newVal.id_nivel ?? (newVal.nivel && newVal.nivel.id)) || null,
       fecha_inicio: newVal.fecha_inicio || localInscripcion.fecha_inicio,
       meses_duracion: newVal.fecha_fin ? calculateMonthsDuration(newVal.fecha_inicio, newVal.fecha_fin) : 1,
       estado: newVal.estado ?? 1

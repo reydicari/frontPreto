@@ -29,8 +29,7 @@
               class="col-md-3 col-sm-6 col-xs-12" />
             <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
               emit-value map-options label="Estado" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
-            <q-select v-model="filterNivel" :options="nivelOptions" option-label="label" option-value="value" emit-value
-              label="Nivel" map-options outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+            <!-- Nivel removed: backend no longer provides nivel object -->
           </div>
           <div class="row justify-end q-mt-sm">
             <q-btn label="Limpiar filtros" flat color="primary" @click="clearFilters" />
@@ -107,12 +106,7 @@
                     <q-badge :color="getStatusColor(persona.estado)" class="q-mr-xs">
                       {{ getStatusLabel(persona.estado) }}
                     </q-badge>
-                    <!-- <q-badge color="info" text-color="white">
-                      {{ persona.tipo_persona }}
-                    </q-badge> -->
-                    <q-badge color="warning" text-color="dark">
-                      {{ persona.nivel.nombre_nivel }}
-                    </q-badge>
+                    <!-- Nivel removed: backend no longer provides nivel object -->
                   </div>
                 </div>
               </div>
@@ -164,7 +158,6 @@ import PersonaDialog from './PersonaDialog.vue'
 import PersonaDetails from './PersonaDetails.vue'
 import PagosPersonaDialog from 'src/components/PagosPersonaDialog.vue'
 import { agregar, listar, categoriasUnicas, modificar, cambiarEstado } from 'src/stores/persona-store.js'
-import { listarNiveles } from 'src/stores/nivel'
 
 const $q = useQuasar()
 const host = 'http://localhost:3001/uploads/'
@@ -182,10 +175,10 @@ const searchTerm = ref('')
 const filterCategory = ref(null)
 const filterStatus = ref(true)
 const filterType = ref('estudiante')
-const filterNivel = ref(null)
+// nivel removed: backend no longer provides nivel object
 let searchTimeout = null
 
-const nivelOptions = ref([])
+// nivelOptions removed: backend no longer provides nivel object
 const pagosDialog = ref(false)
 const personaPagos = ref(null)
 function verPagosPersona(persona) {
@@ -219,68 +212,9 @@ const statusOptions = [
   { label: 'Activo', value: true },
   { label: 'Inactivo', value: false }
 ]
-const typeOptions = ['estudiante', 'Entrenador', 'Administrador']
 const categoryOptions = ref([])
 
-// Columnas de la tabla
-const columns = [
-  {
-    name: 'fotografia',
-    label: 'Foto',
-    align: 'center'
-  },
-  {
-    name: 'nombres',
-    label: 'Nombres',
-    field: row => `${row.nombres} ${row.apellido_paterno} ${row.apellido_materno}`,
-    align: 'left',
-    sortable: true
-  },
-  {
-    name: 'ci',
-    label: 'CI',
-    field: row => `${row.ci} ${row.complemento}`,
-    align: 'center'
-  },
-  {
-    name: 'categoria',
-    label: 'Categoría',
-    field: 'categoria',
-    align: 'center'
-  },
-  {
-    name: 'tipo_persona',
-    label: 'Tipo',
-    field: 'tipo_persona',
-    align: 'center',
-    sortable: true
-  },
-  {
-    name: 'experiencia',
-    label: 'Experiencia',
-    field: 'experiencia',
-    align: 'center'
-  },
-  {
-    name: 'estado',
-    label: 'Estado',
-    align: 'center'
-  },
-  {
-    name: 'actions',
-    label: 'Acciones',
-    align: 'center'
-  }
-]
-
-// Paginación
-const pagination = ref({
-  sortBy: 'nombres',
-  descending: false,
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0
-})
+// pagination not used in card-based infinite scroll
 
 // Función para calcular la edad a partir de la fecha de nacimiento
 function calcularEdad(fechaNacimiento) {
@@ -449,7 +383,6 @@ const loadStudents = async (page = 1, append = false) => {
       tipo_persona: filterType.value,
       estado: filterStatus.value,
       categoria: filterCategory.value,
-      nivel: filterNivel.value,
       search: searchTerm.value,
       page,
       limit: itemsPerPage
@@ -494,7 +427,7 @@ const loadMore = async (index, done) => {
 }
 
 // Cuando cambian los filtros o búsqueda
-watch([filterType, filterStatus, filterCategory, searchTerm, filterNivel], () => {
+watch([filterType, filterStatus, filterCategory, searchTerm], () => {
   currentPage.value = 1
   if (infiniteScrollRef.value) {
     infiniteScrollRef.value.reset()
@@ -504,11 +437,7 @@ watch([filterType, filterStatus, filterCategory, searchTerm, filterNivel], () =>
 // Cargar datos iniciales
 onMounted(async () => {
   try {
-    const responseNivel = await listarNiveles()
-    nivelOptions.value = responseNivel.map(nivel => ({
-      label: nivel.nombre_nivel,
-      value: nivel.id
-    }))
+    // niveles removed: no cargar opciones
     const response = await categoriasUnicas()
     // Asegurarse de que la respuesta sea un array
     if (Array.isArray(response)) {
