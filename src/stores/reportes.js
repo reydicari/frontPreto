@@ -100,21 +100,21 @@ export const reportePagosPersona = async (params) => {
     return error.response.data;
   }
 };
-export const reporteAsistenciasEntrenamiento = async (params) => {
-  try {
-    const response = await api.get(URL_PART + `/asistenciasEntrenamiento`, {
-      params,
-      responseType: "blob",
-    });
-    const blob = new Blob([response.data], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    return response.data;
-  } catch (error) {
-    console.log("error en el store", error);
-    return error.response.data;
-  }
-};
+// export const reporteAsistenciasEntrenamiento = async (params) => {
+//   try {
+//     const response = await api.get(URL_PART + `/asistenciasEntrenamiento`, {
+//       params,
+//       responseType: "blob",
+//     });
+//     const blob = new Blob([response.data], { type: "application/pdf" });
+//     const url = URL.createObjectURL(blob);
+//     window.open(url, "_blank");
+//     return response.data;
+//   } catch (error) {
+//     console.log("error en el store", error);
+//     return error.response.data;
+//   }
+// };
 
 // Excel para asistencias por entrenamiento
 export const reporteAsistenciasEntrenamientoExcel = async (params) => {
@@ -155,6 +155,22 @@ export const reporteAsistenciasEntrenamientoExcel = async (params) => {
     return response.data;
   } catch (error) {
     console.log("error en reporteAsistenciasEntrenamientoExcel", error);
+    return error.response?.data;
+  }
+};
+export const reporteAsistenciasEntrenamiento = async (params) => {
+  try {
+    const response = await api.post(URL_PART + "/asistenciasPDF", params, {
+      params,
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+
+    return response.data;
+  } catch (error) {
+    console.log("error en el store reportePagosParams", error);
     return error.response?.data;
   }
 };

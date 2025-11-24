@@ -23,8 +23,7 @@
                 <q-input v-model="form.nombre" label="Nombre del paquete *" filled dense class=" col-6"
                   :rules="[val => !!val || 'El nombre es requerido']" />
                 <q-select v-model="form.id_nivel" :options="nivelOptions" option-label="label" option-value="value"
-                  emit-value map-options label="Nivel *" filled dense class="col-6" style="min-width: 160px"
-                  :rules="[val => !!val || 'El nivel es requerido']" />
+                  emit-value map-options label="Nivel" filled dense class="col-6" style="min-width: 160px" />
 
                 <div class="col-6">
                   <q-input dense filled v-model="form.fecha_inicio" label="Fecha inicio *" readonly
@@ -166,7 +165,7 @@
                     <div class="col-12 q-mt-xs text-caption">
                       <small>Inicio: {{ formatDate(pkg.fecha_inicio) }} · Fin: {{ formatDate(pkg.fecha_vencimiento) ||
                         '—'
-                        }}</small>
+                      }}</small>
                     </div>
                   </div>
                 </div>
@@ -383,7 +382,7 @@ function validateHorarioInForm(h, opts = {}) {
   const aE = toMin(h.hora_fin)
 
   // check overlaps inside current form.horarios (exclude same id)
-  const clash = form.value.horarios.find(x => x.id !== h.id && x.dia === h.dia && overlap(aS, aE, toMin(x.hora_inicio), toMin(x.hora_fin)))
+  const clash = form.value.horarios.find(x => x !== h && x.dia === h.dia && overlap(aS, aE, toMin(x.hora_inicio), toMin(x.hora_fin)))
   if (clash) return 'Este horario se solapa con otro horario del mismo paquete (mismo día).'
 
   // check against other paquetes of same disciplina
@@ -638,11 +637,7 @@ const canSaveForm = computed(() => {
     reason.message = 'Ingrese el nombre del paquete'
     return reason
   }
-  if (!form.value.id_nivel) {
-    reason.allowed = false
-    reason.message = 'Seleccione el nivel (requerido)'
-    return reason
-  }
+  // id_nivel es opcional ahora; no bloquea el guardado
   if (!form.value.fecha_inicio) {
     reason.allowed = false
     reason.message = 'Seleccione la fecha de inicio'

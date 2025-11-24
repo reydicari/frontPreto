@@ -134,7 +134,7 @@ async function generarReporte() {
   const params = {
     desde: filterDesde.value,
     hasta: filterHasta.value,
-    id_entrenamiento: filterEntrenamiento.value,
+    id_entrenamiento: 3,
     id_persona: filterPersona.value,
     search: searchTerm.value
   }

@@ -57,19 +57,36 @@
                 <!-- Paquetes: scroller horizontal -->
                 <div class="packages-row">
                   <div class="packages-scroll" ref="packagesContainer">
-                    <div v-for="(pkg, i) in paquetesAvailable" :key="pkg.id" class="package-item" :data-pkg-id="pkg.id"
+                    <div v-for="(pkg, i) in visiblePaquetes" :key="pkg.id" class="package-item" :data-pkg-id="pkg.id"
                       :style="{ animationDelay: (i * 60) + 'ms' }"
-                      :class="{ recommended: isRecommended(pkg), selected: localInscripcion.id_paquete === pkg.id }">
+                      :class="{ recommended: recommendationReason(pkg) !== null, selected: localInscripcion.id_paquete === pkg.id, taken: studentPackageIds.includes(pkg.id), overlap: hasHorarioOverlap(pkg) }">
                       <q-card class="q-mb-sm" clickable @click.stop.prevent="selectPackage(pkg)"
                         :bordered="localInscripcion.id_paquete === pkg.id">
                         <q-card-section>
                           <div class="text-subtitle1">{{ pkg.nombre }}</div>
-                          <div class="text-caption q-mt-xs">Inicio: {{ formatDate(pkg.fecha_inicio) || '—' }} · Fin: {{
-                            formatDate(pkg.fecha_vencimiento) || '—' }}</div>
-                          <q-badge v-if="isRecommended(pkg)" color="amber" class="q-ml-sm recommended-badge">Recomendado
-                            por
-                            edad</q-badge>
-                          <div class="text-caption">Cupo máximo: {{ pkg.max_estudiantes || '—' }}</div>
+                          <div class="row items-center q-mt-xs">
+                            <div class="col-auto text-caption">Inicio: {{ formatDate(pkg.fecha_inicio) || '—' }} · Fin:
+                              {{
+                                formatDate(pkg.fecha_vencimiento) || '—' }}</div>
+                            <div class="col-auto">
+                              <q-badge v-if="recommendationReason(pkg) === 'edad'" color="amber"
+                                class="q-ml-sm recommended-badge">Recomendado por edad</q-badge>
+                              <q-badge v-else-if="recommendationReason(pkg) === 'nivel'" color="purple"
+                                class="q-ml-sm recommended-badge">Recomendado por nivel</q-badge>
+                              <q-badge v-else-if="studentPackageIds.includes(pkg.id)" color="grey-4" text-color="black"
+                                class="q-ml-sm">Ya inscrito</q-badge>
+                              <q-badge v-else-if="hasHorarioOverlap(pkg)" color="negative" text-color="white"
+                                class="q-ml-sm">Solapamiento de horario con otra inscripción</q-badge>
+                            </div>
+                          </div>
+                          <div class="text-caption">Cupo máximo: {{ pkg.max_estudiantes || '—' }}
+                            <span class="q-ml-sm">
+                              <q-badge v-if="pkg.disponible === 0" color="negative">Sin cupo disponible</q-badge>
+                              <span v-else class="text-caption">Cupos disponibles: {{ pkg.disponible == null ? '—' :
+                                pkg.disponible
+                              }}</span>
+                            </span>
+                          </div>
                         </q-card-section>
                         <q-separator />
                         <q-card-section class="q-pa-sm">
@@ -166,6 +183,7 @@ import { useQuasar } from 'quasar'
 import { listar } from 'src/stores/persona-store.js'
 import { listarPaquetes } from 'src/stores/paquete-store'
 import { listarNiveles } from 'src/stores/nivel'
+import { listar as listarInscripciones } from 'src/stores/inscripcion-store'
 import PersonaDialog from "pages/estudiantes/PersonaDialog.vue";
 import { agregarIscripcionPersona } from 'src/stores/inscripcion-store';
 
@@ -301,6 +319,8 @@ const allEstudiantes = ref([])
 const paquetesAvailable = ref([])
 const packagesContainer = ref(null)
 const nivelOptions = ref([])
+const studentPackageIds = ref([])
+const studentInscripcionesList = ref([])
 // Estado del componente
 const selectedEstudiante = ref({})
 const newEstudianteName = ref('')
@@ -330,6 +350,8 @@ watch(isDialogVisible, (visible) => {
   if (visible) {
     loadPaquetes()
     loadNiveles()
+    // limpiar paquetes del estudiante cuando se abre el diálogo
+    studentPackageIds.value = []
   }
 });
 // const loadStudents = async () => {
@@ -407,6 +429,11 @@ function addNewEstudiante() {
 watch(selectedEstudiante, (newVal) => {
   if (newVal && newVal.id !== 0) {
     localInscripcion.id_persona = newVal.id
+    // cargar inscripciones del estudiante seleccionado
+    loadInscripcionesForStudent(newVal.id)
+  } else {
+    studentPackageIds.value = []
+    studentInscripcionesList.value = []
   }
 })
 // Calcular monto total automáticamente
@@ -486,8 +513,90 @@ async function loadPaquetes() {
   }
 }
 
+// Cargar inscripciones del estudiante y extraer los ids de paquete
+async function loadInscripcionesForStudent(personaId) {
+  if (!personaId) {
+    studentPackageIds.value = []
+    return
+  }
+  try {
+    // Intentar pedir inscripciones filtradas por persona si el store lo soporta
+    const res = await listarInscripciones({ id_persona: personaId })
+    const list = Array.isArray(res) ? res : (res && res.data ? res.data : [])
+    studentInscripcionesList.value = list
+    const ids = []
+    for (const ins of list) {
+      const pid = ins.id_paquete || (ins.paquete && ins.paquete.id) || null
+      if (pid != null) ids.push(pid)
+    }
+    studentPackageIds.value = Array.from(new Set(ids))
+  } catch (err) {
+    console.error('Error cargando inscripciones del estudiante', err)
+    studentInscripcionesList.value = []
+    studentPackageIds.value = []
+  }
+}
+
+// Convertir "HH:MM" a minutos desde medianoche
+function toMinutes(hhmm) {
+  if (!hhmm || typeof hhmm !== 'string') return null
+  const parts = hhmm.split(':')
+  if (parts.length < 2) return null
+  const h = parseInt(parts[0], 10)
+  const m = parseInt(parts[1], 10)
+  if (isNaN(h) || isNaN(m)) return null
+  return h * 60 + m
+}
+
+// Determina si dos horarios (mismo dia) se solapan
+function horarioOverlap(h1, h2) {
+  // h1/h2: { dia, hora_inicio, hora_fin }
+  if (!h1 || !h2) return false
+  if (h1.dia != h2.dia) return false
+  const aStart = toMinutes(h1.hora_inicio)
+  const aEnd = toMinutes(h1.hora_fin)
+  const bStart = toMinutes(h2.hora_inicio)
+  const bEnd = toMinutes(h2.hora_fin)
+  if (aStart == null || aEnd == null || bStart == null || bEnd == null) return false
+  return aStart < bEnd && bStart < aEnd
+}
+
+// Determina si el paquete tiene solapamiento de horarios con alguna inscripción del estudiante
+function hasHorarioOverlap(pkg) {
+  if (!pkg || !pkg.horarios || !pkg.horarios.length) return false
+  if (!studentInscripcionesList.value || !studentInscripcionesList.value.length) return false
+  for (const ins of studentInscripcionesList.value) {
+    const otherHorarios = ins.horarios || (ins.paquete && ins.paquete.horarios) || []
+    for (const oh of otherHorarios) {
+      for (const ph of pkg.horarios) {
+        if (horarioOverlap(ph, oh)) return true
+      }
+    }
+  }
+  return false
+}
+
+// Si un paquete puede seleccionarse: no está ya tomado y no tiene solapamiento
+function isPackageSelectable(pkg) {
+  if (!pkg) return false
+  if (studentPackageIds.value && studentPackageIds.value.includes(pkg.id)) return false
+  if (hasHorarioOverlap(pkg)) return false
+  return true
+}
+
 function selectPackage(pkg) {
   if (!pkg) return
+  // impedir selección si no es selectable (ya inscrito o solapamiento)
+  if (!isPackageSelectable(pkg)) {
+    if (studentPackageIds.value && studentPackageIds.value.includes(pkg.id)) {
+      $q.notify({ type: 'negative', message: 'El estudiante seleccionado ya está inscrito en este paquete.' })
+    } else if (hasHorarioOverlap(pkg)) {
+      $q.notify({ type: 'negative', message: 'Solapamiento de horario con otra inscripción.' })
+    } else {
+      $q.notify({ type: 'negative', message: 'El paquete no es seleccionable.' })
+    }
+    return
+  }
   localInscripcion.id_paquete = pkg.id
   // desplazar la card seleccionada al centro del contenedor si es posible
   nextTick(() => {
@@ -545,6 +654,67 @@ const studentAge = computed(() => {
   }
 })
 
+// Determina si el paquete coincide con la edad del estudiante (soporta min, max o ambos)
+function packageMatchesAge(pkg, age) {
+  const min = pkg.edad_minima == null ? null : Number(pkg.edad_minima)
+  const max = pkg.edad_maxima == null ? null : Number(pkg.edad_maxima)
+  if (age == null) {
+    // Si no hay edad disponible, solo aceptar paquetes sin restricciones de edad
+    return min == null && max == null
+  }
+  if (min != null && max != null) return age >= min && age <= max
+  if (min != null) return age >= min
+  if (max != null) return age <= max
+  return true
+}
+
+// Computed: paquetes visibles según selección de estudiante y nivel
+const visiblePaquetes = computed(() => {
+  const nivelId = localInscripcion.id_nivel
+  const age = studentAge.value
+
+  // Si NO hay estudiante ni nivel seleccionado -> mostrar solo paquetes sin id_nivel (genéricos)
+  if (!selectedEstudiante.value && !nivelId) {
+    return (paquetesAvailable.value || []).filter(p => p.id_nivel == null)
+  }
+
+  // En caso contrario, incluir paquetes que coincidan por edad o por nivel
+  return (paquetesAvailable.value || []).filter(p => {
+    const matchesAge = packageMatchesAge(p, age)
+    const matchesNivel = nivelId ? (p.id_nivel == null ? false : p.id_nivel === nivelId) : false
+    return matchesAge || matchesNivel
+  })
+})
+
+// Al cambiar estudiante o nivel, seleccionar el primer paquete recomendado (por edad o por nivel).
+watch([selectedEstudiante, () => localInscripcion.id_nivel], (/* newVals */) => {
+  nextTick(() => {
+    const list = (visiblePaquetes.value || []).filter(p => isPackageSelectable(p))
+    if (!list.length) return
+
+    // buscar primero paquetes recomendados por edad o nivel
+    const firstRecommended = list.find(p => {
+      const byAge = packageMatchesAge(p, studentAge.value) && (p.edad_minima != null || p.edad_maxima != null)
+      const byNivel = localInscripcion.id_nivel && p.id_nivel === localInscripcion.id_nivel
+      return !!(byAge || byNivel)
+    })
+
+    const pick = firstRecommended || list[0]
+    if (pick) {
+      localInscripcion.id_paquete = pick.id
+      // desplazar al primer paquete seleccionado
+      try {
+        if (packagesContainer.value) {
+          const el = packagesContainer.value.querySelector(`[data-pkg-id="${pick.id}"]`)
+          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+        }
+      } catch {
+        // ignore
+      }
+    }
+  })
+})
+
 // Recomienda paquete si la edad cae dentro del rango edad_minima / edad_maxima
 function isRecommended(pkg) {
   if (!pkg) return false
@@ -557,6 +727,21 @@ function isRecommended(pkg) {
   // if neither min nor max defined, don't recommend
   if (min == null && max == null) return false
   return true
+}
+
+// Devuelve 'edad' | 'nivel' | null indicando la razón de recomendación
+function recommendationReason(pkg) {
+  if (!pkg) return null
+  // prioridad: nivel (si coincide), luego edad (si rango definido y edad disponible)
+  if (localInscripcion.id_nivel && pkg.id_nivel != null && pkg.id_nivel === localInscripcion.id_nivel) return 'nivel'
+  const age = studentAge.value
+  const min = pkg.edad_minima == null ? null : Number(pkg.edad_minima)
+  const max = pkg.edad_maxima == null ? null : Number(pkg.edad_maxima)
+  if (age == null) return null
+  if (min == null && max == null) return null
+  if (min != null && age < min) return null
+  if (max != null && age > max) return null
+  return 'edad'
 }
 const StudentToCreate = ref(new FormData())//guardar el estudiante, foto, archivos y luego la inscripcion que se va a crear
 // Cuando se guarda un nuevo estudiante
@@ -681,6 +866,14 @@ async function saveInscripcion() {
       type: 'positive',
       message: 'Inscripción actualizada correctamente'
     })
+
+    // refrescar lista de inscripciones del estudiante para actualizar badges
+    try {
+      const pid = localInscripcion.id_persona || (selectedEstudiante.value && selectedEstudiante.value.id)
+      if (pid) await loadInscripcionesForStudent(pid)
+    } catch {
+      // ignore
+    }
 
     emit('saved')
     closeDialog()
@@ -949,5 +1142,22 @@ function calculateMonthsDuration(startDate, endDate) {
 .packages-scroll::-webkit-scrollbar-thumb {
   background: rgba(16, 24, 40, 0.08);
   border-radius: 8px;
+}
+
+/* Paquetes que el estudiante ya tiene: apariencia plomeada */
+.package-item.taken .q-card {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+  pointer-events: none;
+}
+
+.package-item.taken {
+  pointer-events: auto;
+  /* permitir scroll en el contenedor, pero la card no responde al click */
+}
+
+/* Estilo para paquetes con solapamiento: borde rojo para indicar conflicto */
+.package-item.overlap .q-card {
+  border-color: rgba(220, 38, 38, 0.9) !important;
 }
 </style>
