@@ -1,46 +1,120 @@
 <template>
   <q-dialog v-model="show" persistent>
-    <q-card style="min-width:520px">
-      <q-card-section>
-        <div class="text-h6">{{ isEdit ? 'Editar Pago' : 'Nuevo Pago' }}</div>
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-section class="q-gutter-md">
-        <q-input v-model="local.detalle" label="Detalle" outlined dense />
-
-        <div class="row ">
-          <q-input class="col" v-model.number="local.monto" type="number" label="Monto" prefix="Bs " outlined dense />
-          <q-input class="col" v-model.number="local.descuento" type="number" label="Descuento" prefix="Bs " outlined
-            dense />
+    <q-card class="payment-dialog responsive-dialog scrollable-dialog">
+      <q-card-section class="payment-header">
+        <div class="header-title-payment">
+          <q-icon name="add_card" size="32px" class="q-mr-sm" />
+          <div class="text-h5 text-weight-bold">{{ isEdit ? 'Editar Pago' : 'Nuevo Pago' }}</div>
         </div>
-
-        <q-input v-model="local.fecha" label="Fecha" outlined dense readonly>
-          <template v-slot:append>
-            <q-popup-proxy transition-show="scale" transition-hide="scale">
-              <q-date v-model="local.fecha" mask="YYYY-MM-DD" />
-            </q-popup-proxy>
-          </template>
-        </q-input>
-
-        <q-file v-model="comprobanteFile" accept="image/*" label="Comprobante (imagen)" filled />
-
-        <q-select v-model="local.id_persona" :options="personOptions" option-label="displayName" option-value="id"
-          label="Persona" use-input input-debounce="200" emit-value map-options outlined dense @filter="filterPerson" />
-
-        <q-select v-model="local.id_categoria" :options="categoriaOptions" option-value="id" option-label="nombre"
-          label="Categoría" outlined dense />
-
-        <q-select v-model="local.id_metodo" :options="metodoOptions" option-value="id" option-label="nombre"
-          label="Método de pago" outlined dense />
-
-        <q-input v-model="local.usuario_cobrador" label="Usuario cobrador" outlined dense disabled />
       </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn flat label="Cancelar" @click="close" />
-        <q-btn color="primary" label="Guardar" @click="handleSave" :disable="!canSave" />
+      <q-separator class="separator-gradient" />
+
+      <q-card-section class="payment-form">
+        <div class="row q-col-gutter-md">
+          <div class="col-12">
+            <q-input v-model="local.detalle" label="Detalle del pago" outlined dense class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="description" color="green-7" />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-input v-model.number="local.monto" type="number" label="Monto *" prefix="Bs " outlined dense
+              class="form-input" :rules="[val => val > 0 || 'Monto requerido']">
+              <template v-slot:prepend>
+                <q-icon name="payments" color="green-7" />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-input v-model.number="local.descuento" type="number" label="Descuento" prefix="Bs " outlined dense
+              class="form-input" hint="Opcional">
+              <template v-slot:prepend>
+                <q-icon name="discount" color="orange-7" />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-input v-model="local.fecha" label="Fecha *" outlined dense readonly class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="event" color="green-7" />
+              </template>
+              <template v-slot:append>
+                <q-icon name="calendar_month" class="cursor-pointer" />
+              </template>
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-date v-model="local.fecha" mask="YYYY-MM-DD">
+                  <div class="row items-center justify-end">
+                    <q-btn v-close-popup label="OK" color="primary" flat />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-select v-model="local.id_persona" :options="personOptions" option-label="displayName" option-value="id"
+              label="Persona *" use-input input-debounce="200" emit-value map-options outlined dense
+              @filter="filterPerson" class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="person" color="green-7" />
+              </template>
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No se encontró</q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-select v-model="local.id_categoria" :options="categoriaOptions" option-value="id" option-label="nombre"
+              label="Categoría *" outlined dense class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="category" color="green-7" />
+              </template>
+            </q-select>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <q-select v-model="local.id_metodo" :options="metodoOptions" option-value="id" option-label="nombre"
+              label="Método de pago *" outlined dense class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="credit_card" color="green-7" />
+              </template>
+            </q-select>
+          </div>
+
+          <div class="col-12">
+            <q-file v-model="comprobanteFile" accept="image/*" label="Comprobante (imagen opcional)" outlined dense
+              class="form-input" counter>
+              <template v-slot:prepend>
+                <q-icon name="image" color="green-7" />
+              </template>
+              <template v-slot:append>
+                <q-icon name="attach_file" />
+              </template>
+            </q-file>
+          </div>
+
+          <div class="col-12">
+            <q-input v-model="local.usuario_cobrador" label="Usuario cobrador" outlined dense disabled
+              class="form-input">
+              <template v-slot:prepend>
+                <q-icon name="account_circle" color="grey-6" />
+              </template>
+            </q-input>
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right" class="payment-actions">
+        <q-btn flat label="Cancelar" color="negative" @click="close" />
+        <q-btn label="Guardar" color="positive" @click="handleSave" :disable="!canSave" icon="save" class="btn-save" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -214,8 +288,169 @@ const close = () => { show.value = false }
 
 </script>
 
-<style scoped>
-.q-file {
-  max-width: 100%
+<style scoped lang="scss">
+/* Paleta de colores verdosos pastel */
+$color-emerald: #10b981;
+$color-jade: #059669;
+$color-mint: #6ee7b7;
+$color-sage: #34d399;
+$color-forest: #047857;
+$color-lime: #84cc16;
+
+$pastel-mint: #d1fae5;
+$pastel-sage: #ecfdf5;
+$pastel-lime: #f7fee7;
+$pastel-emerald: #a7f3d0;
+
+.payment-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.responsive-dialog {
+  width: 90vw;
+  max-width: 600px;
+}
+
+.scrollable-dialog {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+
+  :deep(.q-card__section) {
+    &:not(.payment-header):not(.payment-actions) {
+      overflow-y: auto;
+      flex: 1;
+    }
+  }
+}
+
+.payment-header {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 50%, $pastel-emerald 100%);
+  padding: 24px;
+  border-bottom: 3px solid $color-mint;
+  flex-shrink: 0;
+}
+
+.header-title-payment {
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+}
+
+.separator-gradient {
+  height: 3px;
+  background: linear-gradient(90deg, $color-forest 0%, $color-jade 50%, $color-emerald 100%);
+}
+
+.payment-form {
+  background: linear-gradient(135deg, #ffffff 0%, $pastel-sage 100%);
+  padding: 24px;
+}
+
+.form-input {
+  :deep(.q-field__control) {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: $color-sage;
+      box-shadow: 0 0 0 1px $pastel-mint;
+    }
+  }
+
+  :deep(.q-field--focused .q-field__control) {
+    border-color: $color-mint;
+    box-shadow: 0 0 0 2px $pastel-emerald;
+  }
+
+  :deep(.q-field__label) {
+    color: $color-jade;
+  }
+}
+
+.payment-actions {
+  border-top: 2px solid $pastel-mint;
+  padding: 16px 24px;
+  background: white;
+  flex-shrink: 0;
+
+  .q-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: none;
+    padding: 10px 24px;
+  }
+}
+
+.btn-save {
+  background: linear-gradient(135deg, $color-emerald 0%, $color-jade 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  }
+
+  &:disabled {
+    background: #9ca3af;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .responsive-dialog {
+    width: 95vw;
+    margin: 8px;
+  }
+
+  .scrollable-dialog {
+    max-height: 95vh;
+  }
+
+  .payment-header {
+    padding: 16px;
+  }
+
+  .header-title-payment {
+    .q-icon {
+      font-size: 24px !important;
+    }
+
+    .text-h5 {
+      font-size: 1.2em;
+    }
+  }
+
+  .payment-form {
+    padding: 16px;
+  }
+
+  .row.q-col-gutter-md {
+    margin-left: -8px;
+    margin-right: -8px;
+
+    >div {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+  }
+
+  :deep(.q-field__label) {
+    font-size: 0.9em;
+  }
+
+  .payment-actions {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .q-btn {
+      flex: 1;
+      min-width: 120px;
+    }
+  }
 }
 </style>

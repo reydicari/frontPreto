@@ -1,9 +1,12 @@
 <template>
   <q-dialog :model-value="modelValue" @update:model-value="val => $emit('update:modelValue', val)" persistent>
-    <q-card style="min-width: 800px; max-width: 900px">
-      <q-card-section>
-        <div class="text-h6">
-          {{ editMode ? 'Editar Estudiante' : 'Nuevo Estudiante' }}
+    <q-card class="dialog-card responsive-dialog scrollable-dialog">
+      <q-card-section class="dialog-header">
+        <div class="header-content-dialog">
+          <q-icon name="school" size="32px" class="q-mr-sm" />
+          <div class="text-h5 text-weight-bold">
+            {{ editMode ? 'Editar Estudiante' : 'Nuevo Estudiante' }}
+          </div>
         </div>
       </q-card-section>
 
@@ -15,7 +18,7 @@
             <q-form ref="formStep1">
               <div class="row q-col-gutter-md">
                 <!-- Columna izquierda - Datos personales -->
-                <div class="col-md-8">
+                <div class="col-12 col-md-8">
                   <!-- <div class="row q-col-gutter-md">
                     <q-alert icon="warning" text-color="dark" class="q-pa-md" style="
                     background-color: #fdecea;       /* rojo suave */
@@ -87,7 +90,7 @@
                   </div>
                 </div>
                 <!-- Columna derecha - Foto de perfil -->
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                   <div class="column items-center q-gutter-md">
                     <q-uploader ref="uploader" label="Foto de perfil *" accept=".jpg,.jpeg,.png" max-file-size="5242880"
                       max-files="1" @added="onProfilePhotoAdded" @removed="profilePhoto = null" style="width: 100%"
@@ -538,8 +541,198 @@ watch(() => localPersona.value.apellido_materno, (val) => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+/* Paleta pastel verde-marrón */
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+$pastel-clay: #d7ccc8;
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+
+.dialog-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 50%, $pastel-lime 100%);
+  padding: 24px;
+  border-bottom: 3px solid $color-leaf;
+}
+
+.header-content-dialog {
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+}
+
+.q-stepper :deep(.q-stepper__header) {
+  background: $pastel-sage;
+  border-radius: 12px;
+  padding: 8px;
+  margin-bottom: 16px;
+}
+
+.q-stepper :deep(.q-stepper__tab--active) {
+  background: linear-gradient(135deg, $color-leaf 0%, $color-moss 100%);
+  color: white;
+  border-radius: 8px;
+}
+
+.q-stepper :deep(.q-stepper__tab--done) {
+  background: $pastel-mint;
+  color: $color-forest;
+  border-radius: 8px;
+}
+
+.q-stepper :deep(.q-stepper__dot) {
+  background: $color-leaf;
+}
+
 .q-uploader__file {
   padding: 8px;
+}
+
+:deep(.q-field--outlined .q-field__control) {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+:deep(.q-field--outlined .q-field__control:hover) {
+  border-color: $color-moss;
+  box-shadow: 0 0 0 1px $pastel-mint;
+}
+
+:deep(.q-field--outlined.q-field--focused .q-field__control) {
+  border-color: $color-leaf;
+  box-shadow: 0 0 0 2px $pastel-mint;
+}
+
+:deep(.q-btn) {
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+:deep(.q-btn.bg-positive) {
+  background: linear-gradient(135deg, $color-forest 0%, $color-leaf 100%);
+}
+
+:deep(.q-btn.bg-primary) {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+}
+
+:deep(.q-btn.text-negative) {
+  color: $color-wood;
+}
+
+:deep(.q-uploader) {
+  border: 2px dashed $color-moss;
+  border-radius: 12px;
+  background: $pastel-sage;
+}
+
+:deep(.q-list) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.q-item) {
+  background: $pastel-sand;
+  margin-bottom: 4px;
+  border-radius: 8px;
+}
+
+/* Estilos responsivos */
+.responsive-dialog {
+  width: 90vw;
+  max-width: 900px;
+}
+
+.scrollable-dialog {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+
+  :deep(.q-card__section) {
+    &:not(.dialog-header) {
+      overflow-y: auto;
+      flex: 1;
+    }
+  }
+}
+
+@media (max-width: 599px) {
+  .responsive-dialog {
+    width: 95vw;
+    margin: 8px;
+  }
+
+  .scrollable-dialog {
+    max-height: 95vh;
+  }
+
+  .dialog-header {
+    padding: 16px;
+  }
+
+  .header-content-dialog {
+    flex-direction: row;
+
+    .q-icon {
+      font-size: 24px !important;
+    }
+
+    .text-h5 {
+      font-size: 1.2em;
+    }
+  }
+
+  :deep(.q-stepper__header) {
+    padding: 4px;
+  }
+
+  :deep(.q-stepper__tab) {
+    min-height: 48px;
+    padding: 8px 12px;
+  }
+
+  :deep(.q-card-section) {
+    padding: 12px;
+  }
+
+  .row.q-col-gutter-md {
+    margin-left: -8px;
+    margin-right: -8px;
+
+    >div {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+  }
+
+  :deep(.q-field__label) {
+    font-size: 0.9em;
+  }
+
+  :deep(.q-btn) {
+    padding: 8px 12px;
+    font-size: 0.9em;
+  }
+
+  :deep(.q-stepper-navigation) {
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .q-btn {
+      flex: 1;
+      min-width: 120px;
+    }
+  }
 }
 </style>

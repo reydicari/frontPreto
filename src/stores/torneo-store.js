@@ -185,3 +185,27 @@ export const confirmarInicioTorneo = async (id, partidos) => {
     return null;
   }
 };
+export const finalizarTorneo = async (id_torneo) => {
+  try {
+    console.log("confirmando fin de torneo");
+    Notify.create({
+      type: "positive",
+      message: "Torneo finalizado con éxito no en backend",
+      position: "bottom",
+    });
+    // se espera que el backend responda con un objeto { mensaje: '...' } o similar
+    const resp = await api.put(`${URL_PART}/finalizar`, {
+      id_torneo,
+    });
+
+    return resp.data;
+  } catch (error) {
+    console.error("Error al comenzar torneo", error);
+    Notify.create({
+      type: "negative",
+      message: "Error al iniciar el torneo",
+      position: "bottom",
+    });
+    return null;
+  }
+};

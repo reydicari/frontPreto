@@ -1,32 +1,33 @@
 <template>
   <q-dialog v-model="isDialogVisible" persistent>
-    <q-card style="min-width: 800px; max-width: 900px">
-      <q-card-section class="row items-center justify-between">
-        <div class="text-h6 q-mr-sm">
+    <q-card class="dialog-card">
+      <q-card-section class="row items-center justify-between dialog-header">
+        <div class="dialog-title">
+          <q-icon name="local_activity" size="28px" class="q-mr-sm" />
           {{ editMode ? 'Modificar Inscripción' : 'Nueva Inscripción' }}
         </div>
         <div>
-          <q-btn flat dense round color="primary" class="help-nueva-inscripcion" aria-label="Ayuda" title="Ayuda"
+          <q-btn flat dense round class="help-nueva-inscripcion help-btn" aria-label="Ayuda" title="Ayuda"
             @click.stop="onInscripcionHelpClick">
             <q-icon name="help_outline" />
           </q-btn>
         </div>
       </q-card-section>
 
-      <q-stepper v-model="step" color="primary" persistent>
+      <q-stepper v-model="step" color="teal-7" animated persistent class="custom-stepper">
         <!-- Paso 1: Datos de la inscripción -->
-        <q-step name="datos" title="Datos de Inscripción" :done="step > 'datos'">
-          <div class="q-gutter-y-md">
-            <!-- Selección de estudiante -->
-            <div class="row items-center q-gutter-sm">
-              <div class="col-md-3">
+        <q-step name="datos" title="Datos de Inscripción" icon="assignment" :done="step > 'datos'">
+          <div class="q-gutter-y-md dialog-content">
+            <!-- Selección de estudiante en una sola fila -->
+            <div class="row q-col-gutter-sm items-end">
+              <div class="col-12 col-sm-3">
                 <q-select ref="nivelSelect" data-driver="nivel-select" v-model="localInscripcion.id_nivel"
-                  :options="nivelOptions" label="Nivel" option-label="label" option-value="value" emit-value map-options
-                  outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
+                  :options="nivelOptions" label="Nivel *" option-label="label" option-value="value" emit-value
+                  map-options outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
               </div>
-              <div class="col-md-7">
+              <div class="col-12 col-sm-6">
                 <q-select ref="estudianteSelect" data-driver="estudiante-select" v-model="selectedEstudiante"
-                  :options="displayedEstudiantes" option-label="displayName" label="Estudiante *" outlined
+                  :options="displayedEstudiantes" option-label="displayName" label="Estudiante *" outlined dense
                   :use-input="!props.editMode" @filter="filterEstudiantes" @input-value="updateNewEstudianteName"
                   @click.stop @popup-show="onPopupShow" :readonly="props.editMode" :clearable="!props.editMode"
                   :rules="[val => !!val || 'Seleccione un estudiante']">
@@ -38,7 +39,7 @@
                     </q-item>
                     <q-item clickable v-if="newEstudianteName" @click="addNewEstudiante">
                       <q-item-section avatar>
-                        <q-icon name="add_circle" color="positive" />
+                        <q-icon name="add_circle" class="text-teal-7" />
                       </q-item-section>
                       <q-item-section>
                         <q-item-label>Agregar: "{{ newEstudianteName }}"</q-item-label>
@@ -51,16 +52,20 @@
                   </template>
                 </q-select>
               </div>
-              <div class="col-auto">
-                <q-btn icon="person_add" color="secondary" label="Nuevo" data-driver="new-student-btn"
-                  @click="showNewStudentDialog = true" />
+              <div class="col-12 col-sm-3">
+                <q-btn icon="person_add" class="btn-add-student" label="Nuevo" data-driver="new-student-btn" unelevated
+                  no-caps dense @click="showNewStudentDialog = true" style="width: 100%;" />
               </div>
             </div>
 
 
-            <!-- Configuración de fechas -->
+            <!-- Sección de paquetes -->
             <div class="row q-col-gutter-md">
               <div class="col-12">
+                <div class="text-subtitle2 text-weight-medium q-mb-sm">
+                  <q-icon name="inventory_2" size="20px" class="q-mr-xs" />
+                  Seleccione un paquete
+                </div>
                 <!-- Paquetes: scroller horizontal -->
                 <div class="packages-row">
                   <div class="packages-scroll" data-driver="packages-scroll" ref="packagesContainer">
@@ -76,22 +81,29 @@
                               {{
                                 formatDate(pkg.fecha_vencimiento) || '—' }}</div>
                             <div class="col-auto">
-                              <q-badge v-if="recommendationReason(pkg) === 'edad'" color="amber"
-                                class="q-ml-sm recommended-badge">Recomendado por edad</q-badge>
-                              <q-badge v-else-if="recommendationReason(pkg) === 'nivel'" color="purple"
-                                class="q-ml-sm recommended-badge">Recomendado por nivel</q-badge>
-                              <q-badge v-else-if="studentPackageIds.includes(pkg.id)" color="grey-4" text-color="black"
-                                class="q-ml-sm">Ya inscrito</q-badge>
-                              <q-badge v-else-if="hasHorarioOverlap(pkg)" color="negative" text-color="white"
-                                class="q-ml-sm">Solapamiento de horario con otra inscripción</q-badge>
+                              <q-badge v-if="recommendationReason(pkg) === 'edad'"
+                                class="q-ml-sm badge-edad">Recomendado por
+                                edad</q-badge>
+                              <q-badge v-else-if="recommendationReason(pkg) === 'nivel'"
+                                class="q-ml-sm badge-nivel">Recomendado por
+                                nivel</q-badge>
+                              <q-badge v-else-if="studentPackageIds.includes(pkg.id)" class="q-ml-sm badge-inscrito">Ya
+                                inscrito</q-badge>
+                              <q-badge v-else-if="hasHorarioOverlap(pkg)" class="q-ml-sm badge-overlap">Solapamiento de
+                                horario</q-badge>
                             </div>
                           </div>
-                          <div class="text-caption">Cupo máximo: {{ pkg.max_estudiantes || '—' }}
+                          <div class="text-caption">
+                            <q-icon name="group" size="14px" class="q-mr-xs" />
+                            Cupo máximo: {{ pkg.max_estudiantes || '—' }}
                             <span class="q-ml-sm">
-                              <q-badge v-if="pkg.disponible === 0" color="negative">Sin cupo disponible</q-badge>
-                              <span v-else class="text-caption">Cupos disponibles: {{ pkg.disponible == null ? '—' :
+                              <q-badge v-if="pkg.disponible === 0" class="badge-sin-cupo">Sin cupo</q-badge>
+                              <q-badge v-else-if="pkg.disponible <= 3 && pkg.disponible > 0" class="badge-cupo-bajo">
+                                {{ pkg.disponible }} disponibles
+                              </q-badge>
+                              <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                              }}</span>
+                                }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>
@@ -117,61 +129,63 @@
               </div>
 
             </div>
-            <div class="row">
-              <div class="col-4">
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-sm-4">
                 <q-input ref="fechaInicioInput" v-model="localInscripcion.fecha_inicio" label="Fecha inicio *"
-                  type="date" outlined :rules="[val => !!val || 'Campo requerido']" class="q-mt-md" />
-
+                  type="date" outlined dense :rules="[val => !!val || 'Campo requerido']" />
               </div>
-              <div class="col-4">
-                <q-toggle v-model="inscripcionIndefinida" label="Inscripción indefinida" />
-
+              <div class="col-12 col-sm-4">
+                <div class="flex items-center" style="height: 40px;">
+                  <q-toggle v-model="inscripcionIndefinida" label="Inscripción indefinida" color="deep-orange-6" />
+                </div>
               </div>
-              <div class="col-4">
-
+              <div class="col-12 col-sm-4">
                 <q-input v-if="!inscripcionIndefinida" v-model="localInscripcion.meses_duracion"
-                  label="Duración en meses *" type="number" outlined min="1"
-                  :rules="[val => !!val || 'Campo requerido']" class="q-mt-sm" />
+                  label="Duración en meses *" type="number" outlined dense min="1"
+                  :rules="[val => !!val || 'Campo requerido']" />
               </div>
             </div>
           </div>
 
           <q-stepper-navigation>
-            <q-btn v-if="!inscripcionIndefinida" @click="stepPago" color="primary" label="Continuar a Pago" />
-            <q-btn v-else @click="saveInscripcion" color="positive" label="Guardar Inscripción" />
+            <q-btn v-if="!inscripcionIndefinida" @click="stepPago" class="btn-continuar" label="Continuar a Pago"
+              icon-right="arrow_forward" unelevated />
+            <q-btn v-else @click="saveInscripcion" class="btn-guardar" label="Guardar Inscripción" icon-right="save"
+              unelevated />
 
-            <q-btn flat @click="closeDialog" color="negative" label="Cancelar" class="q-ml-sm" />
+            <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
           </q-stepper-navigation>
         </q-step>
 
         <!-- Paso 2: Pago (opcional) -->
-        <q-step name="pago" title="Pago">
+        <q-step name="pago" title="Pago" icon="payments">
 
 
-          <div class="q-mt-md">
+          <div class="q-mt-md dialog-content">
             <div class="row q-col-gutter-md">
-              <div class="col-md-4">
-                <q-input v-model="nuevoPago.monto" label="Monto total" type="number" prefix="$" outlined readonly
+              <div class="col-12 col-sm-4">
+                <q-input v-model="nuevoPago.monto" label="Monto total" type="number" prefix="$" outlined dense readonly
                   :rules="[val => val > 0 || 'Monto debe ser positivo']" />
               </div>
-              <div class="col-md-4" v-if="localInscripcion.fecha_fin">
-                <q-input v-model="nuevoPago.meses_cubiertos" label="Meses cubiertos" type="number" outlined readonly
-                  :rules="[val => val > 0 || 'Debe cubrir al menos 1 mes']" />
+              <div class="col-12 col-sm-4" v-if="localInscripcion.fecha_fin">
+                <q-input v-model="nuevoPago.meses_cubiertos" label="Meses cubiertos" type="number" outlined dense
+                  readonly :rules="[val => val > 0 || 'Debe cubrir al menos 1 mes']" />
               </div>
-              <div class="col-md-4">
-                <q-select v-model="nuevoPago.metodo_pago" :options="metodosPago" label="Método de pago *" outlined
+              <div class="col-12 col-sm-4">
+                <q-select v-model="nuevoPago.metodo_pago" :options="metodosPago" label="Método de pago *" outlined dense
                   :rules="[val => !!val || 'Seleccione método']" />
               </div>
               <div class="col-12">
-                <q-input v-model="nuevoPago.detalle" label="Observaciones" type="textarea" outlined />
+                <q-input v-model="nuevoPago.detalle" label="Observaciones" type="textarea" outlined dense rows="3" />
               </div>
             </div>
           </div>
 
           <q-stepper-navigation>
-            <q-btn @click="saveInscripcion" color="positive" label="Guardar Inscripción" />
-            <q-btn flat @click="step = 'datos'" color="primary" label="Atrás" class="q-ml-sm" />
-            <q-btn flat @click="closeDialog" color="negative" label="Cancelar" class="q-ml-sm" />
+            <q-btn @click="saveInscripcion" class="btn-guardar" label="Guardar Inscripción" icon-right="save"
+              unelevated />
+            <q-btn flat @click="step = 'datos'" class="btn-atras" label="Atrás" icon="arrow_back" />
+            <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
           </q-stepper-navigation>
         </q-step>
       </q-stepper>
@@ -1014,6 +1028,232 @@ function calculateMonthsDuration(startDate, endDate) {
 </script>
 
 <style scoped>
+/* Estilos del diálogo - Paleta verde y naranja escuela de fútbol */
+.dialog-card {
+  width: 95vw;
+  max-width: 950px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-content {
+  overflow-y: auto;
+  max-height: calc(90vh - 200px);
+  padding-right: 4px;
+}
+
+/* Scrollbar para el contenido del diálogo */
+.dialog-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: rgba(46, 125, 50, 0.05);
+  border-radius: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background: rgba(46, 125, 50, 0.2);
+  border-radius: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 125, 50, 0.35);
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #558b2f 100%);
+  color: white;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.2);
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.help-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.help-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+/* Stepper personalizado */
+.custom-stepper {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.custom-stepper :deep(.q-stepper__header) {
+  background: linear-gradient(to right, #e8f5e9, #f1f8e9);
+  flex-shrink: 0;
+}
+
+.custom-stepper :deep(.q-stepper__tab--active) {
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+.custom-stepper :deep(.q-stepper__tab--active .q-stepper__dot) {
+  background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+}
+
+.custom-stepper :deep(.q-stepper__content) {
+  overflow: visible;
+}
+
+.custom-stepper :deep(.q-stepper__nav) {
+  padding: 16px;
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+/* Botones de acción */
+.btn-add-student {
+  background: linear-gradient(135deg, #43a047 0%, #558b2f 100%);
+  color: white;
+  font-weight: 600;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(67, 160, 71, 0.3);
+}
+
+.btn-add-student:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(67, 160, 71, 0.4);
+}
+
+.btn-continuar {
+  background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+  color: white;
+  font-weight: 600;
+  padding: 10px 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-continuar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #ff6f00, #f57c00);
+  opacity: 0.8;
+}
+
+.btn-continuar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+}
+
+.btn-guardar {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: white;
+  font-weight: 600;
+  padding: 10px 24px;
+  transition: all 0.3s ease;
+}
+
+.btn-guardar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.4);
+}
+
+.btn-atras {
+  color: #558b2f;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-atras:hover {
+  background: rgba(85, 139, 47, 0.1);
+  color: #2e7d32;
+}
+
+.btn-cancelar {
+  color: #ef6c00;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-cancelar:hover {
+  background: rgba(239, 108, 0, 0.1);
+  color: #d84315;
+}
+
+/* Badges personalizados */
+.badge-edad {
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  color: white;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(124, 179, 66, 0.3);
+}
+
+.badge-nivel {
+  background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+  color: white;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(67, 160, 71, 0.3);
+}
+
+.badge-inscrito {
+  background: #bdbdbd;
+  color: #424242;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.badge-overlap {
+  background: linear-gradient(135deg, #ef6c00 0%, #f57c00 100%);
+  color: white;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(239, 108, 0, 0.3);
+}
+
+.badge-sin-cupo {
+  background: linear-gradient(135deg, #d84315 0%, #e64a19 100%);
+  color: white;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(216, 67, 21, 0.3);
+}
+
+.badge-cupo-bajo {
+  background: linear-gradient(135deg, #ff6f00 0%, #ff8f00 100%);
+  color: white;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(255, 111, 0, 0.3);
+  animation: pulse 2s infinite;
+}
+
 .packages-scroll {
   display: flex;
   gap: 12px;
@@ -1036,15 +1276,14 @@ function calculateMonthsDuration(startDate, endDate) {
   position: relative;
 }
 
-/* Card base: borde suave y fondo neutro */
+/* Card base: borde suave y fondo verde claro */
 .package-item .q-card {
-  border: 2px solid rgba(16, 24, 40, 0.06);
+  border: 2px solid rgba(46, 125, 50, 0.15);
   border-radius: 10px;
-  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  background: linear-gradient(180deg, #ffffff, #f1f8e9);
   overflow: hidden;
-  /* clip el brillo dentro de la tarjeta */
   position: relative;
-  /* para los pseudo-elementos de brillo */
+  transition: all 0.3s ease;
 }
 
 /* Indicador circular en la esquina para el seleccionado */
@@ -1053,17 +1292,32 @@ function calculateMonthsDuration(startDate, endDate) {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #1E88E5, #1976D2);
+  background: linear-gradient(180deg, #1b5e20, #2e7d32);
   color: white;
   font-weight: 700;
   border-radius: 50%;
-  box-shadow: 0 6px 18px rgba(30, 88, 165, 0.18);
+  box-shadow: 0 6px 18px rgba(27, 94, 32, 0.3);
   z-index: 6;
+  animation: checkPulse 0.5s ease;
+}
+
+@keyframes checkPulse {
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Animación de aparición */
@@ -1082,35 +1336,35 @@ function calculateMonthsDuration(startDate, endDate) {
 
 /* Estilo para seleccionado */
 .package-item.selected .q-card {
-  transform: scale(1.04);
+  transform: scale(1.05);
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
-  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.14);
-  border-color: rgba(30, 120, 220, 0.95);
-  background: linear-gradient(180deg, #E8F2FF, #F5FAFF);
+  box-shadow: 0 12px 30px rgba(27, 94, 32, 0.25);
+  border-color: #2e7d32;
+  background: linear-gradient(180deg, #e8f5e9, #f1f8e9);
 }
 
 /* Estilo para recomendado (efecto reluciente) */
 .package-item.recommended .q-card {
-  box-shadow: 0 0 0 3px rgba(255, 200, 50, 0.08), 0 6px 18px rgba(255, 180, 20, 0.12);
-  border-color: rgba(255, 180, 20, 0.6);
+  box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15), 0 6px 18px rgba(124, 179, 66, 0.2);
+  border-color: #7cb342;
 }
 
 @keyframes glow {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 200, 50, 0.12);
+    box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15), 0 6px 18px rgba(124, 179, 66, 0.2);
   }
 
   50% {
-    box-shadow: 0 0 20px 6px rgba(255, 200, 50, 0.14);
+    box-shadow: 0 0 0 5px rgba(124, 179, 66, 0.25), 0 8px 24px rgba(124, 179, 66, 0.3);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 200, 50, 0.12);
+    box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15), 0 6px 18px rgba(124, 179, 66, 0.2);
   }
 }
 
 .package-item.recommended .q-card {
-  animation: glow 2.2s infinite ease-in-out;
+  animation: glow 2s infinite ease-in-out;
 }
 
 
@@ -1125,24 +1379,22 @@ function calculateMonthsDuration(startDate, endDate) {
   transform: translateX(-100%) rotate(-25deg);
 }
 
-/* Línea gruesa (doble de la delgada) - arriba */
+/* Línea gruesa - arriba */
 .package-item.recommended .q-card::before {
   top: 28%;
-  height: 20px;
-  /* gruesa */
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.12));
-  opacity: 0.88;
-  animation: diagLR 3.2s linear infinite;
+  height: 18px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.1));
+  opacity: 0.8;
+  animation: diagLR 3s linear infinite;
 }
 
 /* Línea delgada - justo debajo, en paralelo */
 .package-item.recommended .q-card::after {
   top: 36%;
-  height: 5px;
-  /* delgada (aprox la mitad) */
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.18));
-  opacity: 0.95;
-  animation: diagLR 2.6s linear infinite;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15));
+  opacity: 0.85;
+  animation: diagLR 2.5s linear infinite;
 }
 
 @keyframes diagLR {
@@ -1157,12 +1409,6 @@ function calculateMonthsDuration(startDate, endDate) {
 
 .recommended-badge {
   font-weight: 600;
-}
-
-/* Ajustes de contraste para badge */
-.recommended-badge {
-  background: linear-gradient(90deg, #FFC107, #FFB300) !important;
-  color: #1f2937 !important;
   border-radius: 8px;
   padding: 2px 6px;
 }
@@ -1172,9 +1418,19 @@ function calculateMonthsDuration(startDate, endDate) {
   height: 8px;
 }
 
-.packages-scroll::-webkit-scrollbar-thumb {
-  background: rgba(16, 24, 40, 0.08);
+.packages-scroll::-webkit-scrollbar-track {
+  background: rgba(46, 125, 50, 0.05);
   border-radius: 8px;
+}
+
+.packages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(46, 125, 50, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.packages-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 125, 50, 0.35);
 }
 
 /* Paquetes que el estudiante ya tiene: apariencia plomeada */
@@ -1189,8 +1445,70 @@ function calculateMonthsDuration(startDate, endDate) {
   /* permitir scroll en el contenedor, pero la card no responde al click */
 }
 
-/* Estilo para paquetes con solapamiento: borde rojo para indicar conflicto */
+/* Estilo para paquetes con solapamiento: borde naranja para indicar conflicto */
 .package-item.overlap .q-card {
-  border-color: rgba(220, 38, 38, 0.9) !important;
+  border-color: #ef6c00 !important;
+  box-shadow: 0 0 0 2px rgba(239, 108, 0, 0.15), 0 4px 12px rgba(239, 108, 0, 0.2);
+}
+
+/* Responsive: Pantallas pequeñas */
+@media (max-width: 599px) {
+  .dialog-card {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .dialog-header {
+    padding: 12px 16px;
+  }
+
+  .dialog-title {
+    font-size: 1.2rem;
+  }
+
+  .dialog-title .q-icon {
+    font-size: 24px !important;
+  }
+
+  .dialog-content {
+    max-height: calc(100vh - 180px);
+    padding: 12px;
+  }
+
+  .package-item {
+    flex: 0 0 240px;
+    min-width: 200px;
+  }
+
+  .btn-add-student {
+    padding: 8px 16px;
+    font-size: 0.875rem;
+  }
+
+  .custom-stepper :deep(.q-stepper__header) {
+    flex-wrap: wrap;
+  }
+
+  .custom-stepper :deep(.q-stepper__tab) {
+    min-width: 0;
+    padding: 12px 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .package-item {
+    flex: 0 0 200px;
+    min-width: 180px;
+  }
+
+  .dialog-title {
+    font-size: 1.1rem;
+  }
+
+  .packages-scroll {
+    gap: 8px;
+  }
 }
 </style>

@@ -1,350 +1,342 @@
 <template>
-  <template v-if="!isMobile">
-    <q-dialog v-model="localVisible" persistent class="torneo-dialog">
-      <q-card class="torneo-card">
-        <!-- Header mejorado -->
-        <q-card-section class="dialog-header">
-          <div class="header-content">
-            <div class="torneo-info">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="sports_soccer" size="24px" class="q-mr-sm" color="primary" />
-                <div class="text-h5 torneo-title">{{ displayTorneo?.nombre || 'Seguimiento del torneo' }}</div>
-                <q-badge v-if="displayTorneo?.tipo_torneo?.nombre" :color="badgeColor(displayTorneo.tipo_torneo.nombre)"
-                  class="q-ml-md tipo-badge">
-                  {{ displayTorneo.tipo_torneo.nombre }}
-                </q-badge>
+  <q-dialog v-model="localVisible" persistent class="torneo-dialog">
+    <q-card class="torneo-card">
+      <!-- Header mejorado con paleta verde-naranja -->
+      <q-card-section class="dialog-header">
+        <div class="header-content">
+          <div class="torneo-info">
+            <div class="row items-center q-mb-xs">
+              <q-icon name="emoji_events" size="32px" class="q-mr-sm title-icon" />
+              <div class="text-h5 torneo-title">{{ displayTorneo?.nombre || 'Seguimiento del torneo' }}</div>
+              <q-badge v-if="displayTorneo?.tipo_torneo?.nombre" :color="badgeColor(displayTorneo.tipo_torneo.nombre)"
+                class="q-ml-md tipo-badge">
+                {{ displayTorneo.tipo_torneo.nombre }}
+              </q-badge>
+            </div>
+
+            <div class="torneo-meta row items-center">
+              <div class="meta-item">
+                <q-icon name="place" size="18px" class="q-mr-xs" />
+                <q-btn v-if="displayTorneo?.ubicacion?.id" flat dense class="location-btn q-pa-none"
+                  @click.stop="goToUbicacion(displayTorneo.ubicacion.id)">
+                  {{ displayTorneo.ubicacion?.nombre || '—' }}
+                </q-btn>
+                <span v-else>{{ displayTorneo?.ubicacion?.nombre || '—' }}</span>
               </div>
 
-              <div class="torneo-meta row items-center">
-                <div class="meta-item">
-                  <q-icon name="place" size="16px" class="q-mr-xs" />
-                  <q-btn v-if="displayTorneo?.ubicacion?.id" flat dense class="location-btn q-pa-none"
-                    @click.stop="goToUbicacion(displayTorneo.ubicacion.id)">
-                    {{ displayTorneo.ubicacion?.nombre || '—' }}
-                  </q-btn>
-                  <span v-else>{{ displayTorneo?.ubicacion?.nombre || '—' }}</span>
-                </div>
-
-                <div class="meta-item">
-                  <q-icon name="event" size="16px" class="q-mr-xs" />
-                  <span>{{ formatDateShort(displayTorneo?.fecha_inicio) }} → {{
-                    formatDateShort(displayTorneo?.fecha_fin)
+              <div class="meta-item">
+                <q-icon name="event" size="18px" class="q-mr-xs" />
+                <span>{{ formatDateShort(displayTorneo?.fecha_inicio) }} → {{
+                  formatDateShort(displayTorneo?.fecha_fin)
                   }}</span>
-                </div>
-              </div>
-
-              <div v-if="displayTorneo?.encargados && displayTorneo.encargados.length"
-                class="encargados-section q-mt-sm">
-                <div class="text-caption text-weight-medium q-mb-xs">Encargado(s):</div>
-                <div class="encargados-chips">
-                  <q-chip v-for="e in displayTorneo.encargados" :key="e.id || e.id_persona" dense
-                    class="encargado-chip">
-                    <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
-                      {{ getInitials(personaLabel(e.persona || e)) }}
-                    </q-avatar>
-                    {{ personaLabel(e.persona || e) }}
-                  </q-chip>
-                </div>
               </div>
             </div>
 
-            <q-btn flat round dense icon="close" class="close-btn" @click="close" />
+            <div v-if="displayTorneo?.encargados && displayTorneo.encargados.length" class="encargados-section q-mt-sm">
+              <div class="text-caption text-weight-medium q-mb-xs">Encargado(s):</div>
+              <div class="encargados-chips">
+                <q-chip v-for="e in displayTorneo.encargados" :key="e.id || e.id_persona" dense class="encargado-chip">
+                  <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
+                    {{ getInitials(personaLabel(e.persona || e)) }}
+                  </q-avatar>
+                  {{ personaLabel(e.persona || e) }}
+                </q-chip>
+              </div>
+            </div>
           </div>
-        </q-card-section>
 
-        <q-separator />
+          <q-btn flat round dense icon="close" class="close-btn" @click="close" />
+        </div>
+      </q-card-section>
 
-        <!-- Contenido principal mejorado -->
-        <q-card-section class="partidos-section">
-          <div v-if="loading" class="loading-container">
-            <q-spinner-oval size="40px" color="primary" />
-            <div class="q-mt-md text-caption">Cargando partidos...</div>
+      <q-separator />
+
+      <!-- Contenido principal mejorado -->
+      <q-card-section class="partidos-section">
+        <div v-if="loading" class="loading-container">
+          <q-spinner-oval size="40px" color="primary" />
+          <div class="q-mt-md text-caption">Cargando partidos...</div>
+        </div>
+
+        <div v-else>
+          <div v-if="!partidos || partidos.length === 0" class="empty-state">
+            <q-icon name="sports" size="48px" color="grey-5" />
+            <div class="q-mt-md text-h6 text-grey-7">No hay partidos programados</div>
+            <div class="q-mt-xs text-caption text-grey-6">Los partidos aparecerán aquí cuando se programen</div>
           </div>
 
-          <div v-else>
-            <div v-if="!partidos || partidos.length === 0" class="empty-state">
-              <q-icon name="sports" size="48px" color="grey-5" />
-              <div class="q-mt-md text-h6 text-grey-7">No hay partidos programados</div>
-              <div class="q-mt-xs text-caption text-grey-6">Los partidos aparecerán aquí cuando se programen</div>
+          <div v-else class="partidos-container">
+            <div class="partidos-header">
+              <div class="text-h6">Partidos</div>
+              <div class="header-right">
+                <q-badge color="primary" rounded class="q-mr-sm">{{ filteredPartidos.length }} partido(s)</q-badge>
+                <q-tabs v-model="filterMode" dense class="tabs-switch">
+                  <q-tab name="en_marcha" label="En marcha" />
+                  <q-tab v-if="displayTorneo?.id_tipo_torneo === 2" name="posiciones" label="Posiciones" />
+                  <q-tab name="finalizados" label="Finalizados" />
+                </q-tabs>
+              </div>
             </div>
 
-            <div v-else class="partidos-container">
-              <div class="partidos-header">
-                <div class="text-h6">Partidos</div>
-                <div class="header-right">
-                  <q-badge color="primary" rounded class="q-mr-sm">{{ filteredPartidos.length }} partido(s)</q-badge>
-                  <q-tabs v-model="filterMode" dense class="tabs-switch">
-                    <q-tab name="en_marcha" label="En marcha" />
-                    <q-tab v-if="displayTorneo?.id_tipo_torneo === 2" name="posiciones" label="Posiciones" />
-                    <q-tab name="finalizados" label="Finalizados" />
-                  </q-tabs>
-                </div>
-              </div>
-
-              <div class="partidos-list">
-                <template
-                  v-if="filterMode === 'posiciones' || (filterMode === 'finalizados' && displayTorneo?.id_tipo_torneo === 4)">
-                  <div class="posiciones-table q-mt-sm">
-                    <div class="posiciones-header row items-center q-mb-sm" style="justify-content:flex-end;">
-                      <q-icon name="help_outline" class="help-posiciones cursor-pointer" size="24px" color="primary"
-                        @click.stop="onPosicionesHelpClick" />
-                    </div>
-                    <table class="standings-table">
-                      <thead>
-                        <tr v-if="displayTorneo?.id_tipo_torneo === 2">
-                          <th>#</th>
-                          <th>Equipo</th>
-                          <th class="PJ">PJ</th>
-                          <th class="G">G</th>
-                          <th class="E">E</th>
-                          <th class="P">P</th>
-                          <th class="GF">GF</th>
-                          <th class="GC">GC</th>
-                          <th class="DG">DG</th>
-                          <th class="PTS">PTS</th>
-                        </tr>
-                        <tr v-else-if="displayTorneo?.id_tipo_torneo === 4">
-                          <th>#</th>
-                          <th>Equipo</th>
-                          <th class="PJ">PJ</th>
-                          <th class="GF">GF</th>
-                          <th class="GC">GC</th>
-                          <th class="DG">DG</th>
-                          <th class="VICTS">VICTS</th>
-                        </tr>
-                        <tr v-else>
-                          <th>#</th>
-                          <th>Equipo</th>
-                          <th class="PJ">PJ</th>
-                          <th class="W">W</th>
-                          <th class="E">E</th>
-                          <th class="L">L</th>
-                          <th class="GF">GF</th>
-                          <th class="GC">GC</th>
-                          <th class="DG">DG</th>
-                          <th class="PTS">PTS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(t, idx) in posiciones" :key="t.id">
-                          <td>{{ idx + 1 }}</td>
-                          <td>{{ t.nombre }}</td>
-                          <template v-if="displayTorneo?.id_tipo_torneo === 2">
-                            <td>{{ t.PJ }}</td>
-                            <td>{{ t.W }}</td>
-                            <td>{{ t.E }}</td>
-                            <td>{{ t.L }}</td>
-                            <td>{{ t.GF }}</td>
-                            <td>{{ t.GC }}</td>
-                            <td>{{ t.DG }}</td>
-                            <td>{{ t.PTS }}</td>
-                          </template>
-                          <template v-else-if="displayTorneo?.id_tipo_torneo === 4">
-                            <td>{{ t.PJ }}</td>
-                            <td>{{ t.GF }}</td>
-                            <td>{{ t.GC }}</td>
-                            <td>{{ t.DG }}</td>
-                            <td>{{ t.W }}</td>
-                          </template>
-                          <template v-else>
-                            <td>{{ t.PJ }}</td>
-                            <td>{{ t.W }}</td>
-                            <td>{{ t.E }}</td>
-                            <td>{{ t.L }}</td>
-                            <td>{{ t.GF }}</td>
-                            <td>{{ t.GC }}</td>
-                            <td>{{ t.DG }}</td>
-                            <td>{{ t.PTS }}</td>
-                          </template>
-                        </tr>
-                      </tbody>
-                    </table>
+            <div class="partidos-list">
+              <template
+                v-if="filterMode === 'posiciones' || (filterMode === 'finalizados' && displayTorneo?.id_tipo_torneo === 4)">
+                <div class="posiciones-table q-mt-sm">
+                  <div class="posiciones-header row items-center q-mb-sm" style="justify-content:flex-end;">
+                    <q-icon name="help_outline" class="help-posiciones cursor-pointer" size="24px" color="primary"
+                      @click.stop="onPosicionesHelpClick" />
                   </div>
-                </template>
-                <template v-if="filterMode === 'en_marcha' && enMarchaCount === 0">
-                  <!-- Para ligas (tipo 2) mostramos podio de 3 puestos; si no es liga, mostramos ganador final si existe -->
-                  <template
-                    v-if="(displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && posiciones && posiciones.length > 0">
-                    <q-card class="partido-card podium-card">
-                      <q-card-section class="podium-content row items-center" style="justify-content:center;">
-                        <div class="podium-col second" v-if="top3.length >= 2">
-                          <div class="pos-number">2</div>
-                          <div class="equipo-nombre small">{{ top3[1].nombre }}</div>
-                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[1].W + ' victorias' :
-                            top3[1].PTS + ' pts' }}</div>
-                        </div>
-
-                        <div class="podium-col first" v-if="top3.length >= 1" :class="{ 'podium-active': allFinished }">
-                          <img :src="trophyImg" alt="Trofeo" class="trophy-img podium-trophy"
-                            :class="{ 'pulse-trophy': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }"
-                            ref="podiumTrophyRef" />
-                          <div ref="finalWinnerNameRef" class="equipo-nombre">{{ top3[0].nombre }}</div>
-                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[0].W + ' victorias' :
-                            top3[0].PTS + ' pts' }}</div>
-                        </div>
-
-                        <div class="podium-col third" v-if="top3.length >= 3">
-                          <div class="pos-number">3</div>
-                          <div class="equipo-nombre small">{{ top3[2].nombre }}</div>
-                          <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[2].W + ' victorias' :
-                            top3[2].PTS + ' pts' }}</div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </template>
-                  <template v-else-if="finalWinner">
-                    <q-card class="partido-card finalizado special-final-winner">
-                      <q-card-section class="partido-content" style="justify-content:center; text-align:center;">
-                        <div class="equipo equipo-center winner-final"
-                          style="display:flex; align-items:center; gap:12px; justify-content:center;">
-                          <img :src="trophyImg" alt="Trofeo" class="trophy-img" />
-                          <div>
-                            <div ref="finalWinnerNameRef" class="equipo-nombre" style="font-size:1.25rem;">{{
-                              finalWinner.team.nombre }}</div>
-                            <div class="text-caption q-mt-xs">Ganador definitivo</div>
-                          </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </template>
-                </template>
-                <q-card v-for="p in filteredPartidos" :key="p.id || `${p.id_equipo_local}-${p.id_equipo_visitante}`"
-                  class="partido-card"
-                  :class="{ 'finalizado': p.finalizado === true, 'tipo-2or4': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }">
-                  <q-card-section class="partido-content">
-                    <!-- Equipo local -->
-                    <div class="equipo equipo-local" :class="{
-                      winner: isWinner(p, 'local'),
-                      'winner-final': isWinner(p, 'local') && shouldPaintFinal(p),
-                      'winner-semifinal': isWinner(p, 'local') && getWinnerPhase(p) === 'semifinal',
-                      'winner-cuartos': isWinner(p, 'local') && getWinnerPhase(p) === 'cuartos',
-                      'winner-octavos': isWinner(p, 'local') && getWinnerPhase(p) === 'octavos',
-                      'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
-                      [winnerAltClass(p)]: isWinner(p, 'local') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
-                    }">
-                      <div class="equipo-info">
-                        <div class="equipo-nombre">{{ nameOf(p, 'local') }}</div>
-                      </div>
-
-                      <div class="marcador">
-                        <template v-if="isEncargado && !p.finalizado">
-                          <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'local')"
-                            :disable="Number(p.goles_local || 0) <= 0" class="goal-btn" />
-                          <div class="goles">{{ displayGoal(p, 'local') }}</div>
-                          <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'local')"
-                            class="goal-btn" />
+                  <table class="standings-table">
+                    <thead>
+                      <tr v-if="displayTorneo?.id_tipo_torneo === 2">
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th class="PJ">PJ</th>
+                        <th class="G">G</th>
+                        <th class="E">E</th>
+                        <th class="P">P</th>
+                        <th class="GF">GF</th>
+                        <th class="GC">GC</th>
+                        <th class="DG">DG</th>
+                        <th class="PTS">PTS</th>
+                      </tr>
+                      <tr v-else-if="displayTorneo?.id_tipo_torneo === 4">
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th class="PJ">PJ</th>
+                        <th class="GF">GF</th>
+                        <th class="GC">GC</th>
+                        <th class="DG">DG</th>
+                        <th class="VICTS">VICTS</th>
+                      </tr>
+                      <tr v-else>
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th class="PJ">PJ</th>
+                        <th class="W">W</th>
+                        <th class="E">E</th>
+                        <th class="L">L</th>
+                        <th class="GF">GF</th>
+                        <th class="GC">GC</th>
+                        <th class="DG">DG</th>
+                        <th class="PTS">PTS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(t, idx) in posiciones" :key="t.id">
+                        <td>{{ idx + 1 }}</td>
+                        <td>{{ t.nombre }}</td>
+                        <template v-if="displayTorneo?.id_tipo_torneo === 2">
+                          <td>{{ t.PJ }}</td>
+                          <td>{{ t.W }}</td>
+                          <td>{{ t.E }}</td>
+                          <td>{{ t.L }}</td>
+                          <td>{{ t.GF }}</td>
+                          <td>{{ t.GC }}</td>
+                          <td>{{ t.DG }}</td>
+                          <td>{{ t.PTS }}</td>
+                        </template>
+                        <template v-else-if="displayTorneo?.id_tipo_torneo === 4">
+                          <td>{{ t.PJ }}</td>
+                          <td>{{ t.GF }}</td>
+                          <td>{{ t.GC }}</td>
+                          <td>{{ t.DG }}</td>
+                          <td>{{ t.W }}</td>
                         </template>
                         <template v-else>
-                          <div class="goles">{{ displayGoal(p, 'local') }}</div>
+                          <td>{{ t.PJ }}</td>
+                          <td>{{ t.W }}</td>
+                          <td>{{ t.E }}</td>
+                          <td>{{ t.L }}</td>
+                          <td>{{ t.GF }}</td>
+                          <td>{{ t.GC }}</td>
+                          <td>{{ t.DG }}</td>
+                          <td>{{ t.PTS }}</td>
                         </template>
-                      </div>
-                    </div>
-
-                    <!-- Separador central -->
-                    <div class="partido-separador">
-                      <div class="vs">VS</div>
-                      <div class="ronda">{{ p.ronda || '-' }}</div>
-                    </div>
-
-                    <!-- Equipo visitante -->
-                    <div class="equipo equipo-visitante" :class="{
-                      winner: isWinner(p, 'visitante'),
-                      'winner-final': isWinner(p, 'visitante') && shouldPaintFinal(p),
-                      'winner-semifinal': isWinner(p, 'visitante') && getWinnerPhase(p) === 'semifinal',
-                      'winner-cuartos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'cuartos',
-                      'winner-octavos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'octavos',
-                      'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
-                      [winnerAltClass(p)]: isWinner(p, 'visitante') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
-                    }">
-                      <div class="marcador">
-                        <template v-if="isEncargado && !p.finalizado">
-                          <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'visitante')"
-                            :disable="Number(p.goles_visitante || 0) <= 0" class="goal-btn" />
-                          <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
-                          <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'visitante')"
-                            class="goal-btn" />
-                        </template>
-                        <template v-else>
-                          <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
-                        </template>
-                      </div>
-                      <div class="equipo-info">
-                        <div class="equipo-nombre">{{ nameOf(p, 'visitante') }}</div>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+              <template v-if="filterMode === 'en_marcha' && enMarchaCount === 0">
+                <!-- Para ligas (tipo 2) mostramos podio de 3 puestos; si no es liga, mostramos ganador final si existe -->
+                <template
+                  v-if="(displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && posiciones && posiciones.length > 0">
+                  <q-card class="partido-card podium-card">
+                    <q-card-section class="podium-content row items-center" style="justify-content:center;">
+                      <div class="podium-col second" v-if="top3.length >= 2">
+                        <div class="pos-number">2</div>
+                        <div class="equipo-nombre small">{{ top3[1].nombre }}</div>
+                        <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[1].W + ' victorias' :
+                          top3[1].PTS + ' pts' }}</div>
                       </div>
 
+                      <div class="podium-col first" v-if="top3.length >= 1" :class="{ 'podium-active': allFinished }">
+                        <img :src="trophyImg" alt="Trofeo" class="trophy-img podium-trophy"
+                          :class="{ 'pulse-trophy': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }"
+                          ref="podiumTrophyRef" />
+                        <div ref="finalWinnerNameRef" class="equipo-nombre">{{ top3[0].nombre }}</div>
+                        <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[0].W + ' victorias' :
+                          top3[0].PTS + ' pts' }}</div>
+                      </div>
+
+                      <div class="podium-col third" v-if="top3.length >= 3">
+                        <div class="pos-number">3</div>
+                        <div class="equipo-nombre small">{{ top3[2].nombre }}</div>
+                        <div class="pos-stats">{{ displayTorneo?.id_tipo_torneo === 4 ? top3[2].W + ' victorias' :
+                          top3[2].PTS + ' pts' }}</div>
+                      </div>
+                    </q-card-section>
+                  </q-card>
+                </template>
+                <template v-else-if="finalWinner">
+                  <q-card class="partido-card finalizado special-final-winner">
+                    <q-card-section class="partido-content" style="justify-content:center; text-align:center;">
+                      <div class="equipo equipo-center winner-final"
+                        style="display:flex; align-items:center; gap:12px; justify-content:center;">
+                        <img :src="trophyImg" alt="Trofeo" class="trophy-img" />
+                        <div>
+                          <div ref="finalWinnerNameRef" class="equipo-nombre" style="font-size:1.25rem;">{{
+                            finalWinner.team.nombre }}</div>
+                          <div class="text-caption q-mt-xs">Ganador definitivo</div>
+                        </div>
+                      </div>
+                    </q-card-section>
+                  </q-card>
+                </template>
+              </template>
+              <q-card v-for="p in filteredPartidos" :key="p.id || `${p.id_equipo_local}-${p.id_equipo_visitante}`"
+                class="partido-card"
+                :class="{ 'finalizado': p.finalizado === true, 'tipo-2or4': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) }">
+                <q-card-section class="partido-content">
+                  <!-- Equipo local -->
+                  <div class="equipo equipo-local" :class="{
+                    winner: isWinner(p, 'local'),
+                    'winner-final': isWinner(p, 'local') && shouldPaintFinal(p),
+                    'winner-semifinal': isWinner(p, 'local') && getWinnerPhase(p) === 'semifinal',
+                    'winner-cuartos': isWinner(p, 'local') && getWinnerPhase(p) === 'cuartos',
+                    'winner-octavos': isWinner(p, 'local') && getWinnerPhase(p) === 'octavos',
+                    'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
+                    [winnerAltClass(p)]: isWinner(p, 'local') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
+                  }">
+                    <div class="equipo-info">
+                      <div class="equipo-nombre">{{ nameOf(p, 'local') }}</div>
                     </div>
 
-                    <!-- Acciones -->
-                    <div class="partido-acciones">
-                      <template v-if="isEncargado">
-                        <q-btn color="primary" unelevated v-if="p.id_equipo_ganador == null && p.finalizado !== true"
-                          label="Finalizar" @click="finishMatch(p, $event.currentTarget)" />
+                    <div class="marcador">
+                      <template v-if="isEncargado && !p.finalizado">
+                        <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'local')"
+                          :disable="Number(p.goles_local || 0) <= 0" class="goal-btn" />
+                        <div class="goles">{{ displayGoal(p, 'local') }}</div>
+                        <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'local')"
+                          class="goal-btn" />
+                      </template>
+                      <template v-else>
+                        <div class="goles">{{ displayGoal(p, 'local') }}</div>
                       </template>
                     </div>
-                    <!-- Mobile layout duplicates (visible only on small screens) -->
-
-                  </q-card-section>
-
-                  <!-- Estado del partido -->
-                  <div v-if="p.finalizado === true" class="partido-finalizado-indicator">
-                    <q-icon name="check_circle" size="16px" class="q-mr-xs" :color="statusLabelColor(p).color" />
-                    <span class="finalizado-label" :style="{ color: statusLabelColor(p).color }">{{
-                      statusLabelColor(p).label }}</span>
                   </div>
-                </q-card>
-              </div>
 
-              <div class="advance-center q-mt-md" v-if="enMarchaCount === 0 && partidos.length > 0 && showAdvance">
-                <template v-if="displayTorneo?.id_tipo_torneo === 1">
-                  <q-btn class="advance-btn" icon="skip_next" @click="openOrganizeWithWinners">Avanzar fase</q-btn>
-                </template>
-                <template v-else>
-                  <q-btn class="advance-btn" flat color="grey-6" disable icon="flag" label="Torneo finalizado" />
-                </template>
-              </div>
+                  <!-- Separador central -->
+                  <div class="partido-separador">
+                    <div class="vs">VS</div>
+                    <div class="ronda">{{ p.ronda || '-' }}</div>
+                  </div>
+
+                  <!-- Equipo visitante -->
+                  <div class="equipo equipo-visitante" :class="{
+                    winner: isWinner(p, 'visitante'),
+                    'winner-final': isWinner(p, 'visitante') && shouldPaintFinal(p),
+                    'winner-semifinal': isWinner(p, 'visitante') && getWinnerPhase(p) === 'semifinal',
+                    'winner-cuartos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'cuartos',
+                    'winner-octavos': isWinner(p, 'visitante') && getWinnerPhase(p) === 'octavos',
+                    'empate': (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4) && (Number(p.goles_local || p.golesLocal || 0) === Number(p.goles_visitante || p.golesVisitante || 0)) && (Number(p.goles_local || p.golesLocal || 0) >= 0),
+                    [winnerAltClass(p)]: isWinner(p, 'visitante') && (displayTorneo?.id_tipo_torneo === 2 || displayTorneo?.id_tipo_torneo === 4)
+                  }">
+                    <div class="marcador">
+                      <template v-if="isEncargado && !p.finalizado">
+                        <q-btn round dense flat icon="remove" size="sm" @click="decrementGoal(p, 'visitante')"
+                          :disable="Number(p.goles_visitante || 0) <= 0" class="goal-btn" />
+                        <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
+                        <q-btn round dense flat icon="add" size="sm" @click="incrementGoal(p, 'visitante')"
+                          class="goal-btn" />
+                      </template>
+                      <template v-else>
+                        <div class="goles">{{ displayGoal(p, 'visitante') }}</div>
+                      </template>
+                    </div>
+                    <div class="equipo-info">
+                      <div class="equipo-nombre">{{ nameOf(p, 'visitante') }}</div>
+                    </div>
+
+                  </div>
+
+                  <!-- Acciones -->
+                  <div class="partido-acciones">
+                    <template v-if="isEncargado">
+                      <q-btn color="primary" unelevated v-if="p.id_equipo_ganador == null && p.finalizado !== true"
+                        label="Finalizar" @click="finishMatch(p, $event.currentTarget)" />
+                    </template>
+                  </div>
+                  <!-- Mobile layout duplicates (visible only on small screens) -->
+
+                </q-card-section>
+
+                <!-- Estado del partido -->
+                <div v-if="p.finalizado === true" class="partido-finalizado-indicator">
+                  <q-icon name="check_circle" size="16px" class="q-mr-xs" :color="statusLabelColor(p).color" />
+                  <span class="finalizado-label" :style="{ color: statusLabelColor(p).color }">{{
+                    statusLabelColor(p).label }}</span>
+                </div>
+              </q-card>
+            </div>
+
+            <div class="advance-center q-mt-md" v-if="enMarchaCount === 0 && partidos.length > 0 && showAdvance">
+              <template v-if="displayTorneo?.id_tipo_torneo === 1">
+                <q-btn class="advance-btn" icon="skip_next" @click="openOrganizeWithWinners">Avanzar fase</q-btn>
+              </template>
+              <template v-else>
+                <q-btn class="advance-btn" flat color="grey-6" disable icon="flag" label="Torneo finalizado" />
+              </template>
+            </div>
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right" class="dialog-actions">
+        <q-btn flat label="Cerrar" color="grey-7" @click="close" />
+      </q-card-actions>
+    </q-card>
+    <!-- Organize dialog embebido: se abre con los ganadores cuando corresponde -->
+
+    <q-dialog v-model="tieDialogVisible" persistent>
+      <q-card class="q-pa-none tie-dialog" style="min-width:360px; max-width:560px;">
+        <q-card-section class="row items-start">
+          <q-icon name="warning_amber" size="40px" color="amber-8" class="q-mr-md" />
+          <div>
+            <div class="text-h6">{{ tieDialogTitle }}</div>
+            <div class="text-caption q-mt-xs">El partido está empatado. Si continúa, el partido se reprogramará.</div>
+            <div v-if="tieDialogMatch" class="text-subtitle2 q-mt-sm">
+              <span class="team-name">{{ tieDialogMatch.equipoLocal?.nombre || tieDialogMatch.equipo_local?.nombre ||
+                'Local' }}</span>
+              <span class="goals-color">{{ tieDialogMatch.goles_local }} - {{ tieDialogMatch.goles_visitante }}</span>
+              <span class="team-name">{{ tieDialogMatch.equipoVisitante?.nombre ||
+                tieDialogMatch.equipo_visitante?.nombre
+                || 'Visitante' }}</span>
             </div>
           </div>
         </q-card-section>
-
-        <q-card-actions align="right" class="dialog-actions">
-          <q-btn flat label="Cerrar" color="grey-7" @click="close" />
+        <q-separator />
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" @click="cancelReprogram" />
+          <q-btn color="primary" unelevated label="Reprogramar" @click="confirmReprogram" />
         </q-card-actions>
       </q-card>
-      <!-- Organize dialog embebido: se abre con los ganadores cuando corresponde -->
-
-      <q-dialog v-model="tieDialogVisible" persistent>
-        <q-card class="q-pa-none tie-dialog" style="min-width:360px; max-width:560px;">
-          <q-card-section class="row items-start">
-            <q-icon name="warning_amber" size="40px" color="amber-8" class="q-mr-md" />
-            <div>
-              <div class="text-h6">{{ tieDialogTitle }}</div>
-              <div class="text-caption q-mt-xs">El partido está empatado. Si continúa, el partido se reprogramará.</div>
-              <div v-if="tieDialogMatch" class="text-subtitle2 q-mt-sm">
-                <span class="team-name">{{ tieDialogMatch.equipoLocal?.nombre || tieDialogMatch.equipo_local?.nombre ||
-                  'Local' }}</span>
-                <span class="goals-color">{{ tieDialogMatch.goles_local }} - {{ tieDialogMatch.goles_visitante }}</span>
-                <span class="team-name">{{ tieDialogMatch.equipoVisitante?.nombre ||
-                  tieDialogMatch.equipo_visitante?.nombre
-                  || 'Visitante' }}</span>
-              </div>
-            </div>
-          </q-card-section>
-          <q-separator />
-          <q-card-actions align="right">
-            <q-btn flat label="Cancelar" color="grey-7" @click="cancelReprogram" />
-            <q-btn color="primary" unelevated label="Reprogramar" @click="confirmReprogram" />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-      <OrganizeMatchesDialog :modelValue="organizeVisible" @update:modelValue="val => organizeVisible = val"
-        :torneoId="displayTorneo?.id || props.torneoId" :initialTeams="organizeTeams"
-        @generatedMatches="onGeneratedMatches" @started="onOrganizeStarted" />
     </q-dialog>
-  </template>
-
-  <!-- Mobile-specific dialog component -->
-  <MobileSeguimientoDialog v-else :modelValue="localVisible" @update:modelValue="val => localVisible = val"
-    :torneoId="props.torneoId" :torneo="props.torneo" @partido-updated="p => emit('partido-updated', p)" />
+    <OrganizeMatchesDialog :modelValue="organizeVisible" @update:modelValue="val => organizeVisible = val"
+      :torneoId="displayTorneo?.id || props.torneoId" :initialTeams="organizeTeams"
+      @generatedMatches="onGeneratedMatches" @started="onOrganizeStarted" />
+  </q-dialog>
 </template>
 
 <script setup>
@@ -359,9 +351,8 @@ onMounted(() => attachToIcon('.help-posiciones'))
 //   attachToIcon() // O llamar startPosicionesTour() directamente después de que la tabla se renderice
 // })
 import OrganizeMatchesDialog from 'src/pages/torneos/OrganizeMatchesDialog.vue'
-import MobileSeguimientoDialog from 'src/pages/torneos/MobileSeguimientoDialog.vue'
 import { actualizarPartido, listarPartidos, reprogramarPartido } from 'src/stores/partido-store'
-import { obtenerTorneo } from 'src/stores/torneo-store'
+import { obtenerTorneo, finalizarTorneo } from 'src/stores/torneo-store'
 import { useRouter } from 'vue-router'
 import { Notify } from 'quasar'
 
@@ -409,14 +400,6 @@ const filteredPartidos = computed(() => {
     return bi - ai
   })
 })
-
-// Responsive helper: detect mobile breakpoint and switch to mobile dialog
-const isMobile = ref(false)
-function updateIsMobile() { isMobile.value = window.innerWidth <= 520 }
-if (typeof window !== 'undefined') {
-  updateIsMobile()
-  window.addEventListener('resize', updateIsMobile)
-}
 
 const enMarchaCount = computed(() => {
   if (!partidos.value) return 0
@@ -606,6 +589,21 @@ async function finishMatch(p) {
         await actualizarPartido(p)
         emit('partido-updated', JSON.parse(JSON.stringify(p)))
         Notify.create({ type: 'positive', message: 'Empate registrado' })
+
+        // Verificar si este es el último partido en marcha
+        const partidosEnMarcha = partidos.value.filter(partido => !partido.finalizado)
+        if (partidosEnMarcha.length === 1 && partidosEnMarcha[0].id === p.id) {
+          const tipo = displayTorneo.value?.id_tipo_torneo
+          if (tipo === 1) {
+            if (p.id_equipo_ganador != null) {
+              await finalizarTorneo(displayTorneo.value.id)
+            }
+          } else if (tipo === 2 || tipo === 4) {
+            if (p.id_equipo_ganador != null || p.goles_local != -1 || p.goles_visitante != -1) {
+              await finalizarTorneo(displayTorneo.value.id)
+            }
+          }
+        }
       } catch (err) {
         console.error('Error guardando empate', err)
         Notify.create({ type: 'negative', message: 'No se pudo guardar el empate' })
@@ -661,6 +659,22 @@ async function finishMatch(p) {
   await actualizarPartido(p)
   emit('partido-updated', JSON.parse(JSON.stringify(p)))
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
+
+  // Verificar si este es el último partido en marcha
+  const partidosEnMarcha = partidos.value.filter(partido => !partido.finalizado)
+  if (partidosEnMarcha.length === 1 && partidosEnMarcha[0].id === p.id) {
+    const tipo = displayTorneo.value?.id_tipo_torneo
+    if (tipo === 1) {
+      if (p.id_equipo_ganador != null) {
+        await finalizarTorneo(displayTorneo.value.id)
+      }
+    } else if (tipo === 2 || tipo === 4) {
+      if (p.id_equipo_ganador != null || p.goles_local != -1 || p.goles_visitante != -1) {
+        await finalizarTorneo(displayTorneo.value.id)
+      }
+    }
+  }
+
   // trigger confetti at the button location (try to use a DOM element passed), fallback to center
   try {
     triggerConfetti(savedOrigin)
@@ -1416,16 +1430,41 @@ function appendOrIncrementReprogram(p, label) {
 </script>
 
 <style scoped lang="scss">
+// Paleta verde-naranja-marrón (de Torneos-Module)
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-lime: #9ccc65;
+$color-sage: #8bc34a;
+$color-bark: #5d4037;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+$color-clay: #a1887f;
+$color-sand: #bcaaa4;
+$color-orange: #ff6f00;
+$color-orange-light: #ff8f00;
+$color-orange-accent: #ffa726;
+
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+$pastel-clay: #d7ccc8;
+
 .torneo-dialog {
   .torneo-card {
     min-width: 480px;
     max-width: 900px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(46, 125, 50, 0.18);
+    border: 2px solid $pastel-mint;
   }
 
   .dialog-header {
-    padding: 20px 24px 16px;
+    padding: 24px 28px 20px;
+    background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
 
     .header-content {
       display: flex;
@@ -1437,64 +1476,91 @@ function appendOrIncrementReprogram(p, label) {
       flex: 1;
     }
 
+    .title-icon {
+      color: $color-orange-accent;
+      filter: drop-shadow(0 2px 4px rgba(255, 111, 0, 0.3));
+    }
+
     .torneo-title {
-      font-weight: 600;
-      color: #1a1a1a;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
     .tipo-badge {
-      font-size: 0.75rem;
-      padding: 4px 8px;
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      font-weight: 600;
     }
 
     .torneo-meta {
-      margin-top: 8px;
-      gap: 16px;
+      margin-top: 12px;
+      gap: 20px;
       flex-wrap: wrap;
     }
 
     .meta-item {
       display: flex;
       align-items: center;
-      color: #666;
-      font-size: 0.875rem;
-    }
-
-    .location-btn {
-      color: #1976d2;
+      color: $pastel-lime;
+      font-size: 0.9rem;
       font-weight: 500;
     }
 
+    .location-btn {
+      color: $color-orange-accent;
+      font-weight: 600;
+      text-decoration: underline;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: $color-orange-light;
+      }
+    }
+
     .encargados-section {
-      margin-top: 12px;
+      margin-top: 14px;
+
+      .text-caption {
+        color: $pastel-lime;
+        font-weight: 600;
+      }
     }
 
     .encargados-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
     }
 
     .encargado-chip {
-      background: #f5f7fa;
-      border: 1px solid #e1e5eb;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      backdrop-filter: blur(4px);
     }
 
     .close-btn {
-      color: #666;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
     }
   }
 
   .partidos-section {
-    padding: 16px 24px;
+    padding: 20px 28px;
+    background: $pastel-sage;
 
     .loading-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
-      color: #666;
+      padding: 50px 20px;
+      color: $color-wood;
     }
 
     .empty-state {
@@ -1502,26 +1568,27 @@ function appendOrIncrementReprogram(p, label) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
+      padding: 50px 20px;
       text-align: center;
+      color: $color-earth;
     }
 
     .partidos-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      gap: 12px;
+      margin-bottom: 20px;
+      gap: 16px;
     }
 
     .tabs-switch {
-      min-width: 220px;
+      min-width: 240px;
     }
 
     .partidos-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .standings-table {
@@ -1529,20 +1596,18 @@ function appendOrIncrementReprogram(p, label) {
       border-collapse: collapse;
     }
 
-    /* Tabla de posiciones: estilo visual más claro y legible */
+    /* Tabla de posiciones: estilo con paleta verde-naranja */
     .standings-table {
       width: 100%;
       border-collapse: separate;
-      /* menos separación entre filas para reducir alturas */
-      border-spacing: 0 4px;
+      border-spacing: 0 6px;
       background: transparent;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     .standings-table th,
     .standings-table td {
-      /* reducir padding para filas más compactas */
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-bottom: none;
       text-align: left;
       font-size: 0.92rem;
@@ -1551,90 +1616,94 @@ function appendOrIncrementReprogram(p, label) {
 
     .standings-table thead th {
       font-weight: 700;
-      color: #263238;
-      background: linear-gradient(180deg, #ffffff, #fbfbfc);
-      border-bottom: 2px solid rgba(0, 0, 0, 0.04);
-      padding: 12px 14px;
+      color: $color-forest;
+      background: linear-gradient(135deg, $pastel-mint 0%, $pastel-lime 100%);
+      border-bottom: 2px solid $color-moss;
+      padding: 14px 16px;
       text-transform: uppercase;
       font-size: 0.85rem;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 6px rgba(46, 125, 50, 0.1);
     }
 
-    /* Estilo de las filas como tarjetas ligeras */
+    /* Estilo de las filas como tarjetas con paleta verde */
     .standings-table tbody tr {
-      background: linear-gradient(180deg, #ffffff, #fcfdff);
-      border: 1px solid #eef2f5;
-      box-shadow: 0 1px 4px rgba(19, 38, 57, 0.02);
-      border-radius: 6px;
+      background: #ffffff;
+      border: 2px solid $pastel-mint;
+      box-shadow: 0 2px 6px rgba(46, 125, 50, 0.08);
+      border-radius: 8px;
       display: table-row;
-      transition: box-shadow .12s ease, background .12s ease;
+      transition: all 0.25s ease;
     }
 
-    /* Hover: no levantar demasiado, pero pintar fondo pastel púrpura */
+    /* Hover con pastel verde-lima */
     .standings-table tbody tr:hover {
-      transform: none;
-      box-shadow: 0 4px 10px rgba(19, 38, 57, 0.05);
-      background: linear-gradient(90deg, rgba(230, 225, 255, 0.9), rgba(245, 240, 255, 0.95));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 125, 50, 0.18);
+      background: linear-gradient(90deg, $pastel-sage 0%, $pastel-lime 100%);
+      border-color: $color-leaf;
     }
 
-    /* quitar fondos alternos, ya manejamos el estilo de fila */
+    /* quitar fondos alternos */
     .standings-table tbody tr:nth-child(odd),
     .standings-table tbody tr:nth-child(even) {
       background: transparent;
     }
 
-    /* Equipo - columna 2: quitar estilo pesado, usar peso normal */
+    /* Equipo - columna 2 */
     .standings-table td:nth-child(2) {
-      font-weight: 400;
-      color: inherit;
-      padding-left: 18px;
+      font-weight: 500;
+      color: $color-wood;
+      padding-left: 20px;
       width: 100%;
     }
 
-    /* Al hacer hover, el nombre del equipo toma un color suave para destacarlo */
+    /* Al hacer hover, el nombre del equipo toma color verde */
     .standings-table tbody tr:hover td:nth-child(2) {
-      color: #0b5563;
-      font-weight: 600;
+      color: $color-forest;
+      font-weight: 700;
     }
 
-    /* Columna de puntos: derecha y destacada */
+    /* Columna de puntos: derecha y destacada con color verde */
     .standings-table td:nth-child(10),
     .standings-table th.PTS {
       text-align: right;
       font-weight: 900;
-      color: #0f5132;
+      color: $color-forest;
       background: transparent;
+      font-size: 1.05rem;
     }
-
-    /* eliminar medallas decorativas en la columna de posición para estilo más limpio */
 
     /* Small tweak: make table cells behave like row-cells when using border-spacing */
     .standings-table tbody td {
       display: table-cell;
-      padding: 12px 14px;
+      padding: 14px 16px;
     }
 
     .advance-center {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 12px 0;
+      padding: 16px 0;
     }
 
     .partido-card {
-      border-radius: 8px;
-      border: 1px solid #e1e5eb;
-      transition: all 0.2s ease;
+      border-radius: 12px;
+      border: 2px solid $pastel-mint;
+      transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      background: #ffffff;
 
       &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
+        border-color: $color-leaf;
+        transform: translateY(-2px);
       }
 
       &.finalizado {
-        background: #f8f9fa;
-        border-color: #d1e7dd;
+        background: linear-gradient(135deg, $pastel-mint 0%, #ffffff 100%);
+        border-color: $color-moss;
 
         .partido-finalizado-indicator {
           display: flex;
@@ -1648,6 +1717,7 @@ function appendOrIncrementReprogram(p, label) {
       grid-template-columns: 1fr auto 1fr auto;
       align-items: center;
       gap: 16px;
+      min-width: 0;
     }
 
     .equipo {
@@ -1695,22 +1765,24 @@ function appendOrIncrementReprogram(p, label) {
 
     /* Winner highlight for finalizados */
     .partido-card.finalizado .equipo.winner .goles {
-      background: #d1e7dd;
-      border: 1px solid #0f5132;
-      color: #0f5132;
+      background: linear-gradient(135deg, $pastel-mint 0%, $color-sage 100%);
+      border: 2px solid $color-forest;
+      color: $color-forest;
       font-weight: 900;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
     }
 
     .partido-card.finalizado .equipo.winner .equipo-nombre {
-      color: #0f5132;
+      color: $color-forest;
       font-weight: 800;
     }
 
     .goal-btn {
-      color: #666;
+      color: $color-wood;
 
       &:hover {
-        background: #e9ecef;
+        background: $pastel-clay;
+        color: $color-forest;
       }
     }
 
@@ -1718,21 +1790,24 @@ function appendOrIncrementReprogram(p, label) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     .vs {
-      font-weight: 700;
-      color: #666;
-      font-size: 0.875rem;
+      font-weight: 800;
+      color: $color-orange;
+      font-size: 0.95rem;
+      text-shadow: 0 1px 3px rgba(255, 111, 0, 0.2);
     }
 
     .ronda {
       font-size: 0.75rem;
-      color: #888;
-      background: #f1f3f4;
-      padding: 2px 8px;
-      border-radius: 12px;
+      color: $color-wood;
+      background: $pastel-clay;
+      padding: 3px 10px;
+      border-radius: 14px;
+      font-weight: 600;
+      border: 1px solid $color-sand;
     }
 
     .partido-acciones {
@@ -1741,7 +1816,7 @@ function appendOrIncrementReprogram(p, label) {
     }
 
     .finalizar-btn {
-      min-width: 100px;
+      min-width: 110px;
     }
 
     .partido-finalizado-indicator {
@@ -1749,13 +1824,14 @@ function appendOrIncrementReprogram(p, label) {
       position: absolute;
       top: 0;
       right: 0;
-      background: #d1e7dd;
-      color: #0f5132;
-      padding: 4px 12px;
-      border-bottom-left-radius: 8px;
+      background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-bottom-left-radius: 10px;
       font-size: 0.75rem;
-      font-weight: 500;
+      font-weight: 600;
       align-items: center;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
     }
 
     .ganador-indicator {
@@ -2184,193 +2260,303 @@ function appendOrIncrementReprogram(p, label) {
   }
 
   .dialog-actions {
-    padding: 16px 24px;
-    border-top: 1px solid #e1e5eb;
+    padding: 18px 28px;
+    border-top: 2px solid $pastel-mint;
+    background: $pastel-sage;
   }
 }
 
 // Responsive
-@media (max-width: 768px) {
+@media (max-width: 959px) {
   .torneo-dialog {
     .torneo-card {
       min-width: unset;
-      margin: 16px;
+      margin: 12px;
+      max-width: calc(100vw - 24px);
+    }
+
+    .partidos-section {
+      overflow-x: hidden;
+    }
+
+    .partidos-list {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+
+      /* Scrollbar personalizada */
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: $pastel-sage;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: $color-leaf;
+        border-radius: 3px;
+
+        &:hover {
+          background: $color-moss;
+        }
+      }
+    }
+
+    .posiciones-table {
+      overflow-x: visible;
+    }
+
+    .partido-card {
+      min-width: 650px;
+      flex-shrink: 0;
     }
 
     .partido-content {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 12px;
-      text-align: center;
-    }
-
-    .equipo-local,
-    .equipo-visitante {
-      justify-content: center;
-    }
-
-    .equipo-visitante {
-      flex-direction: row-reverse;
-    }
-
-    .partido-separador {
-      order: -1;
-      flex-direction: row;
-      justify-content: center;
-      gap: 12px;
+      grid-template-columns: 1fr auto 1fr auto;
+      gap: 14px;
+      min-width: 650px;
     }
 
     .partido-acciones {
-      margin-top: 8px;
+      margin-top: 10px;
+    }
+
+    .standings-table {
+      font-size: 0.85rem;
+
+      th,
+      td {
+        padding: 6px 8px;
+      }
     }
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .torneo-dialog {
+    .torneo-card {
+      margin: 0;
+      max-width: 100vw;
+      width: 100vw;
+      min-height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
 
-    .dialog-header,
-    .partidos-section,
+    .dialog-header {
+      padding: 18px 16px 16px;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    .partidos-section {
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
     .dialog-actions {
-      padding-left: 16px;
-      padding-right: 16px;
+      padding: 14px 16px;
     }
 
     .torneo-title {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
+    }
+
+    .title-icon {
+      font-size: 28px !important;
     }
 
     .torneo-meta {
       flex-direction: column;
       align-items: flex-start;
+      gap: 10px;
+    }
+
+    .partidos-list {
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+      display: block;
+
+      /* Scrollbar personalizada */
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: $pastel-sage;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: $color-leaf;
+        border-radius: 3px;
+
+        &:hover {
+          background: $color-moss;
+        }
+      }
+    }
+
+    .posiciones-table {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+      display: block;
+      min-width: 100%;
+
+      /* Scrollbar personalizada */
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: $pastel-sage;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: $color-leaf;
+        border-radius: 3px;
+
+        &:hover {
+          background: $color-moss;
+        }
+      }
+    }
+
+    .standings-table {
+      min-width: 600px;
+    }
+
+    .partido-card {
+      border-radius: 10px;
+      min-width: 336px;
+      flex-shrink: 0;
+      transform: scale(0.8);
+      transform-origin: left top;
+      margin-bottom: -20%;
+    }
+
+    .partido-content {
+      grid-template-columns: 1fr auto 1fr auto;
       gap: 8px;
+      min-width: 420px;
+      padding: 12px 10px;
+    }
+
+    .equipo {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .equipo-local,
+    .equipo-visitante {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .equipo-info {
+      order: 2;
+      text-align: center;
+      max-width: 100px;
+    }
+
+    .marcador {
+      order: 1;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .equipo-nombre {
+      font-size: 0.8rem;
+      text-align: center;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+
+    .goles {
+      min-width: 44px;
+      height: 44px;
+      font-size: 1.25rem;
+    }
+
+    .goal-btn {
+      order: 1;
+      padding: 4px;
+    }
+
+    .partido-separador {
+      gap: 4px;
+    }
+
+    .vs {
+      font-size: 0.85rem;
+    }
+
+    .ronda {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+    }
+
+    .partido-acciones {
+      grid-column: 1 / -1;
+      margin-top: 8px;
+    }
+
+    .standings-table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+
+      thead,
+      tbody,
+      tr {
+        display: block;
+      }
+
+      tr {
+        margin-bottom: 12px;
+        border: 2px solid $pastel-mint;
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      td {
+        display: block;
+        text-align: left;
+        padding: 6px 0;
+        border: none;
+
+        &:before {
+          content: attr(data-label);
+          font-weight: 700;
+          color: $color-forest;
+          margin-right: 8px;
+        }
+      }
+
+      thead {
+        display: none;
+      }
     }
   }
 }
 
 /* Estilos para el diálogo de empate/reprogramación */
-.tie-dialog .team-name {
-  color: #1a1a1a;
-  font-weight: 700;
-}
-
-.tie-dialog .goals-color {
-  color: #1976d2;
-  font-weight: 800;
-  margin: 0 10px;
-}
-
-/* Mobile-only helpers (hidden by default) */
-.mobile-only {
-  display: none;
-}
-
-@media (max-width: 520px) {
-  .mobile-only {
-    display: block;
+.tie-dialog {
+  .team-name {
+    color: $color-forest;
+    font-weight: 700;
   }
 
-  .torneo-dialog {
-
-    /* make the partidos list horizontally scrollable */
-    .partidos-list {
-      display: flex;
-      flex-direction: row;
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
-    }
-
-    .partido-card {
-      min-width: 320px;
-      flex: 0 0 auto;
-      scroll-snap-align: start;
-    }
-
-    /* Use a grid layout inside each card to match requested rows/columns */
-    .partido-content {
-      display: grid;
-      grid-template-columns: 1fr 72px 1fr;
-      grid-template-rows: auto auto auto;
-      grid-template-areas:
-        "local-controls . visitante-controls"
-        "local-name vs visitante-name"
-        "actions actions actions";
-      gap: 8px;
-      align-items: center;
-      padding: 12px;
-    }
-
-    /* hide desktop-specific markers/info to avoid duplication */
-    .partido-content .marcador {
-      display: none !important;
-    }
-
-    .partido-content .equipo-info {
-      display: none !important;
-    }
-
-    .mobile-local-controls {
-      grid-area: local-controls;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mobile-visit-controls {
-      grid-area: visitante-controls;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mobile-local-name {
-      grid-area: local-name;
-      text-align: left;
-      padding-left: 6px;
-    }
-
-    .mobile-visit-name {
-      grid-area: visitante-name;
-      text-align: right;
-      padding-right: 6px;
-    }
-
-    .mobile-vs {
-      grid-area: vs;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .mobile-actions {
-      grid-area: actions;
-      display: flex;
-      justify-content: center;
-      padding-top: 6px;
-    }
-
-    .mobile-goals {
-      min-width: 56px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      background: #f5f7fa;
-      font-weight: 800;
-      font-size: 1.25rem;
-    }
-
-    .mobile-icons {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 6px;
-    }
+  .goals-color {
+    color: $color-orange;
+    font-weight: 800;
+    margin: 0 12px;
   }
 }
 </style>

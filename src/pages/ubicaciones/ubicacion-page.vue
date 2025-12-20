@@ -1,15 +1,59 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header -->
-    <div class="row items-center justify-between q-mb-md">
-      <div>
-        <h1 class="text-h4 text-primary q-ma-none page-title">Gestión de Ubicaciones</h1>
-        <p class="text-grey-6 q-mt-sm">Administra las ubicaciones deportivas</p>
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-3'">
+    <!-- Header modernizado -->
+    <div class="page-header q-mb-lg">
+      <div class="header-content">
+        <div class="row items-center justify-between q-col-gutter-md">
+          <div class="col-12 col-sm-auto">
+            <div class="header-title">
+              <q-icon name="place" size="42px" class="q-mr-sm" />
+              <h2 class="page-title">Gestión de Ubicaciones</h2>
+            </div>
+            <p class="header-subtitle">Administra las ubicaciones deportivas del sistema</p>
+          </div>
+        </div>
       </div>
-      <div class="row items-center q-gutter-sm">
-        <div class="text-caption text-grey-7">💡 Haz clic en el mapa para seleccionar una ubicación</div>
-        <q-btn color="primary" icon="add" label="Crear Ubicación" :disable="!ubicacionSeleccionada"
-          @click="mostrarDialogoNuevo" />
+
+      <!-- Estadísticas -->
+      <div class="stats-container row q-gutter-md q-mt-md">
+        <div class="stat-card stat-card-total">
+          <div class="stat-icon">
+            <q-icon name="place" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ ubicaciones.length }}</div>
+            <div class="stat-label">Total Ubicaciones</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-active">
+          <div class="stat-icon">
+            <q-icon name="check_circle" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ubicaciones.filter(u => u.estado).length}}</div>
+            <div class="stat-label">Activas</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-equipped">
+          <div class="stat-icon">
+            <q-icon name="sports" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ubicaciones.filter(u => u.equipado).length}}</div>
+            <div class="stat-label">Equipadas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ayuda con botón -->
+      <div class="help-banner q-mt-md">
+        <q-icon name="info" size="20px" class="q-mr-sm" />
+        <span class="help-text">💡 Haz clic en el mapa para seleccionar una ubicación y crear un nuevo registro</span>
+        <q-space />
+        <q-btn class="btn-create-inline" icon="add_circle" label="Crear Ubicación" :disable="!ubicacionSeleccionada"
+          @click="mostrarDialogoNuevo" unelevated no-caps size="md" />
       </div>
     </div>
 
@@ -27,8 +71,8 @@
 
       <!-- Lista de ubicaciones - 1/3 del ancho -->
       <div class="col-12 col-md-4">
-        <q-card class="shadow-1 sticky-card">
-          <q-card-section class="bg-primary text-white">
+        <q-card class="shadow-1 sticky-card list-card">
+          <q-card-section class="list-header">
             <div class="text-h6">Lista de Ubicaciones</div>
             <div class="text-caption">
               {{ ubicaciones.length }} ubicación{{ ubicaciones.length !== 1 ? 'es' : '' }} registrada{{
@@ -42,31 +86,35 @@
           </q-inner-loading>
 
           <!-- Lista -->
-          <q-list v-if="!cargando" class="rounded-borders">
-            <q-item v-for="ubicacion in ubicacionesPaginadas" :key="ubicacion.id" class="q-my-xs" clickable
+          <q-list v-if="!cargando" class="ubicaciones-list">
+            <q-item v-for="ubicacion in ubicacionesPaginadas" :key="ubicacion.id" class="ubicacion-item" clickable
               @click="centrarEnUbicacion(ubicacion)"
-              :class="{ 'bg-blue-1': ubicacionSeleccionadaLista === ubicacion.id }">
+              :class="{ 'item-selected': ubicacionSeleccionadaLista === ubicacion.id }">
               <q-item-section avatar>
-                <q-icon name="place" :color="ubicacion.estado ? 'primary' : 'grey'" />
+                <q-avatar size="42px" :class="ubicacion.estado ? 'avatar-active' : 'avatar-inactive'">
+                  <q-icon name="place" size="24px" />
+                </q-avatar>
               </q-item-section>
 
               <q-item-section>
-                <q-item-label class="text-weight-medium">
+                <q-item-label class="item-title">
                   {{ ubicacion.nombre }}
                 </q-item-label>
-                <q-item-label caption lines="2">
-                  {{ ubicacion.descripcion }}
+                <q-item-label caption lines="2" class="item-description">
+                  {{ ubicacion.descripcion || 'Sin descripción' }}
                 </q-item-label>
-                <q-item-label caption>
+                <q-item-label caption class="q-mt-xs">
                   <div class="row items-center q-gutter-xs">
-                    <q-badge :color="ubicacion.estado ? 'positive' : 'grey'" text-color="white">
+                    <q-badge :color="ubicacion.estado ? 'positive' : 'grey'" text-color="white" class="status-badge">
                       {{ ubicacion.estado ? 'Activo' : 'Inactivo' }}
                     </q-badge>
-                    <q-badge v-if="ubicacion.equipado" color="info" text-color="white">
+                    <q-badge v-if="ubicacion.equipado" color="orange" text-color="white" class="equipped-badge">
+                      <q-icon name="sports" size="12px" class="q-mr-xs" />
                       Equipado
                     </q-badge>
-                    <q-badge color="secondary">
-                      Cap: {{ ubicacion.capacidad }}
+                    <q-badge color="brown-7" text-color="white" class="capacity-badge">
+                      <q-icon name="groups" size="12px" class="q-mr-xs" />
+                      {{ ubicacion.capacidad }}
                     </q-badge>
                   </div>
                 </q-item-label>
@@ -74,12 +122,11 @@
 
               <q-item-section side>
                 <div class="row q-gutter-xs">
-                  <q-btn flat round icon="edit" color="primary" @click.stop="editarUbicacion(ubicacion)">
+                  <q-btn flat round dense icon="edit" color="brown-7" @click.stop="editarUbicacion(ubicacion)">
                     <q-tooltip>Editar ubicación</q-tooltip>
                   </q-btn>
                   <q-toggle dense :model-value="ubicacion.estado"
-                    @update:model-value="openConfirmToggle(ubicacion, $event)" @click.stop label="" />
-                  <!-- Botón de eliminar removido a petición del usuario -->
+                    @update:model-value="openConfirmToggle(ubicacion, $event)" @click.stop />
                 </div>
               </q-item-section>
             </q-item>
@@ -102,23 +149,26 @@
 
     <!-- Diálogo para crear/editar ubicación -->
     <q-dialog v-model="mostrarDialogo" persistent>
-      <q-card style="min-width: 500px">
-        <q-card-section class="row items-center">
-          <div class="text-h6">
-            {{ esEdicion ? 'Editar Ubicación' : 'Crear Nueva Ubicación' }}
+      <q-card class="dialog-card" style="min-width: 500px">
+        <q-card-section class="dialog-header">
+          <div class="dialog-title">
+            <q-icon :name="esEdicion ? 'edit_location' : 'add_location'" size="28px" class="q-mr-sm" />
+            <span class="text-h6">{{ esEdicion ? 'Editar Ubicación' : 'Crear Nueva Ubicación' }}</span>
           </div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
+          <q-btn icon="close" flat round dense v-close-popup color="white" />
         </q-card-section>
+        <q-separator />
 
         <q-card-section>
           <q-form @submit="guardarUbicacion" class="q-gutter-md">
             <!-- Coordenadas seleccionadas -->
-            <div class="q-pa-sm bg-blue-1 rounded-borders">
-              <div class="text-caption text-weight-medium">Coordenadas:</div>
-              <div class="text-caption">
-                Lat: {{ formulario.latitud?.toFixed(6) }},
-                Lng: {{ formulario.longitud?.toFixed(6) }}
+            <div class="coordinates-box">
+              <q-icon name="my_location" size="20px" class="q-mr-sm" />
+              <div>
+                <div class="text-caption text-weight-medium">Coordenadas seleccionadas:</div>
+                <div class="text-caption coordinates-text">
+                  Lat: {{ formulario.latitud?.toFixed(6) }}, Lng: {{ formulario.longitud?.toFixed(6) }}
+                </div>
               </div>
             </div>
 
@@ -144,8 +194,11 @@
             <q-toggle v-model="formulario.estado" label="Ubicación activa" color="positive" />
 
             <div class="row justify-end q-gutter-sm q-mt-lg">
-              <q-btn label="Cancelar" color="grey" v-close-popup flat />
-              <q-btn :label="esEdicion ? 'Actualizar' : 'Crear'" color="primary" type="submit" :loading="guardando" />
+              <q-btn label="Cancelar" flat class="btn-cancel" v-close-popup />
+              <q-btn :label="esEdicion ? 'Actualizar' : 'Crear'" type="submit" :loading="guardando" unelevated no-caps
+                class="btn-save-dialog">
+                <q-icon :name="esEdicion ? 'save' : 'add'" class="q-mr-xs" />
+              </q-btn>
             </div>
           </q-form>
         </q-card-section>
@@ -527,39 +580,352 @@ onUnmounted(() => {
 <style scoped lang="scss">
 @import 'src/css/quasar.variables.scss';
 
+// Variables de color (Paleta Verde-Naranja-Marrón)
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-lime: #9ccc65;
+$color-sage: #8bc34a;
+$color-bark: #5d4037;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+$color-orange: #ff6f00;
+$color-orange-light: #ff8f00;
+
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+
+.page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.header-content {
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .q-icon {
+    color: $color-moss;
+  }
+}
+
 .page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
-  font-weight: 800;
+  color: $color-forest;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
   line-height: 1.2;
 }
 
+.header-subtitle {
+  color: $color-wood;
+  font-size: 1rem;
+  margin: 0;
+  margin-left: 58px;
+  opacity: 0.9;
+}
+
+.btn-add-header {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(85, 139, 47, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+// Estadísticas
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stat-card {
+  flex: 1 1 auto;
+  min-width: 200px;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.stat-card-total {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+}
+
+.stat-card-active {
+  background: linear-gradient(135deg, $color-leaf 0%, $color-lime 100%);
+  color: white;
+}
+
+.stat-card-equipped {
+  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%);
+  color: white;
+}
+
+.stat-card-capacity {
+  background: linear-gradient(135deg, $color-wood 0%, $color-earth 100%);
+  color: white;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+// Banner de ayuda
+.help-banner {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-lime 100%);
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .q-icon {
+    color: $color-orange;
+  }
+}
+
+.help-text {
+  flex: 1;
+}
+
+.btn-create-inline {
+  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%);
+  color: white;
+  font-weight: 600;
+  padding: 10px 20px;
+  box-shadow: 0 3px 10px rgba(255, 111, 0, 0.3);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 111, 0, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    background: linear-gradient(135deg, #bdbdbd 0%, #9e9e9e 100%);
+  }
+}
+
+// Diálogo mejorado
+.dialog-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+
+  .q-icon {
+    color: $color-orange;
+  }
+}
+
+.coordinates-box {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-lime 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  border-left: 4px solid $color-orange;
+
+  .q-icon {
+    color: $color-orange;
+  }
+}
+
+.coordinates-text {
+  color: $color-forest;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.btn-cancel {
+  color: $color-wood;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(93, 64, 55, 0.1);
+  }
+}
+
+.btn-save-dialog {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 600;
+  padding: 10px 24px;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(85, 139, 47, 0.4);
+  }
+}
+
+// Mapa
 .map-container {
   height: 600px;
   width: 100%;
-  border-radius: 8px;
+  border-radius: 16px;
   z-index: 1;
 }
 
+// Lista de ubicaciones
 .sticky-card {
   position: sticky;
   top: 20px;
   max-height: 600px;
   overflow-y: auto;
+  border-radius: 16px;
 }
 
-.q-item {
-  border-radius: 8px;
+.list-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.list-header {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+  padding: 20px;
+}
+
+.ubicaciones-list {
+  padding: 8px;
+}
+
+.ubicacion-item {
+  border-radius: 12px;
+  margin-bottom: 8px;
+  padding: 12px;
   transition: all 0.3s ease;
-  border-left: 3px solid transparent;
+  border: 2px solid transparent;
+  background: white;
+
+  &:hover {
+    background: $pastel-sage;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+    border-color: $color-leaf;
+  }
 }
 
-.q-item:hover {
-  background-color: #f5f5f5;
-  transform: translateY(-1px);
-  border-left-color: var(--q-primary);
+.item-selected {
+  background: linear-gradient(135deg, $pastel-mint 0%, $pastel-lime 100%) !important;
+  border-color: $color-moss !important;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.2);
+}
+
+.avatar-active {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  box-shadow: 0 3px 10px rgba(85, 139, 47, 0.3);
+}
+
+.avatar-inactive {
+  background: linear-gradient(135deg, #757575 0%, #9e9e9e 100%);
+  color: white;
+}
+
+.item-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: $color-forest;
+}
+
+.item-description {
+  color: $color-earth;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.equipped-badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.capacity-badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Mejoras para Leaflet */
@@ -569,10 +935,29 @@ onUnmounted(() => {
 }
 
 :deep(.leaflet-popup-content-wrapper) {
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Responsive */
+@media (max-width: 1023px) {
+  .stats-container {
+    .stat-card {
+      min-width: calc(50% - 8px);
+    }
+  }
+}
+
+@media (max-width: 959px) {
+  .page-title {
+    font-size: 1.8rem;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+}
+
 @media (max-width: 768px) {
   .map-container {
     height: 400px;
@@ -581,6 +966,33 @@ onUnmounted(() => {
   .sticky-card {
     position: relative;
     top: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  .stats-container {
+    .stat-card {
+      min-width: 100%;
+    }
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .header-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-add-header {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

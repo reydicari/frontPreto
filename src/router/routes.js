@@ -24,6 +24,10 @@ const routes = [
         component: () => import("pages/usuarios/Roles-Page.vue"),
       },
       {
+        path: "/menus",
+        component: () => import("pages/usuarios/Menus-Page.vue"),
+      },
+      {
         path: "/entrenamientos",
         component: () => import("pages/entrenamientos/Entrenamientos-Page.vue"),
       },
@@ -55,6 +59,26 @@ const routes = [
       {
         path: "/reporteTorneos",
         component: () => import("pages/reportes/reportesTorneo-page.vue"),
+      },
+      {
+        path: "/reporteEstudiantes",
+        component: () => import("pages/reportes/reporteEstudiantes-page.vue"),
+      },
+      {
+        path: "/reporteInscripciones",
+        component: () => import("pages/reportes/reporteInscripciones-page.vue"),
+      },
+      {
+        path: "/reporteEntrenadores",
+        component: () => import("pages/reportes/reporteEntrenadores-page.vue"),
+      },
+      {
+        path: "/reportePaquetes",
+        component: () => import("pages/reportes/reportePaquetes-page.vue"),
+      },
+      {
+        path: "/reporteGastos",
+        component: () => import("pages/reportes/reporteGastos-page.vue"),
       },
       {
         path: "/paisaje",

@@ -1,39 +1,136 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="q-mb-md">
-      <h2 class="text-h4 q-ma-none page-title">Gestión de Entrenadores</h2>
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-gradient'">
+    <!-- Header con estadísticas -->
+    <div class="page-header q-mb-lg">
+      <div class="header-content">
+        <div class="row items-center justify-between q-col-gutter-md">
+          <div class="col-12 col-sm-auto">
+            <div class="header-title">
+              <q-icon name="sports" size="42px" class="q-mr-sm" />
+              <h2 class="page-title">Gestión de Entrenadores</h2>
+            </div>
+            <p class="header-subtitle">Administra el equipo de entrenadores y su carga de trabajo</p>
+          </div>
+          <div class="col-12 col-sm-auto">
+            <q-btn class="btn-add-header" icon="person_add" label="Agregar Entrenador" @click="showPersonaDialog"
+              unelevated no-caps />
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjetas de estadísticas -->
+      <div class="stats-container row q-gutter-md q-mt-md">
+        <div class="stat-card stat-card-total">
+          <div class="stat-icon">
+            <q-icon name="groups" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.total }}</div>
+            <div class="stat-label">Total Entrenadores</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-active">
+          <div class="stat-icon">
+            <q-icon name="person_check" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.activos }}</div>
+            <div class="stat-label">Activos</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-inactive">
+          <div class="stat-icon">
+            <q-icon name="person_off" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.inactivos }}</div>
+            <div class="stat-label">Inactivos</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-experience">
+          <div class="stat-icon">
+            <q-icon name="workspace_premium" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.experienciaPromedio }}</div>
+            <div class="stat-label">Experiencia Promedio</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-birthday">
+          <div class="stat-icon">
+            <q-icon name="celebration" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.cumpleanosEsteMes }}</div>
+            <div class="stat-label">Cumpleaños este Mes</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Barra de herramientas -->
-    <q-card class="q-mb-md">
+    <q-card class="q-mb-md toolbar-card">
       <q-card-section>
-        <div class="row items-center justify-between">
+        <div class="row items-center q-col-gutter-sm">
           <!-- Buscador -->
           <q-input v-model="searchInput" clearable @update:model-value="handleSearchInput" outlined dense
-            placeholder="Buscar personas..." class="col-md-4" :debounce="500">
-            <template v-slot:append>
-              <q-icon name="search" />
+            placeholder="Buscar por nombre, CI, teléfono..." class="col-12 search-input" :debounce="500">
+            <template v-slot:prepend>
+              <q-icon name="search" class="text-brown-7" />
             </template>
           </q-input>
-          <!-- Botón para agregar persona -->
-          <q-btn color="primary" icon="add" label="Agregar Entrenador" @click="showPersonaDialog" />
+        </div> <!-- Filtros avanzados -->
+        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
+          <template v-slot:header>
+            <div class="filters-header">
+              <q-icon name="tune" size="24px" class="q-mr-sm" />
+              <span class="filters-title">Filtros Avanzados</span>
+              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
+                {{ activeFiltersCount }}
+              </q-badge>
+            </div>
+          </template>
 
+          <div class="filters-body q-pt-md">
+            <div class="row q-col-gutter-md">
+              <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
+                emit-value map-options label="Estado" outlined dense clearable
+                class="col-12 col-sm-6 col-md-3 filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="toggle_on" class="text-brown-6" />
+                </template>
+              </q-select>
 
-        </div>
+              <q-select v-model="filterType" :options="typeOptions" label="Tipo de Persona" outlined dense clearable
+                emit-value map-options class="col-12 col-sm-6 col-md-3 filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="category" class="text-green-8" />
+                </template>
+              </q-select>
 
-        <!-- Filtros avanzados -->
-        <q-expansion-item v-model="filtersExpanded" label="Filtros avanzados" class="q-mt-sm">
-          <div class="row q-col-gutter-md q-pt-md">
+              <q-input v-model="filterExperienciaMin" type="number" label="Experiencia Mínima (años)" outlined dense
+                clearable class="col-12 col-sm-6 col-md-3 filter-input" :min="0">
+                <template v-slot:prepend>
+                  <q-icon name="timeline" class="text-light-green-8" />
+                </template>
+              </q-input>
 
-            <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
-              emit-value map-options label="Estado" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
+              <q-input v-model="filterSalarioMin" type="number" label="Salario Mínimo" outlined dense clearable
+                class="col-12 col-sm-6 col-md-3 filter-input" :min="0">
+                <template v-slot:prepend>
+                  <q-icon name="payments" class="text-amber-8" />
+                </template>
+              </q-input>
+            </div>
 
-            <q-select v-model="filterType" :options="typeOptions" label="Tipo de Persona" outlined dense clearable
-              class="col-md-3 col-sm-6 col-xs-12" />
-
-          </div>
-          <div class="row justify-end q-mt-sm">
-            <q-btn label="Limpiar filtros" flat color="primary" @click="clearFilters" />
+            <div class="row justify-end q-mt-md q-gutter-sm">
+              <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
+              <q-btn label="Aplicar filtros" class="btn-apply-filters" icon="check" @click="applyFilters" unelevated />
+            </div>
           </div>
         </q-expansion-item>
       </q-card-section>
@@ -54,78 +151,82 @@
       </template>
       <div class="row q-col-gutter-md">
 
-        <div v-for="(persona, index) in filteredPersonas" :key="persona.id"
-          class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
-          <q-card class="my-card" height="100px">
-            <q-card-section class="q-pa-sm" @click="viewPersonaDetails(persona)">
-              <div class="row items-start">
-                <!-- Columna de la imagen -->
-                <div class="col-4">
-                  <div class="image-container">
-                    <q-img v-if="persona.fotografia" :src="host + persona.fotografia" class="card-img"
-                      style="width: 100%; height: 100%; object-fit: cover;" />
-                    <div v-else class="flex flex-center bg-primary text-white" style="width: 100%; height: 100%;">
-                      <q-avatar size="60px" color="secondary" text-color="white" font-size="24px">
-                        {{ getInitials(persona.nombres, persona.apellido_paterno) }}
-                      </q-avatar>
-                    </div>
-                  </div>
-                  <p class="text-subtitle2 text-weight-medium" style="font-size: 30px">{{ index + 1 }}</p>
-                </div>
+        <div v-for="(persona, index) in filteredPersonas" :key="persona.id" class="col-xs-12 col-sm-6 col-md-4 col-lg-3"
+          :style="{ animationDelay: (index * 30) + 'ms' }">
+          <q-card class="trainer-card">
+            <div class="card-number">{{ index + 1 }}</div>
 
-                <!-- Columna de la información -->
-                <div class="col-8 q-pl-md">
-                  <div class="text-subtitle2 text-weight-medium">
-                    {{ persona.nombres }} {{ persona.apellido_paterno }} {{ persona.apellido_materno }}
-                  </div>
-                  <div class="text-caption">
-                    <div><strong>CI:</strong> {{ persona.ci }} {{ persona.complemento }}</div>
-                    <div><strong>Teléfono:</strong> {{ persona.telefono || '' }}</div>
-                    <div v-if="persona.tipo_persona === 'entrenador'"><strong>Categoría:</strong> {{ persona.categoria
-                      ||
-                      ''
-                      }}</div>
-                    <div><strong>Edad:</strong> {{ persona.fecha_nacimiento ? calcularEdad(persona.fecha_nacimiento) +
-                      ' años' : 'N/A' }}</div>
-                    <div v-if="persona.experiencia"><strong>Experiencia:</strong> {{ persona.experiencia }} año{{
-                      persona.experiencia !== 1 ? 's' :
-                        ''
-                    }}</div>
-                  </div>
+            <div class="card-ribbon" :class="persona.estado ? 'ribbon-active' : 'ribbon-inactive'">
+              {{ persona.estado ? 'ACTIVO' : 'INACTIVO' }}
+            </div>
 
-                  <div class="q-mt-xs">
-                    <q-badge :color="getStatusColor(persona.estado)" class="q-mr-xs">
-                      {{ getStatusLabel(persona.estado) }}
-                    </q-badge>
-                    <!-- <q-badge :color="persona.tipo_persona === 'entrenador' ? 'primary' : 'info'" text-color="white">
-                      {{ persona.tipo_persona }}
-                    </q-badge> -->
+            <q-card-section class="card-header" @click="viewPersonaDetails(persona)">
+              <div class="avatar-container">
+                <q-avatar size="80px" class="avatar-trainer">
+                  <q-img v-if="persona.fotografia" :src="host + persona.fotografia" />
+                  <div v-else class="avatar-placeholder">
+                    {{ getInitials(persona.nombres, persona.apellido_paterno) }}
                   </div>
-                </div>
+                </q-avatar>
+              </div>
+
+              <div class="trainer-name">
+                {{ persona.nombres }} {{ persona.apellido_paterno }}
+              </div>
+              <div class="trainer-lastname">
+                {{ persona.apellido_materno }}
               </div>
             </q-card-section>
 
-            <!-- Acciones
-          <q-card-actions align="right" class="q-px-md q-pb-md">
-
-            <div class="text-body2 text-center q-mt-sm">
-              Experiencia: <strong>{{ persona.experiencia }} años</strong>
-            </div>
-          </q-card-actions>
--->
-
-            <!-- Acciones -->
             <q-separator />
 
-            <q-card-actions align="around">
-              <q-btn icon="edit" color="primary" flat dense @click="editPersona(persona)" />
-              <q-btn :icon="persona.estado ? 'delete' : 'restore_from_trash'"
-                :color="!persona.estado ? 'positive' : 'negative'" flat dense @click="confirmDeletePersona(persona)">
+            <q-card-section class="card-body">
+              <div class="info-row">
+                <q-icon name="badge" size="18px" class="info-icon text-brown-7" />
+                <span class="info-label">CI:</span>
+                <span class="info-value">{{ persona.ci }} {{ persona.complemento }}</span>
+              </div>
+
+              <div class="info-row">
+                <q-icon name="phone" size="18px" class="info-icon text-green-7" />
+                <span class="info-label">Teléfono:</span>
+                <span class="info-value">{{ persona.telefono || 'N/A' }}</span>
+              </div>
+
+              <div v-if="persona.experiencia" class="info-row">
+                <q-icon name="workspace_premium" size="18px" class="info-icon text-amber-8" />
+                <span class="info-label">Experiencia:</span>
+                <span class="info-value">{{ persona.experiencia }} año{{ persona.experiencia !== 1 ? 's' : '' }}</span>
+              </div>
+
+              <div v-if="persona.salario" class="info-row">
+                <q-icon name="payments" size="18px" class="info-icon text-green-8" />
+                <span class="info-label">Salario:</span>
+                <span class="info-value">Bs. {{ persona.salario }}</span>
+              </div>
+
+              <div v-if="persona.grupos_maximo" class="info-row">
+                <q-icon name="groups_3" size="18px" class="info-icon text-light-green-8" />
+                <span class="info-label">Grupos máx.:</span>
+                <span class="info-value">{{ persona.grupos_maximo }}</span>
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <q-card-actions class="card-actions">
+              <q-btn class="btn-action btn-edit" round icon="edit" @click="editPersona(persona)">
+                <q-tooltip>Editar entrenador</q-tooltip>
+              </q-btn>
+              <q-btn class="btn-action btn-toggle" round :icon="persona.estado ? 'person_remove' : 'person_add_alt'"
+                @click="confirmDeletePersona(persona)">
                 <q-tooltip>
-                  {{ persona.estado ? 'Eliminar persona' : 'Restaurar persona' }}
+                  {{ persona.estado ? 'Dar de baja' : 'Restaurar' }}
                 </q-tooltip>
               </q-btn>
-              <q-btn icon="visibility" color="info" flat dense @click="viewPersonaDetails(persona)" />
+              <q-btn class="btn-action btn-view" round icon="visibility" @click="viewPersonaDetails(persona)">
+                <q-tooltip>Ver detalles</q-tooltip>
+              </q-btn>
             </q-card-actions>
           </q-card>
         </div>
@@ -178,7 +279,57 @@ const searchTerm = ref('')
 const filterCategory = ref(null)
 const filterStatus = ref(true)
 const filterType = ref('')
+const filterExperienciaMin = ref(null)
+const filterSalarioMin = ref(null)
+const filtersExpanded = ref(false)
 let searchTimeout = null
+
+// Computed para contar filtros activos
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (filterStatus.value !== null && filterStatus.value !== true) count++
+  if (filterType.value) count++
+  if (filterExperienciaMin.value) count++
+  if (filterSalarioMin.value) count++
+  return count
+})
+
+// Computed para estadísticas
+const estadisticas = computed(() => {
+  const total = personas.value.length
+  const activos = personas.value.filter(p => p.estado).length
+  const inactivos = total - activos
+
+  let sumaExperiencia = 0
+  let countExperiencia = 0
+  let cumpleanosEsteMes = 0
+
+  const mesActual = new Date().getMonth() // 0-11
+
+  personas.value.forEach(p => {
+    if (p.experiencia && !isNaN(p.experiencia)) {
+      sumaExperiencia += p.experiencia
+      countExperiencia++
+    }
+
+    // Verificar si el cumpleaños es este mes
+    if (p.fecha_nacimiento) {
+      const fechaNac = new Date(p.fecha_nacimiento)
+      if (fechaNac.getMonth() === mesActual) {
+        cumpleanosEsteMes++
+      }
+    }
+  })
+  const experienciaPromedio = countExperiencia > 0 ? Math.round(sumaExperiencia / countExperiencia) : 0
+
+  return {
+    total,
+    activos,
+    inactivos,
+    experienciaPromedio,
+    cumpleanosEsteMes
+  }
+})
 
 // Función para manejar la búsqueda con debounce
 const handleSearchInput = (value) => {
@@ -406,18 +557,19 @@ function clearFilters() {
   searchTerm.value = ''
   searchInput.value = ''
   filterCategory.value = null
-  filterStatus.value = null
+  filterStatus.value = true
+  filterType.value = ''
+  filterExperienciaMin.value = null
+  filterSalarioMin.value = null
+  loadStudents(1, false)
 }
 
-// Obtener color para el estado
-function getStatusColor(status) {
-  return status ? 'positive' : 'negative'
+// Aplicar filtros
+function applyFilters() {
+  loadStudents(1, false)
 }
 
-// Obtener texto para el estado
-function getStatusLabel(status) {
-  return status ? 'Activo' : 'Inactivo'
-}
+
 const loadStudents = async (page = 1, append = false) => {
   try {
     if (append) loadingMore.value = true
@@ -505,87 +657,538 @@ onMounted(async () => {
 <style scoped lang="scss">
 @import 'src/css/quasar.variables.scss';
 
+/* Paleta de colores verde-marrón tierra/naturaleza */
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-lime: #9ccc65;
+$color-sage: #8bc34a;
+$color-bark: #5d4037;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+$color-clay: #a1887f;
+$color-sand: #bcaaa4;
+
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+$pastel-clay: #d7ccc8;
+
+/* Fondo degradado tierra */
+.bg-gradient {
+  background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 50%, #efebe9 100%);
+}
+
+.page-container {
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Header principal */
+.page-header {
+  animation: slideDown 0.6s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-content {
+  margin-bottom: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 50%, $color-bark 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
+  font-size: 2.5em;
   font-weight: 800;
   line-height: 1.2;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Estilos personalizados */
-.my-card {
-  height: 100%;
+.header-subtitle {
+  color: #5d4037;
+  font-size: 1.1em;
+  margin: 8px 0 0 0;
+  font-weight: 500;
+}
+
+/* Tarjetas de estadísticas */
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 180px;
+  padding: 20px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  animation: scaleIn 0.5s ease;
 }
 
-.my-card:hover {
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-total {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+}
+
+.stat-card-active {
+  background: linear-gradient(135deg, $color-leaf 0%, $color-sage 100%);
+  color: white;
+}
+
+.stat-card-inactive {
+  background: linear-gradient(135deg, $color-wood 0%, $color-earth 100%);
+  color: white;
+}
+
+.stat-card-experience {
+  background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
+  color: white;
+}
+
+.stat-card-birthday {
+  background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+  color: white;
+}
+
+.stat-icon {
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-number {
+  font-size: 2.5em;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.85em;
+  opacity: 0.95;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Toolbar */
+.toolbar-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid $color-forest;
+}
+
+.search-input :deep(.q-field__control) {
+  transition: all 0.3s ease;
+}
+
+.search-input:hover :deep(.q-field__control) {
+  border-color: $color-moss;
+}
+
+.search-input:focus-within :deep(.q-field__control) {
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+}
+
+.btn-add-header {
+  background: linear-gradient(135deg, $color-forest 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-add-header:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
 }
 
-.image-container {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
+/* Filtros */
+.filters-expansion {
+  background: $pastel-sage;
+  border-radius: 12px;
+  border-left: 4px solid $color-moss;
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  color: $color-forest;
+  width: 100%;
+}
+
+.filters-title {
+  font-size: 1.1em;
+}
+
+.filters-body {
+  background: white;
+  padding: 20px;
+  border-radius: 0 0 12px 12px;
+}
+
+.filter-input :deep(.q-field__control) {
+  transition: all 0.3s ease;
+}
+
+.filter-input:hover :deep(.q-field__control) {
+  border-color: $color-moss;
+}
+
+.btn-clear-filters {
+  border: 2px solid $color-earth;
+  color: $color-earth;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-clear-filters:hover {
+  background: $color-earth;
+  color: white;
+}
+
+.btn-apply-filters {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-apply-filters:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(85, 139, 47, 0.4);
+}
+
+/* Tarjetas de entrenadores */
+.trainer-card {
+  height: 100%;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  opacity: 0;
+  animation: cardFadeIn 0.6s ease forwards;
+  border: 2px solid $pastel-mint;
 }
 
-.card-img {
+@keyframes cardFadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.trainer-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: $color-leaf;
+}
+
+.card-number {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, $color-wood 0%, $color-earth 100%);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9em;
+  box-shadow: 0 2px 8px rgba(93, 64, 55, 0.3);
+  z-index: 10;
+}
+
+.card-ribbon {
+  position: absolute;
+  top: 16px;
+  right: -32px;
+  padding: 4px 40px;
+  font-size: 0.65em;
+  font-weight: 800;
+  letter-spacing: 1px;
+  transform: rotate(45deg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.ribbon-active {
+  background: linear-gradient(135deg, $color-forest 0%, $color-leaf 100%);
+  color: white;
+}
+
+.ribbon-inactive {
+  background: linear-gradient(135deg, $color-wood 0%, $color-earth 100%);
+  color: white;
+}
+
+.card-header {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 100%);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card-header:hover {
+  background: linear-gradient(135deg, $pastel-mint 0%, $pastel-lime 100%);
+}
+
+.avatar-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.avatar-trainer {
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-placeholder {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-size: 1.6em;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
-/* Estilos para la información de la tarjeta */
-.text-subtitle2 {
+.trainer-name {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: $color-forest;
   line-height: 1.2;
   margin-bottom: 4px;
 }
 
-.text-caption {
-  line-height: 1.4;
+.trainer-lastname {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: $color-wood;
+  line-height: 1.2;
 }
 
-.text-caption div {
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.card-body {
+  padding: 16px;
+  background: white;
 }
 
-/* Ajustes para los badges */
-.q-badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  margin-bottom: 2px;
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid $pastel-mint;
+  transition: all 0.3s ease;
 }
 
-/* Ajustes para el contenedor de la tarjeta */
-.q-card__section {
-  flex-grow: 1;
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row:hover {
+  background: $pastel-sage;
+  padding-left: 8px;
+  margin: 0 -8px;
+  padding-right: 8px;
+  border-radius: 8px;
+}
+
+.info-icon {
+  flex-shrink: 0;
+}
+
+.info-label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: $color-bark;
+  min-width: 80px;
+}
+
+.info-value {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #424242;
+  flex: 1;
+}
+
+.card-actions {
+  background: $pastel-sand;
   padding: 12px;
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
 }
 
-/* Ajustes para las acciones de la tarjeta */
-.q-card__actions {
-  padding: 8px 12px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+.btn-action {
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Ajustes para pantallas pequeñas */
-@media (max-width: 599px) {
-  .image-container {
-    width: 60px;
-    height: 60px;
+.btn-action:hover {
+  transform: scale(1.15);
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+}
+
+.btn-edit:hover {
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.4);
+}
+
+.btn-toggle {
+  background: linear-gradient(135deg, $color-wood 0%, $color-earth 100%);
+  color: white;
+}
+
+.btn-toggle:hover {
+  box-shadow: 0 4px 12px rgba(121, 85, 72, 0.4);
+}
+
+.btn-view {
+  background: linear-gradient(135deg, $color-lime 0%, #c5e1a5 100%);
+  color: #33691e;
+}
+
+.btn-view:hover {
+  box-shadow: 0 4px 12px rgba(156, 204, 101, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 959px) {
+  .page-title {
+    font-size: 2em;
   }
 
-  .text-caption div {
-    font-size: 11px;
+  .stats-container {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    width: 100%;
+  }
+
+  .btn-add-header {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 599px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-title {
+    font-size: 1.6em;
+  }
+
+  .header-subtitle {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+  }
+
+  .header-title {
+    margin-bottom: 8px;
+  }
+
+  .stat-card {
+    min-width: 100%;
+    padding: 16px;
+  }
+
+  .stat-number {
+    font-size: 1.8em;
+  }
+
+  .card-number {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8em;
+  }
+
+  .trainer-name {
+    font-size: 1em;
+  }
+
+  .info-label {
+    min-width: 70px;
+    font-size: 0.8em;
+  }
+
+  .info-value {
+    font-size: 0.85em;
   }
 }
 </style>

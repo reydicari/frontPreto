@@ -1,128 +1,239 @@
 <template>
-  <q-page padding :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <q-card>
-      <q-card-section class="row items-center q-gutter-sm">
-        <div class="text-h6 page-title">Torneos</div>
-        <q-space />
-        <q-btn color="primary" label="Agregar torneo" icon="add" @click="onAdd" />
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-section>
-        <div class="row q-col-gutter-md q-row-wrap items-center">
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-input dense v-model="filters.search" label="Buscar por nombre" clearable />
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header con estadísticas -->
+    <div class="page-header q-mb-lg">
+      <div class="header-content">
+        <div class="row items-center justify-between q-col-gutter-md">
+          <div class="col-12 col-sm-auto">
+            <div class="header-title">
+              <q-icon name="emoji_events" size="42px" class="q-mr-sm" />
+              <h2 class="page-title q-ma-none">Gestión de Torneos</h2>
+            </div>
+            <p class="header-subtitle">Administra torneos y competiciones deportivas</p>
           </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-select dense v-model="filters.id_tipo_torneo" :options="tipoOptions" label="Tipo" emit-value map-options
-              clearable />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-select dense v-model="filters.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
-              map-options clearable />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-select dense v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
-              clearable />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-select dense multiple use-chips chip-color="primary" v-model="filters.estados" :options="estadoOptions"
-              label="Estado" emit-value map-options clearable />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-input dense v-model="filters.fecha_inicio_desde" label="Desde (inicio)" type="date" />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-input dense v-model="filters.fecha_inicio_hasta" label="Hasta (inicio)" type="date" />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 row items-center">
-            <q-btn flat icon="filter_list" label="Limpiar" @click="clearFilters" />
+          <div class="col-12 col-sm-auto">
+            <q-btn class="btn-add-header" icon="add_circle" label="Agregar Torneo" @click="onAdd" unelevated no-caps />
           </div>
         </div>
-      </q-card-section>
+      </div>
 
-      <q-separator />
+      <!-- Tarjetas de estadísticas -->
+      <div class="stats-container row q-gutter-md q-mt-md">
+        <div class="stat-card stat-card-total">
+          <div class="stat-icon">
+            <q-icon name="emoji_events" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ torneos.length }}</div>
+            <div class="stat-label">Total Torneos</div>
+          </div>
+        </div>
 
+        <div class="stat-card stat-card-active">
+          <div class="stat-icon">
+            <q-icon name="play_circle" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.enMarcha }}</div>
+            <div class="stat-label">En Marcha</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-pending">
+          <div class="stat-icon">
+            <q-icon name="schedule" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.sinComenzar }}</div>
+            <div class="stat-label">Sin Comenzar</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-suspended">
+          <div class="stat-icon">
+            <q-icon name="block" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.suspendidos }}</div>
+            <div class="stat-label">Suspendidos</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-finished">
+          <div class="stat-icon">
+            <q-icon name="check_circle" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticas.terminados }}</div>
+            <div class="stat-label">Terminados</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de herramientas -->
+    <q-card class="q-mb-md toolbar-card">
       <q-card-section>
-        <q-table :rows="rowsWithNro" :columns="columns" row-key="id" v-model:pagination="pagination" flat dense
-          wrap-cells @row-click="openDetails">
-          <template v-slot:body-cell-nombre="props">
-            <q-td :props="props">
-              <div class="row items-center">
-                <q-badge :color="badgeColor(props.row.tipo_torneo?.nombre || 'Desconocido')" class="q-mr-sm col-label"
-                  outline>
-                  {{ props.row.tipo_torneo?.nombre || '—' }}
-                </q-badge>
-                <div>
-                  <div class="text-weight-medium">{{ props.row.nombre }}</div>
-                </div>
-              </div>
-            </q-td>
+        <div class="row items-center q-col-gutter-sm">
+          <!-- Buscador -->
+          <q-input v-model="filters.search" clearable outlined dense placeholder="Buscar por nombre de torneo..."
+            class="col-12 search-input">
+            <template v-slot:prepend>
+              <q-icon name="search" class="text-brown-7" />
+            </template>
+          </q-input>
+        </div>
+
+        <!-- Filtros avanzados -->
+        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
+          <template v-slot:header>
+            <div class="filters-header">
+              <q-icon name="tune" size="24px" class="q-mr-sm" />
+              <span class="filters-title">Filtros Avanzados</span>
+              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
+                {{ activeFiltersCount }}
+              </q-badge>
+            </div>
           </template>
 
-          <template v-slot:body-cell-estado="props">
-            <q-td :props="props">
-              <div class="row items-center">
-                <q-badge :color="badgeColorEstado(props.row, estadoFromDates(props.row))" class="q-mr-sm col-label">
-                  <template v-if="isSpecialGolden(props.row, estadoFromDates(props.row))">
-                    <q-icon name="star" size="14px" class="q-mr-xs" />
+          <div class="filters-body q-pt-md">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-select v-model="filters.id_tipo_torneo" :options="tipoOptions" label="Tipo" emit-value map-options
+                  clearable outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="category" />
                   </template>
-                  {{ estadoLabel(props.row, estadoFromDates(props.row)) }}
-                </q-badge>
+                </q-select>
               </div>
-            </q-td>
-          </template>
 
-          <template v-slot:body-cell-ubicacion="props">
-            <q-td :props="props">
-              <div>
-                <!-- Botón compacto para ubicación: visible pero no grande -->
-                <q-btn size="sm" dense rounded outline color="indigo" class="q-ml-sm col-label-btn"
-                  @click.stop="goToUbicacion(props.row.ubicacion?.id)" :label="props.row.ubicacion?.nombre || '—'"
-                  title="Ver ubicación" />
-                <q-tooltip anchor="top middle" self="bottom middle">Ver ubicación</q-tooltip>
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-select v-model="filters.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
+                  map-options clearable outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="place" />
+                  </template>
+                </q-select>
               </div>
-            </q-td>
-          </template>
 
-          <template v-slot:body-cell-fecha_inicio="props">
-            <q-td :props="props">
-              {{ formatDate(props.row.fecha_inicio) }}
-            </q-td>
-          </template>
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-select v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
+                  clearable outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="signal_cellular_alt" />
+                  </template>
+                </q-select>
+              </div>
 
-          <template v-slot:body-cell-fecha_fin="props">
-            <q-td :props="props">
-              {{ formatDate(props.row.fecha_fin) }}
-            </q-td>
-          </template>
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-select multiple use-chips chip-color="brown-7" v-model="filters.estados" :options="estadoOptions"
+                  label="Estado" emit-value map-options clearable outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="flag" />
+                  </template>
+                </q-select>
+              </div>
 
-          <template v-slot:body-cell-nivel="props">
-            <q-td :props="props">
-              {{ props.row.nivel?.nombre_nivel || props.row.nivel?.nombre || '—' }}
-            </q-td>
-          </template>
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-input v-model="filters.fecha_inicio_desde" label="Desde (inicio)" type="date" outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="event" />
+                  </template>
+                </q-input>
+              </div>
 
-          <template v-slot:body-cell-acciones="props">
-            <q-td :props="props">
-              <q-btn v-if="props.row.estado != 2" dense flat icon="edit" color="secondary"
-                @click.stop="onEdit(props.row)" title="Editar" />
-              <q-btn v-if="props.row.estado != 0" dense flat icon="pause_circle" color="negative"
-                @click.stop="onDelete(props.row)" title="Suspender" />
-              <q-btn dense flat icon="groups" color="teal" @click.stop="openBorradores(props.row)" title="Borradores" />
-            </q-td>
-          </template>
-        </q-table>
+              <div class="col-12 col-sm-6 col-md-3">
+                <q-input v-model="filters.fecha_inicio_hasta" label="Hasta (inicio)" type="date" outlined dense>
+                  <template v-slot:prepend>
+                    <q-icon name="event" />
+                  </template>
+                </q-input>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3 row items-center">
+                <q-btn flat icon="close" label="Limpiar Filtros" @click="clearFilters" class="clear-filters-btn" />
+              </div>
+            </div>
+          </div>
+        </q-expansion-item>
       </q-card-section>
     </q-card>
+
+    <!-- Grid de tarjetas de torneos -->
+    <div class="torneos-grid">
+      <q-card v-for="torneo in rowsWithNro" :key="torneo.id" class="torneo-card"
+        :class="{ 'torneo-ganador': torneo.estado === 3 }" @click="openDetails($event, torneo)">
+        <q-card-section class="card-header" :class="{ 'header-ganador': torneo.estado === 3 }">
+          <div class="row items-start justify-between">
+            <div class="col">
+              <div class="row items-center q-mb-xs">
+                <div class="avatar-wrapper" :class="{ 'avatar-ganador': torneo.estado === 3 }">
+                  <q-avatar size="46px" class="card-avatar" :class="{ 'avatar-dorado': torneo.estado === 3 }">
+                    <q-icon name="emoji_events" size="28px" />
+                  </q-avatar>
+                  <div v-if="torneo.estado === 3" class="golden-shine"></div>
+                </div>
+                <div class="q-ml-sm">
+                  <div class="card-title" :class="{ 'title-ganador': torneo.estado === 3 }">
+                    {{ torneo.nombre }}
+                    <q-icon v-if="torneo.estado === 3" name="military_tech" size="18px" class="ganador-icon q-ml-xs" />
+                  </div>
+                  <q-badge :color="badgeColor(torneo.tipo_torneo?.nombre || 'Desconocido')" outline class="tipo-badge">
+                    <q-icon name="category" size="14px" class="q-mr-xs" />
+                    {{ torneo.tipo_torneo?.nombre || 'Sin tipo' }}
+                  </q-badge>
+                </div>
+              </div>
+            </div>
+            <div class="col-auto">
+              <q-badge :color="badgeColorEstado(torneo)" class="estado-badge"
+                :class="{ 'badge-ganador': torneo.estado === 3 }">
+                <q-icon v-if="isSpecialGolden(torneo)" name="military_tech" size="14px" class="q-mr-xs" />
+                {{ estadoLabel(torneo) }}
+              </q-badge>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="card-body">
+          <div class="info-row">
+            <q-icon name="place" class="info-icon" />
+            <span class="info-label">Ubicación:</span>
+            <q-btn size="sm" dense rounded outline color="orange" class="ubicacion-btn"
+              @click.stop="goToUbicacion(torneo.ubicacion?.id)" :label="torneo.ubicacion?.nombre || '—'" />
+          </div>
+
+          <div class="info-row">
+            <q-icon name="signal_cellular_alt" class="info-icon" />
+            <span class="info-label">Nivel:</span>
+            <span class="info-value">{{ torneo.nivel?.nombre_nivel || torneo.nivel?.nombre || '—' }}</span>
+          </div>
+
+          <div class="info-row">
+            <q-icon name="event" class="info-icon" />
+            <span class="info-label">Inicio:</span>
+            <span class="info-value">{{ formatDate(torneo.fecha_inicio) }}</span>
+          </div>
+
+          <div class="info-row">
+            <q-icon name="event_available" class="info-icon" />
+            <span class="info-label">Fin:</span>
+            <span class="info-value">{{ formatDate(torneo.fecha_fin) }}</span>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="card-actions">
+          <q-btn flat dense icon="visibility" label="Ver" class="action-btn" />
+          <q-btn v-if="torneo.estado != 2" flat dense icon="edit" color="brown-7" @click.stop="onEdit(torneo)"
+            title="Editar" />
+          <q-btn v-if="torneo.estado != 0" flat dense icon="pause_circle" color="negative"
+            @click.stop="onDelete(torneo)" title="Suspender" />
+          <q-btn flat dense icon="groups" color="orange" @click.stop="openBorradores(torneo)" title="Borradores" />
+        </q-card-actions>
+      </q-card>
+    </div>
 
     <!-- Dialog para crear/editar torneo -->
     <q-dialog v-model="showTorneoDialog" persistent>
@@ -253,19 +364,8 @@ const torneos = ref([])
 const tiposTorneo = ref([])
 const ubicaciones = ref([])
 const loading = ref(false)
-const filters = reactive({ search: '', id_tipo_torneo: null, id_ubicacion: null, id_nivel: null, fecha_inicio_desde: null, fecha_inicio_hasta: null })
+const filters = reactive({ search: '', id_tipo_torneo: null, id_ubicacion: null, id_nivel: null, fecha_inicio_desde: null, fecha_inicio_hasta: null, estados: [2] })
 const pagination = reactive({ page: 1, rowsPerPage: 10 })
-
-const columns = [
-  { name: 'nro', label: 'Nro', field: 'nro', sortable: true },
-  { name: 'nombre', label: 'Nombre', field: 'nombre', sortable: true },
-  { name: 'estado', label: 'Estado', field: row => estadoFromDates(row), sortable: true },
-  { name: 'ubicacion', label: 'Ubicación', field: row => row.ubicacion?.nombre || '-', sortable: true },
-  { name: 'nivel', label: 'Nivel', field: row => row.nivel?.nombre_nivel || (row.nivel?.nombre) || '-', sortable: true },
-  { name: 'fecha_inicio', label: 'Inicio', field: 'fecha_inicio', sortable: true },
-  { name: 'fecha_fin', label: 'Fin', field: 'fecha_fin', sortable: true },
-  { name: 'acciones', label: 'Acciones', field: 'acciones' }
-]
 
 const selectedTorneo = ref(null)
 const drawer = ref(false)
@@ -288,14 +388,40 @@ const nivelOptions = computed(() => {
 
 const niveles = ref([])
 const estadoOptions = [
-  { label: 'Suspendido', value: 'suspendido', color: 'negative' },
-  { label: 'Terminado', value: 0, color: 'grey' },
-  { label: 'En marcha', value: 1, color: 'positive' },
-  { label: 'Sin comenzar', value: 2, color: 'info' }
+  { label: 'Suspendido', value: 0, color: 'negative' },
+  { label: 'Sin comenzar', value: 1, color: 'info' },
+  { label: 'Comenzado', value: 2, color: 'positive' },
+  { label: 'Finalizado', value: 3, color: 'grey' }
 ]
 
-// por defecto mostrar estados activos (En marcha y Sin comenzar)
-filters.estados = [1, 2]
+// por defecto mostrar estados activos (Comenzado)
+filters.estados = [2]
+
+// Expansión de filtros
+const filtersExpanded = ref(false)
+
+// Contador de filtros activos
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (filters.id_tipo_torneo) count++
+  if (filters.id_ubicacion) count++
+  if (filters.id_nivel) count++
+  if (filters.estados && filters.estados.length > 0) count++
+  if (filters.fecha_inicio_desde) count++
+  if (filters.fecha_inicio_hasta) count++
+  return count
+})
+
+// Estadísticas calculadas
+const estadisticas = computed(() => {
+  const filtered = filteredTorneos.value
+  return {
+    suspendidos: filtered.filter(t => Number(t.estado) === 0).length,
+    sinComenzar: filtered.filter(t => Number(t.estado) === 1).length,
+    comenzados: filtered.filter(t => Number(t.estado) === 2).length,
+    finalizados: filtered.filter(t => Number(t.estado) === 3).length
+  }
+})
 
 onMounted(async () => {
   loading.value = true
@@ -332,61 +458,47 @@ const badgeColor = (key) => {
   return 'primary'
 }
 
-// Determina color de badge para la columna Estado.
-// Reglas especiales:
-// - si row.estado === 0 -> 'Suspendido' (rojo)
-// - si computedEstado === 1 (En marcha) y row.estado === 2 -> dorado (amber) con icono
-const badgeColorEstado = (row, computedEstado) => {
-  if (row && typeof row.estado !== 'undefined' && Number(row.estado) === 0) return 'negative'
-  if (computedEstado === 1 && row && Number(row.estado) === 2) return 'amber'
-  switch (Number(computedEstado)) {
-    case -1: return 'negative' // anulado
-    case 0: return 'grey' // terminado
-    case 1: return 'positive' // en marcha
-    case 2: return 'info' // sin comenzar
+// Determina color de badge para la columna Estado basado en torneo.estado directamente
+const badgeColorEstado = (row) => {
+  const estado = Number(row?.estado)
+  switch (estado) {
+    case 0: return 'negative' // Suspendido
+    case 1: return 'info' // Sin comenzar
+    case 2: return 'positive' // Comenzado
+    case 3: return 'grey' // Finalizado
     default: return 'primary'
   }
 }
 
-const estadoLabel = (row, computedEstado) => {
-  if (row && typeof row.estado !== 'undefined' && Number(row.estado) === 0) return 'Suspendido'
-  if (Number(computedEstado) == -1) return 'Anulado'
-  if (Number(computedEstado) == 0) return 'Terminado'
-  if (Number(computedEstado) == 1) return 'En marcha'
-  if (Number(computedEstado) == 2) return 'Sin comenzar'
-  return 'Desconocido'
+const estadoLabel = (row) => {
+  const estado = Number(row?.estado)
+
+  switch (estado) {
+    case 0: return 'Suspendido'
+    case 1: return 'Sin comenzar'
+    case 2: return 'Comenzado'
+    case 3: return 'Finalizado'
+    default: return 'Desconocido'
+  }
 }
 
-const isSpecialGolden = (row, computedEstado) => {
-  return computedEstado === 1 && row && Number(row.estado) === 2
-}
-
-function estadoFromDates(t) {
-  // Reglas solicitadas:
-  // si estado == -1 respetar (anulado)
-  if (typeof t.estado !== 'undefined' && Number(t.estado) === -1) return -1
-  const hoy = new Date()
-  const start = t.fecha_inicio ? new Date(t.fecha_inicio) : null
-  const end = t.fecha_fin ? new Date(t.fecha_fin) : null
-  // ffin <= hoy => terminado (0)
-  if (end && end <= hoy) return 0
-  // finicio <= hoy => en marcha (1)
-  if (start && start <= hoy) return 1
-  // finicio > hoy => sin comenzar (2)
-  if (start && start > hoy) return 2
-  return 2
+const isSpecialGolden = (row) => {
+  return Number(row?.estado) === 3 // Finalizado
 }
 
 const filteredTorneos = computed(() => {
   return torneos.value.filter(t => {
+    // Filtro por búsqueda
     if (filters.search) {
       const q = filters.search.toLowerCase()
       if (!t.nombre.toLowerCase().includes(q)) return false
     }
+    // Filtros por campos
     if (filters.id_tipo_torneo && t.id_tipo_torneo !== filters.id_tipo_torneo) return false
     if (filters.id_ubicacion && t.id_ubicacion !== filters.id_ubicacion) return false
     if (filters.id_nivel && t.id_nivel !== filters.id_nivel) return false
-    // filtro por fecha_inicio rango
+
+    // Filtro por fecha_inicio (rango)
     if (filters.fecha_inicio_desde) {
       const desde = new Date(filters.fecha_inicio_desde)
       if (!t.fecha_inicio || new Date(t.fecha_inicio) < desde) return false
@@ -395,31 +507,15 @@ const filteredTorneos = computed(() => {
       const hasta = new Date(filters.fecha_inicio_hasta)
       if (!t.fecha_inicio || new Date(t.fecha_inicio) > hasta) return false
     }
-    // filtro por estado(s)
+
+    // FILTRO DE ESTADO - ES LO ÚNICO QUE AFECTA AL FILTRADO POR ESTADO
+    // Valores posibles: 0 (Suspendido), 1 (Sin comenzar), 2 (Comenzado), 3 (Finalizado)
+    // El estado se compara DIRECTAMENTE sin ninguna transformación
     if (filters.estados && Array.isArray(filters.estados) && filters.estados.length) {
-      const selections = filters.estados
-
-      // regla especial: los torneos con atributo estado === 0 solo deben aparecer si se seleccionó 'suspendido'
-      if (typeof t.estado !== 'undefined' && Number(t.estado) === 0 && !selections.includes('suspendido')) {
-        return false
-      }
-
-      let allowed = false
-
-      // si se seleccionó 'suspendido', incluimos torneos cuyo atributo estado === 0
-      if (selections.includes('suspendido')) {
-        if (Number(t.estado) === 0) allowed = true
-      }
-
-      // las demás selecciones (numéricas) se comparan con la estado calculada por fechas
-      const numericSelections = selections.filter(s => s !== 'suspendido').map(Number).filter(n => !isNaN(n))
-      if (numericSelections.length) {
-        const est = estadoFromDates(t)
-        if (numericSelections.includes(est)) allowed = true
-      }
-
-      if (!allowed) return false
+      const estadoActual = Number(t.estado)
+      if (!filters.estados.includes(estadoActual)) return false
     }
+
     return true
   })
 })
@@ -586,8 +682,8 @@ async function openDetails(evtOrRow, maybeRow) {
 
   selectedTorneo.value = item
 
-  // Sólo abrir el diálogo de seguimiento cuando el torneo tenga estado === 2.
-  if (typeof item.estado !== 'undefined' && Number(item.estado) === 2) {
+  // Si el estado es 2 (en marcha) o 3 (con ganador), abrir el diálogo de seguimiento
+  if (typeof item.estado !== 'undefined' && (Number(item.estado) === 2 || Number(item.estado) === 3)) {
     try {
       await loadTorneos()
     } catch (e) {
@@ -597,8 +693,9 @@ async function openDetails(evtOrRow, maybeRow) {
     return
   }
 
-  // si no está iniciado, notificar al usuario
-  $q.notify({ type: 'warning', message: 'El torneo aún no fue iniciado' })
+  // Si el estado NO es 2 ni 3, abrir BorradoresDialog
+  activeTorneoForBorradores.value = item.id
+  showBorradoresDialog.value = true
 }
 
 
@@ -640,44 +737,559 @@ function teamName(p, side) {
 <style scoped lang="scss">
 @import 'src/css/quasar.variables.scss';
 
+// Variables de color (Paleta Verde-Naranja-Marrón)
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-lime: #9ccc65;
+$color-sage: #8bc34a;
+$color-bark: #5d4037;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+$color-clay: #a1887f;
+$color-sand: #bcaaa4;
+$color-orange: #ff6f00;
+$color-orange-light: #ff8f00;
+$color-orange-accent: #ffa726;
+
+// Tonos pastel
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+$pastel-clay: #d7ccc8;
+
+.page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.header-content {
+  padding: 10px;
+  border-radius: 16px;
+  margin-bottom: 0px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .q-icon {
+    color: $color-moss;
+  }
+}
+
 .page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
-  font-weight: 800;
+  color: $color-forest;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
   line-height: 1.2;
 }
 
-.q-table tbody td {
-  vertical-align: middle;
+.header-subtitle {
+  color: $color-wood;
+  font-size: 1rem;
+  margin: 0;
+  margin-left: 58px;
+  opacity: 0.9;
 }
 
-/* Centrar los encabezados de la q-table dentro de este componente */
-::v-deep .q-table thead th {
-  text-align: center;
+.btn-add-header {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(85, 139, 47, 0.4);
+  }
+
+  .q-icon {
+    font-size: 1.4em;
+  }
 }
 
-/* Fixed-width label for consistency across rows */
-.col-label {
-  display: inline-flex;
+// Estadísticas
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stat-card {
+  flex: 1 1 auto;
+  min-width: 200px;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 100px;
-  max-width: 100px;
-  width: 100px;
-  padding: 4px 8px;
-  white-space: nowrap;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.stat-card-total {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+}
+
+.stat-card-active {
+  background: linear-gradient(135deg, $color-leaf 0%, $color-lime 100%);
+  color: white;
+}
+
+.stat-card-pending {
+  background: linear-gradient(135deg, $color-sage 0%, $pastel-lime 100%);
+  color: $color-forest;
+}
+
+.stat-card-suspended {
+  background: linear-gradient(135deg, $color-bark 0%, $color-earth 100%);
+  color: white;
+}
+
+.stat-card-finished {
+  background: linear-gradient(135deg, $color-wood 0%, $color-clay 100%);
+  color: white;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+// Barra de herramientas
+.toolbar-card {
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-input {
+  .q-field__control {
+    border-radius: 12px;
+  }
+}
+
+.filters-expansion {
+  border: 2px solid $pastel-lime;
+  border-radius: 12px;
   overflow: hidden;
-  text-overflow: ellipsis;
+
+  .q-expansion-item__container {
+    border: none;
+  }
 }
 
-.col-label-btn {
+.filters-header {
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+  font-weight: 600;
+  font-size: 1rem;
+
+  .q-icon {
+    color: $color-moss;
+  }
+}
+
+.filters-title {
+  color: $color-forest;
+  font-weight: 600;
+}
+
+.filters-body {
+  background: $pastel-sage;
+  padding: 16px;
+  border-radius: 0 0 12px 12px;
+}
+
+.clear-filters-btn {
+  color: $color-wood;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(93, 64, 55, 0.1);
+  }
+}
+
+// Grid de torneos
+.torneos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.torneo-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: $color-leaf;
+  }
+}
+
+.card-header {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-lime 100%);
+  padding: 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.card-avatar {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+  transition: all 0.4s ease;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $color-forest;
+  margin-bottom: 6px;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.tipo-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 130px;
-  max-width: 130px;
-  width: 130px;
+}
+
+.estado-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+// Estilos para torneos con ganador (estado === 3)
+.torneo-ganador {
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+
+  &:hover {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  }
+}
+
+.header-ganador {
+  background: linear-gradient(135deg, #fff9e6 0%, #fffacd 50%, #fff9e6 100%) !important;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.2) 50%, transparent 70%);
+    animation: shine 3s infinite;
+  }
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.avatar-ganador {
+  position: relative;
+  animation: pulse-golden 2s infinite;
+}
+
+@keyframes pulse-golden {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.avatar-dorado {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%) !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 4px 16px rgba(255, 215, 0, 0.5) !important;
+  animation: glow-golden 2s infinite;
+}
+
+@keyframes glow-golden {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 4px 16px rgba(255, 215, 0, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 6px 24px rgba(255, 215, 0, 0.7);
+  }
+}
+
+.golden-shine {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+  animation: expand-shine 2s infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes expand-shine {
+  0% {
+    width: 80px;
+    height: 80px;
+    opacity: 0.8;
+  }
+
+  50% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.4;
+  }
+
+  100% {
+    width: 80px;
+    height: 80px;
+    opacity: 0.8;
+  }
+}
+
+.title-ganador {
+  color: #d4af37 !important;
+  text-shadow: 0 2px 4px rgba(212, 175, 55, 0.3);
+  font-weight: 800;
+}
+
+.ganador-icon {
+  color: #ffd700;
+  animation: rotate-medal 3s infinite;
+  filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.5));
+}
+
+@keyframes rotate-medal {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-10deg);
+  }
+
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.badge-ganador {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #8b6914 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5) !important;
+  animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.info-icon {
+  color: $color-orange;
+  font-size: 1.25rem;
+  margin-right: 12px;
+  min-width: 24px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: $color-wood;
+  margin-right: 8px;
+  min-width: 80px;
+}
+
+.info-value {
+  color: $color-earth;
+  font-weight: 500;
+}
+
+.ubicacion-btn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 111, 0, 0.4);
+  }
+}
+
+.card-actions {
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 8px;
+}
+
+.action-btn {
+  color: $color-forest;
+  font-weight: 600;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(46, 125, 50, 0.1);
+  }
+}
+
+// Responsive
+@media (max-width: 1400px) {
+  .torneos-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1023px) {
+  .torneos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-container {
+    .stat-card {
+      min-width: calc(50% - 8px);
+    }
+  }
+}
+
+@media (max-width: 959px) {
+  .page-title {
+    font-size: 1.8rem;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .torneos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-container {
+    .stat-card {
+      min-width: 100%;
+    }
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .header-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-add-header {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

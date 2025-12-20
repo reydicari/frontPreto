@@ -76,12 +76,13 @@
         <q-separator class="q-mt-md" />
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
-          <q-btn flat label="Asignar encargados" color="secondary" @click="showAssignDialog = true" />
+          <q-btn v-if="!isTorneoFinished" flat label="Asignar encargados" color="secondary"
+            @click="showAssignDialog = true" />
           <q-btn flat label="Cancelar" color="secondary" @click="onCancel" />
           <q-btn v-if="torneoData && Number(torneoData.estado) === 2" flat label="Seguir torneo" color="primary"
             @click="showSeguimiento = true" />
-          <q-btn v-else flat label="Comenzar" color="accent" @click="openStartFlow" />
-          <q-btn label="Guardar equipos" color="primary" @click="onSave" />
+          <q-btn v-else-if="!isTorneoFinished" flat label="Comenzar" color="accent" @click="openStartFlow" />
+          <q-btn v-if="!isTorneoFinished" label="Guardar equipos" color="primary" @click="onSave" />
         </div>
       </div>
     </q-card-section>
@@ -128,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { listarBorradores, listarEquipos } from 'src/stores/borrador-store'
 import { obtenerTorneo, comenzarTorneo } from 'src/stores/torneo-store'
 import OrganizeMatchesDialog from './OrganizeMatchesDialog.vue'
@@ -159,6 +160,15 @@ const showOrganizeDialog = ref(false)
 const showSeguimiento = ref(false)
 const showAssignDialog = ref(false)
 const assignedEncargados = ref(null)
+
+// Computed para verificar si el torneo ha vencido (fecha_fin < hoy)
+const isTorneoFinished = computed(() => {
+  if (!torneoData.value || !torneoData.value.fecha_fin) return false
+  const fechaFin = new Date(torneoData.value.fecha_fin)
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  return fechaFin < hoy
+})
 
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend

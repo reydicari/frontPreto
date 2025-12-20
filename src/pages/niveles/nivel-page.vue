@@ -1,29 +1,79 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con título y botón de agregar -->
-    <div class="row items-center q-mb-md">
-      <div class="col">
-        <h1 class="text-h4 text-primary q-ma-none page-title">Gestión de Niveles Deportivos</h1>
-        <p class="text-grey-6 q-mt-sm">Administra los niveles deportivos del sistema</p>
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-3'">
+    <!-- Header modernizado -->
+    <div class="page-header ">
+      <div class="header-content">
+        <div class="row items-center justify-between q-col-gutter-md">
+          <div class="col-12 col-sm-auto">
+            <div class="header-title">
+              <q-icon name="signal_cellular_alt" size="42px" class="q-mr-sm" />
+              <h2 class="page-title">Gestión de Niveles</h2>
+            </div>
+            <p class="header-subtitle">Administra los niveles deportivos del sistema</p>
+          </div>
+        </div>
       </div>
 
-      <div class="col">
-        <q-card>
-          <q-card-section>
-            <q-select label="Ver por estados" emit-value map-options dense outlined hide-dropdown-icon
-              v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
-              style="min-width:170px" />
-          </q-card-section>
-        </q-card>
-      </div>
+      <!-- Estadísticas
+      <div class="stats-container row q-gutter-md q-mt-md">
+        <div class="stat-card stat-card-total">
+          <div class="stat-icon">
+            <q-icon name="signal_cellular_alt" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ niveles.length }}</div>
+            <div class="stat-label">Total Niveles</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-active">
+          <div class="stat-icon">
+            <q-icon name="check_circle" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{niveles.filter(n => n.estado).length}}</div>
+            <div class="stat-label">Activos</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-inactive">
+          <div class="stat-icon">
+            <q-icon name="block" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{niveles.filter(n => !n.estado).length}}</div>
+            <div class="stat-label">Inactivos</div>
+          </div>
+        </div>
+      </div> -->
     </div>
+
+    <!-- Filtro de estado -->
+    <q-card class="q-mb-md filter-card">
+      <q-card-section>
+        <div class="row items-center q-gutter-md">
+          <q-icon name="tune" size="24px" class="text-brown-7" />
+          <span class="text-weight-medium">Filtrar por estado:</span>
+          <q-select v-model="filterStatus" :options="statusOptions" outlined dense emit-value map-options
+            option-label="label" option-value="value" style="min-width:170px">
+            <template v-slot:prepend>
+              <q-icon name="filter_list" />
+            </template>
+          </q-select>
+        </div>
+      </q-card-section>
+    </q-card>
 
     <div class="row q-col-gutter-md">
       <!-- Formulario estático (izquierda) -->
       <div class="col-12 col-md-5">
-        <q-card>
+        <q-card class="form-card">
+          <q-card-section class="form-header">
+            <q-icon :name="esEdicion ? 'edit' : 'add_circle'" size="24px" class="q-mr-sm" />
+            <span class="text-h6">{{ esEdicion ? 'Editar Nivel' : 'Agregar Nuevo Nivel' }}</span>
+          </q-card-section>
+          <q-separator />
           <q-card-section>
-            <div class="text-h6 q-mb-sm">{{ esEdicion ? 'Editar Nivel' : 'Agregar Nuevo Nivel' }}</div>
 
             <q-input v-model="formulario.nombre_nivel" label="Nombre del Nivel *"
               placeholder="Ej: Principiante, Intermedio, Avanzado"
@@ -34,9 +84,11 @@
             </div>
 
             <div class="row justify-end q-gutter-sm q-mt-lg">
-              <q-btn flat label="Limpiar" color="secondary" @click="resetForm" />
-              <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" :color="esEdicion ? 'info' : 'primary'"
-                class="q-ml-sm" @click="guardarNivel" :loading="guardando" />
+              <q-btn flat label="Limpiar" color="brown-7" @click="resetForm" class="btn-clear" />
+              <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" unelevated no-caps class="btn-save"
+                @click="guardarNivel" :loading="guardando">
+                <q-icon :name="esEdicion ? 'save' : 'add'" class="q-mr-xs" />
+              </q-btn>
             </div>
           </q-card-section>
         </q-card>
@@ -44,54 +96,65 @@
 
       <!-- Lista (derecha) -->
       <div class="col-12 col-md-7">
-        <q-card class="shadow-1">
+        <q-card class="list-card">
+          <q-card-section class="list-header">
+            <div class="row items-center">
+              <q-icon name="list" size="24px" class="q-mr-sm" />
+              <span class="text-h6">Niveles Registrados</span>
+              <q-space />
+              <q-badge color="orange" class="count-badge">
+                {{ filteredNiveles.length }}
+              </q-badge>
+            </div>
+          </q-card-section>
+          <q-separator />
+
           <!-- Estado de carga -->
           <q-inner-loading :showing="cargando">
-            <q-spinner-gears size="50px" color="primary" />
+            <q-spinner-gears size="50px" color="green-7" />
             <div class="q-mt-md">Cargando niveles...</div>
           </q-inner-loading>
 
           <!-- Lista de niveles -->
-          <q-list v-if="!cargando && filteredNiveles.length > 0" class="rounded-borders">
-            <q-item v-for="(nivel, index) in filteredNiveles" :key="nivel.id" class="q-my-xs">
+          <q-list v-if="!cargando && filteredNiveles.length > 0" class="niveles-list">
+            <q-item v-for="(nivel, index) in filteredNiveles" :key="nivel.id" class="nivel-item">
               <q-item-section avatar>
-                <q-badge color="primary" class="q-pa-sm">
-                  {{ index + 1 }}
-                </q-badge>
+                <q-avatar size="42px" :class="nivel.estado ? 'avatar-active' : 'avatar-inactive'">
+                  <span class="avatar-number">{{ index + 1 }}</span>
+                </q-avatar>
               </q-item-section>
 
               <q-item-section>
-                <q-item-label class="text-weight-medium">
+                <q-item-label class="item-title">
                   {{ nivel.nombre_nivel }}
-                  <span class="text-caption text-grey q-ml-sm">Estudiantes: <strong>{{ countStudents(nivel)
-                  }}</strong></span>
                 </q-item-label>
-                <q-item-label caption>
-                  <q-badge :color="nivel.estado ? 'positive' : 'grey'" text-color="white">
+                <q-item-label caption class="q-mt-xs">
+                  <q-badge :color="nivel.estado ? 'positive' : 'grey'" text-color="white" class="status-badge">
+                    <q-icon :name="nivel.estado ? 'check_circle' : 'block'" size="12px" class="q-mr-xs" />
                     {{ nivel.estado ? 'Activo' : 'Inactivo' }}
                   </q-badge>
                 </q-item-label>
               </q-item-section>
 
               <q-item-section side>
-                <div class="row q-gutter-xs">
-                  <q-btn flat round icon="edit" color="primary" @click="editarNivel(nivel)">
+                <div class="row q-gutter-xs items-center">
+                  <q-btn flat round dense icon="edit" color="brown-7" @click="editarNivel(nivel)">
                     <q-tooltip>Editar nivel</q-tooltip>
                   </q-btn>
                   <q-toggle dense :model-value="nivel.estado" @update:model-value="confirmToggle(nivel, $event)"
-                    @click.stop label="" />
-
+                    @click.stop />
                 </div>
               </q-item-section>
             </q-item>
           </q-list>
 
           <!-- Estado vacío -->
-          <div v-else-if="!cargando" class="text-center q-pa-xl">
-            <q-icon name="sports" size="64px" color="grey-4" />
-            <div class="text-h6 text-grey-6 q-mt-md">No hay niveles registrados</div>
-            <p class="text-grey-5">Comienza agregando el primer nivel deportivo</p>
-            <q-btn color="primary" icon="add" label="Agregar Primer Nivel" @click="resetForm" class="q-mt-md" />
+          <div v-else-if="!cargando" class="empty-state">
+            <q-icon name="signal_cellular_alt" size="80px" class="empty-icon" />
+            <div class="empty-title">No hay niveles registrados</div>
+            <p class="empty-text">Comienza agregando el primer nivel deportivo</p>
+            <q-btn unelevated no-caps icon="add_circle" label="Agregar Primer Nivel" @click="resetForm"
+              class="btn-empty" />
           </div>
         </q-card>
       </div>
@@ -302,34 +365,295 @@ onMounted(() => {
 <style scoped lang="scss">
 @import 'src/css/quasar.variables.scss';
 
+// Variables de color (Paleta Verde-Naranja-Marrón)
+$color-forest: #2e7d32;
+$color-moss: #558b2f;
+$color-leaf: #7cb342;
+$color-lime: #9ccc65;
+$color-sage: #8bc34a;
+$color-bark: #5d4037;
+$color-wood: #795548;
+$color-earth: #8d6e63;
+$color-orange: #ff6f00;
+$color-orange-light: #ff8f00;
+
+$pastel-mint: #c8e6c9;
+$pastel-lime: #dcedc8;
+$pastel-sage: #f1f8e9;
+$pastel-sand: #efebe9;
+
+.page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.header-content {
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .q-icon {
+    color: $color-moss;
+  }
+}
+
 .page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
-  font-weight: 800;
+  color: $color-forest;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
   line-height: 1.2;
 }
 
-.q-item {
-  border-radius: 8px;
+.header-subtitle {
+  color: $color-wood;
+  font-size: 1rem;
+  margin: 0;
+  margin-left: 58px;
+  opacity: 0.9;
+}
+
+// Estadísticas
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stat-card {
+  flex: 1 1 auto;
+  min-width: 200px;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
 }
 
-.q-item:hover {
-  background-color: #f5f5f5;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.stat-card-total {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
 }
 
-.q-badge {
-  font-size: 0.9em;
-  min-width: 32px;
-  justify-content: center;
+.stat-card-active {
+  background: linear-gradient(135deg, $color-leaf 0%, $color-lime 100%);
+  color: white;
 }
 
-/* Animación suave para los elementos de la lista */
-.q-item {
+.stat-card-inactive {
+  background: linear-gradient(135deg, $color-bark 0%, $color-earth 100%);
+  color: white;
+}
+
+.stat-card-students {
+  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%);
+  color: white;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+// Filtro
+.filter-card {
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+// Formulario
+.form-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.form-header {
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-lime 100%);
+  color: $color-forest;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+
+  .q-icon {
+    color: $color-orange;
+  }
+}
+
+.btn-clear {
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(93, 64, 55, 0.1);
+  }
+}
+
+.btn-save {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(85, 139, 47, 0.4);
+  }
+}
+
+// Lista
+.list-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.list-header {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+  padding: 20px;
+}
+
+.count-badge {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 12px;
+}
+
+.niveles-list {
+  padding: 8px;
+}
+
+.nivel-item {
+  border-radius: 12px;
+  margin-bottom: 8px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  background: white;
+  border: 2px solid transparent;
+
+  &:hover {
+    background: $pastel-sage;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+    border-color: $color-leaf;
+  }
+}
+
+.avatar-active {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  box-shadow: 0 3px 10px rgba(85, 139, 47, 0.3);
+  font-weight: 700;
+}
+
+.avatar-inactive {
+  background: linear-gradient(135deg, #757575 0%, #9e9e9e 100%);
+  color: white;
+  font-weight: 700;
+}
+
+.avatar-number {
+  font-size: 1.1rem;
+}
+
+.item-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: $color-forest;
+}
+
+.status-badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.students-badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+// Estado vacío
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  color: $color-lime;
+  opacity: 0.5;
+}
+
+.empty-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: $color-forest;
+  margin-top: 20px;
+}
+
+.empty-text {
+  color: $color-earth;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.btn-empty {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  box-shadow: 0 4px 12px rgba(85, 139, 47, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(85, 139, 47, 0.4);
+  }
+}
+
+/* Animación suave */
+.nivel-item {
   animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -342,6 +666,47 @@ onMounted(() => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .stats-container {
+    .stat-card {
+      min-width: calc(50% - 8px);
+    }
+  }
+}
+
+@media (max-width: 959px) {
+  .page-title {
+    font-size: 1.8rem;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .stats-container {
+    .stat-card {
+      min-width: 100%;
+    }
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .header-title {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
