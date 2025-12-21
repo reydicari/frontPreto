@@ -12,6 +12,10 @@ export const listarPaquetes = async () => {
 };
 export const crearPaquete = async (paquete) => {
   try {
+    const current = JSON.parse(sessionStorage.getItem("user"));
+    paquete.usuario_registro = current.usuario;
+    console.log("nuevo paquete", paquete);
+
     const response = await api.post(URL_PART + "/agregar", paquete);
     Notify.create({
       type: "info",
@@ -31,6 +35,8 @@ export const crearPaquete = async (paquete) => {
 };
 export const actualizarPaquete = async (paquete) => {
   try {
+    console.log("ACTUALIZANDO ESTE PAQUETE", paquete);
+
     const response = await api.put(URL_PART + "/actualizar", paquete);
     Notify.create({ type: "info", message: response.data, position: "bottom" });
     return response.data;

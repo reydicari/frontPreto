@@ -20,339 +20,166 @@
       </div>
     </div>
 
-    <div class="row q-col-gutter-md">
-      <!-- Formulario (izquierda) -->
-      <div class="col-12 col-md-5">
-        <q-card class="form-card">
-          <div class="form-header">
-            <q-icon :name="editing ? 'edit' : 'add_circle'" size="24px" class="q-mr-sm" />
-            <span class="form-title">{{ editing ? 'Editar Paquete' : 'Nuevo Paquete' }}</span>
-          </div>
-          <q-card-section class="form-body">
+    <!-- Filtros y Botón -->
+    <div class="row items-center justify-between q-mb-md">
+      <div class="row q-gutter-sm items-center col-auto">
+        <q-select v-model="estadoFilter" :options="[
+          { label: 'Activos', value: true },
+          { label: 'Todos', value: null },
+          { label: 'Inactivos', value: false }
+        ]" option-label="label" option-value="value" emit-value map-options dense outlined style="min-width: 120px;"
+          label="Estado">
+          <template v-slot:prepend>
+            <q-icon name="filter_list" />
+          </template>
+        </q-select>
 
-            <q-form ref="packageForm" @submit.prevent="savePackage">
-              <div class="row q-col-gutter-sm">
-                <q-select class="col-12 col-sm-6 input-field" v-model="form.id_disciplina" :options="disciplineOptions"
-                  option-label="nombre" option-value="id" label="Disciplina *" emit-value map-options outlined dense
-                  :rules="[val => !!val || 'La disciplina es requerida']">
-                  <template v-slot:prepend>
-                    <q-icon name="sports_soccer" class="text-indigo-6" />
-                  </template>
-                </q-select>
+        <q-input v-model="nameFilter" dense outlined placeholder="Buscar por nombre" debounce="300"
+          style="min-width: 200px;">
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
 
-                <q-input v-model="form.nombre" label="Nombre del paquete *" outlined dense
-                  class="col-12 col-sm-6 input-field" :rules="[val => !!val || 'El nombre es requerido']">
-                  <template v-slot:prepend>
-                    <q-icon name="label" class="text-purple-6" />
-                  </template>
-                </q-input>
-
-                <q-select v-model="form.id_nivel" :options="nivelOptions" option-label="label" option-value="value"
-                  emit-value map-options label="Nivel" outlined dense class="col-12 col-sm-6 input-field">
-                  <template v-slot:prepend>
-                    <q-icon name="school" class="text-cyan-6" />
-                  </template>
-                </q-select>
-
-                <div class="col-12 col-sm-6">
-                  <q-input dense outlined v-model="form.fecha_inicio" label="Fecha inicio *" readonly
-                    class="input-field" :rules="[val => !!val || 'La fecha de inicio es requerida']">
-                    <template v-slot:prepend>
-                      <q-icon name="event" class="text-pink-6" />
-                    </template>
-                    <template v-slot:append>
-                      <q-icon name="arrow_drop_down" class="cursor-pointer text-pink-6"
-                        @click.stop.prevent="openDatePicker = true" />
-                    </template>
-                  </q-input>
-                  <q-popup-proxy v-model:show="openDatePicker" transition-show="scale" transition-hide="scale">
-                    <q-card>
-                      <q-date v-model="form.fecha_inicio" mask="YYYY-MM-DD" />
-                      <q-card-actions align="right">
-                        <q-btn flat label="Cerrar" color="primary" v-close-popup @click="openDatePicker = false" />
-                      </q-card-actions>
-                    </q-card>
-                  </q-popup-proxy>
-                </div>
-                <!-- Fecha de vencimiento -->
-                <div class="col-12 col-sm-6">
-                  <q-input dense outlined v-model="form.fecha_vencimiento" label="Fecha vencimiento" readonly
-                    class="input-field">
-                    <template v-slot:prepend>
-                      <q-icon name="event_busy" class="text-deep-orange-6" />
-                    </template>
-                    <template v-slot:append>
-                      <q-icon name="arrow_drop_down" class="cursor-pointer text-deep-orange-6"
-                        @click.stop.prevent="openDatePickerVencimiento = true" />
-                    </template>
-                  </q-input>
-                  <q-popup-proxy v-model:show="openDatePickerVencimiento" transition-show="scale"
-                    transition-hide="scale">
-                    <q-card>
-                      <q-date v-model="form.fecha_vencimiento" mask="YYYY-MM-DD" />
-                      <q-card-actions align="right">
-                        <q-btn flat label="Cerrar" color="primary" v-close-popup
-                          @click="openDatePickerVencimiento = false" />
-                      </q-card-actions>
-                    </q-card>
-                  </q-popup-proxy>
-                </div>
-              </div>
-              <div class="row q-mt-sm q-col-gutter-sm">
-                <q-input v-model.number="form.edad_minima" type="number" label="Edad mínima" outlined dense :min="0"
-                  :max="99" class="col-12 col-sm-4 input-field">
-                  <template v-slot:prepend>
-                    <q-icon name="child_care" class="text-teal-6" />
-                  </template>
-                </q-input>
-                <q-input v-model.number="form.edad_maxima" type="number" label="Edad máxima" outlined dense :min="0"
-                  :max="99" class="col-12 col-sm-4 input-field">
-                  <template v-slot:prepend>
-                    <q-icon name="elderly" class="text-teal-8" />
-                  </template>
-                </q-input>
-
-                <q-input v-model.number="form.max_estudiantes" type="number" label="Cupo" outlined dense
-                  class="col-12 col-sm-4 input-field">
-                  <template v-slot:prepend>
-                    <q-icon name="group" class="text-blue-6" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="row q-mt-sm q-col-gutter-sm">
-                <q-input v-model.number="form.mensualidad" type="number" label="Mensualidad" outlined dense
-                  class="col-12 col-sm-6 input-field" prefix="Bs">
-                  <template v-slot:prepend>
-                    <q-icon name="payments" class="text-green-6" />
-                  </template>
-                </q-input>
-                <q-input v-model.number="form.costo_registro" type="number" label="Costo de registro" outlined dense
-                  class="col-12 col-sm-6 input-field" prefix="Bs">
-                  <template v-slot:prepend>
-                    <q-icon name="receipt" class="text-amber-6" />
-                  </template>
-                </q-input>
-              </div>
-
-
-
-              <div class="toggles-section q-mt-md">
-                <q-toggle v-model="form.materiales" label="Materiales incluidos" color="purple-6" class="toggle-item">
-                  <q-icon name="inventory" size="20px" class="q-ml-xs" />
-                </q-toggle>
-
-                <!-- Toggle de estado: solo visible al editar paquetes desactivados -->
-                <q-toggle v-if="editing && form.estado === false" v-model="form.estado" label="Activar paquete"
-                  color="teal-6" class="toggle-item q-mt-sm">
-                  <q-icon name="check_circle" size="20px" class="q-ml-xs" />
-                </q-toggle>
-              </div>
-
-              <div class="horarios-section q-mt-lg">
-                <div class="section-title">
-                  <q-icon name="schedule" size="24px" class="q-mr-xs" />
-                  <span>Horarios del paquete</span>
-                </div>
-                <div v-for="(h, idx) in form.horarios" :key="idx" class="horario-row">
-                  <div class="row items-center q-gutter-sm q-mb-sm">
-                    <q-select class="col-12 col-sm-3" v-model.number="h.dia" :options="diasOptions" option-label="label"
-                      option-value="value" dense emit-value map-options outlined />
-                    <q-input class="col-12 col-sm-3" v-model="h.hora_inicio" label="Inicio" type="time" dense
-                      outlined />
-                    <q-input class="col-12 col-sm-3" v-model="h.hora_fin" label="Fin" type="time" dense outlined />
-                    <q-btn class="col-12 col-sm-2 btn-delete-horario" dense icon="delete" round
-                      @click.prevent="removeHorario(idx)" />
-                  </div>
-                  <div v-if="h._invalidMessage" class="q-mt-xs">
-                    <q-banner dense class="bg-negative text-white">{{ h._invalidMessage }}</q-banner>
-                  </div>
-                </div>
-
-                <q-btn outline label="Agregar horario" icon="add" class="btn-add-horario" @click.prevent="addHorario"
-                  unelevated />
-
-                <div class="q-mt-sm" v-if="formHorarioError">
-                  <q-banner dense class="bg-negative text-white">{{ formHorarioError }}</q-banner>
-                </div>
-              </div>
-
-              <div class="row justify-end q-mt-lg q-gutter-sm">
-                <q-btn outline label="Limpiar" icon="refresh" class="btn-reset" @click.prevent="resetForm" />
-                <q-btn :class="editing ? 'btn-update' : 'btn-save'" :label="editing ? 'Actualizar' : 'Guardar'"
-                  :icon="editing ? 'edit' : 'save'" unelevated @click.prevent="savePackage"
-                  :disable="!canSaveForm.allowed">
-                  <q-tooltip v-if="!canSaveForm.allowed">{{ canSaveForm.message }}</q-tooltip>
-                </q-btn>
-              </div>
-            </q-form>
-          </q-card-section>
-        </q-card>
+        <q-select v-model="orderOption" :options="[
+          { label: 'Por precio', value: 'precio' },
+          { label: 'Por horarios', value: 'horarios' }
+        ]" option-label="label" option-value="value" emit-value map-options dense outlined clearable label="Ordenar"
+          style="min-width: 150px;">
+          <template v-slot:prepend>
+            <q-icon name="sort" />
+          </template>
+        </q-select>
       </div>
 
-      <!-- Lista (derecha) -->
-      <div class="col-12 col-md-7">
-        <!-- Controles de filtro y orden -->
-        <q-card class="q-mb-lg filters-card">
-          <q-card-section>
-            <div class="filters-title q-mb-md">
-              <q-icon name="filter_list" size="22px" class="q-mr-xs" />
-              <span>Filtros y Búsqueda</span>
-            </div>
-            <div class="row q-col-gutter-sm items-center">
-              <q-select dense clearable class="col-12 col-sm-4 filter-input" v-model="estadoFilter" emit-value
-                map-options
-                :options="[{ label: 'Activos', value: true }, { label: 'Todos', value: null }, { label: 'Inactivos', value: false }]"
-                option-label="label" option-value="value" label="Estado" outlined>
-                <template v-slot:prepend>
-                  <q-icon name="toggle_on" class="text-teal-6" />
-                </template>
-              </q-select>
-
-              <q-input dense class="col-12 col-sm-4 filter-input" v-model="nameFilter" placeholder="Buscar por nombre"
-                debounce="300" clearable outlined>
-                <template v-slot:prepend>
-                  <q-icon name="search" class="text-indigo-6" />
-                </template>
-              </q-input>
-
-              <q-select dense clearable class="col-12 col-sm-4 filter-input" emit-value map-options
-                v-model="orderOption" :options="[
-                  { label: 'Precio: más caro', value: 'precio' },
-                  { label: 'Más horarios', value: 'horarios' }
-                ]" option-label="label" option-value="value" label="Ordenar por" outlined>
-                <template v-slot:prepend>
-                  <q-icon name="sort" class="text-purple-6" />
-                </template>
-              </q-select>
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <div class="paquetes-grid">
-          <q-card v-for="(pkg, index) in filteredList" :key="pkg.id" class="paquete-card"
-            :style="{ animationDelay: (index * 50) + 'ms' }">
-            <div class="card-ribbon" :class="pkg.estado ? 'ribbon-active' : 'ribbon-inactive'">
-              {{ pkg.estado ? 'ACTIVO' : 'INACTIVO' }}
-            </div>
-
-            <q-card-section class="card-header">
-              <div class="package-title">
-                <q-icon name="inventory_2" size="28px" class="title-icon" />
-                <span>{{ pkg.nombre }}</span>
-              </div>
-              <div class="package-meta">
-                <q-chip size="sm" class="chip-disciplina" icon="sports_soccer">
-                  {{ getDisciplinaName(pkg.id_disciplina) }}
-                </q-chip>
-                <q-chip size="sm" class="chip-nivel" icon="school">
-                  {{ getNivelName(pkg.id_nivel) }}
-                </q-chip>
-              </div>
-            </q-card-section>
-
-            <q-separator />
-
-            <q-card-section class="card-body">
-              <div class="info-grid">
-                <div class="info-item">
-                  <q-icon name="people" class="info-icon text-indigo-6" />
-                  <div class="info-content">
-                    <div class="info-label">Edad</div>
-                    <div class="info-value">{{ pkg.edad_minima }} - {{ pkg.edad_maxima }} años</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <q-icon name="group" class="info-icon text-cyan-6" />
-                  <div class="info-content">
-                    <div class="info-label">Cupo</div>
-                    <div class="info-value">{{ pkg.max_estudiantes }} estudiantes</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <q-icon name="payments" class="info-icon text-green-6" />
-                  <div class="info-content">
-                    <div class="info-label">Mensualidad</div>
-                    <div class="info-value">Bs. {{ pkg.mensualidad }}</div>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <q-icon name="receipt" class="info-icon text-amber-6" />
-                  <div class="info-content">
-                    <div class="info-label">Registro</div>
-                    <div class="info-value">Bs. {{ pkg.costo_registro }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="date-range q-mt-md">
-                <div class="date-item">
-                  <q-icon name="event" size="18px" class="text-pink-6" />
-                  <span>{{ formatDate(pkg.fecha_inicio) }}</span>
-                </div>
-                <q-icon name="arrow_forward" size="16px" class="text-grey-6" />
-                <div class="date-item">
-                  <q-icon name="event_busy" size="18px" class="text-deep-orange-6" />
-                  <span>{{ formatDate(pkg.fecha_vencimiento) || '—' }}</span>
-                </div>
-              </div>
-
-              <div class="materials-badge q-mt-md">
-                <q-chip :class="pkg.materiales ? 'chip-materiales-si' : 'chip-materiales-no'"
-                  :icon="pkg.materiales ? 'inventory' : 'block'">
-                  {{ pkg.materiales ? 'Materiales incluidos' : 'Sin materiales' }}
-                </q-chip>
-              </div>
-            </q-card-section>
-
-            <q-separator />
-
-            <q-card-section class="card-actions">
-              <div class="action-buttons">
-                <q-btn class="btn-edit-card" round icon="edit" @click.stop="editPackage(pkg)"
-                  :disable="!canEditPackage(pkg)">
-                  <q-tooltip v-if="!canEditPackage(pkg)">No se puede editar: horarios con errores</q-tooltip>
-                  <q-tooltip v-else>Editar paquete</q-tooltip>
-                </q-btn>
-                <q-btn v-if="pkg.estado" class="btn-delete-card" round icon="delete_forever"
-                  @click.stop.prevent="openDeleteDialog(pkg)">
-                  <q-tooltip>Desactivar paquete</q-tooltip>
-                </q-btn>
-              </div>
-            </q-card-section>
-
-            <q-separator />
-
-            <q-card-section class="card-horarios">
-              <div class="horarios-title">
-                <q-icon name="schedule" size="20px" />
-                <span>Horarios</span>
-                <q-badge class="horarios-count">{{ pkg.horarios?.length || 0 }}</q-badge>
-              </div>
-              <div class="horarios-list">
-                <div v-for="(h, hIndex) in pkg.horarios" :key="h.id" class="horario-chip-modern"
-                  :class="`horario-color-${hIndex % 6}`" @click.stop.prevent="openHorarioDialog(pkg.id, h)">
-                  <div class="horario-day">{{ getDiaLabel(h.dia) }}</div>
-                  <div class="horario-time">
-                    <q-icon name="access_time" size="14px" />
-                    {{ h.hora_inicio }} - {{ h.hora_fin }}
-                  </div>
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-      </div>
+      <q-btn unelevated rounded icon="add_circle" label="Nuevo Paquete" color="orange-7" size="md"
+        @click="openAddDialog" class="btn-add-package" />
     </div>
 
-    <!-- Horario dialog -->
-    <HorarioDialog v-model:modelValue="horarioDialogOpen" :horario="editingHorario"
-      :paquete-id="editingHorarioPaqueteId" :paquetes="paquetes" @save="onSaveHorario" @remove="onRemoveHorario" />
+    <!-- Grid de paquetes -->
+    <div class="paquetes-grid">
+      <q-card v-for="(pkg, index) in filteredList" :key="pkg.id" class="paquete-card"
+        :style="{ animationDelay: (index * 50) + 'ms' }">
+        <div class="card-ribbon" :class="pkg.estado ? 'ribbon-active' : 'ribbon-inactive'">
+          {{ pkg.estado ? 'ACTIVO' : 'INACTIVO' }}
+        </div>
 
-    <!-- Confirmación para desactivar paquete -->
+        <q-card-section class="card-header">
+          <div class="package-title">
+            <q-icon name="inventory_2" size="24px" class="title-icon" />
+            <span>{{ pkg.nombre }}</span>
+          </div>
+          <div class="package-meta">
+            <q-chip size="sm" class="chip-disciplina" dense icon="sports_soccer">
+              {{ getDisciplinaName(pkg.id_disciplina) }}
+            </q-chip>
+            <q-chip size="sm" class="chip-nivel" dense icon="school">
+              {{ getNivelName(pkg.id_nivel) }}
+            </q-chip>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <q-icon name="people" class="info-icon text-indigo-6" size="20px" />
+              <div class="info-content">
+                <div class="info-label">Edad</div>
+                <div class="info-value">{{ pkg.edad_minima }}-{{ pkg.edad_maxima }} años</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <q-icon name="group" class="info-icon text-cyan-6" size="20px" />
+              <div class="info-content">
+                <div class="info-label">Cupo</div>
+                <div class="info-value">{{ pkg.max_estudiantes }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <q-icon name="payments" class="info-icon text-green-6" size="20px" />
+              <div class="info-content">
+                <div class="info-label">Mensualidad</div>
+                <div class="info-value">Bs {{ pkg.mensualidad }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <q-icon name="receipt" class="info-icon text-amber-6" size="20px" />
+              <div class="info-content">
+                <div class="info-label">Registro</div>
+                <div class="info-value">Bs {{ pkg.costo_registro }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="date-range q-mt-sm">
+            <div class="date-item">
+              <q-icon name="event" size="16px" class="text-pink-6" />
+              <span>{{ formatDate(pkg.fecha_inicio) }}</span>
+            </div>
+            <q-icon name="arrow_forward" size="14px" class="text-grey-6" />
+            <div class="date-item">
+              <q-icon name="event_busy" size="16px" class="text-deep-orange-6" />
+              <span>{{ formatDate(pkg.fecha_vencimiento) || '—' }}</span>
+            </div>
+          </div>
+
+          <q-chip v-if="pkg.materiales" size="sm" class="chip-materiales-si q-mt-sm" icon="inventory" dense>
+            Materiales
+          </q-chip>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="card-actions">
+          <div class="action-buttons">
+            <q-btn class="btn-edit-card" round icon="edit" @click.stop="editPackage(pkg)"
+              :disable="!canEditPackage(pkg)">
+              <q-tooltip v-if="!canEditPackage(pkg)">No se puede editar: horarios con errores</q-tooltip>
+              <q-tooltip v-else>Editar paquete</q-tooltip>
+            </q-btn>
+            <q-btn v-if="pkg.estado" class="btn-delete-card" round icon="delete_forever"
+              @click.stop.prevent="openDeleteDialog(pkg)">
+              <q-tooltip>Desactivar paquete</q-tooltip>
+            </q-btn>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="card-horarios">
+          <div class="horarios-title">
+            <q-icon name="schedule" size="20px" />
+            <span>Horarios</span>
+            <q-badge class="horarios-count">{{ pkg.horarios?.length || 0 }}</q-badge>
+          </div>
+          <div class="horarios-list">
+            <div v-for="(h, hIndex) in pkg.horarios" :key="h.id" class="horario-chip-modern"
+              :class="`horario-color-${hIndex % 6}`" @click.stop.prevent="openHorarioDialog(pkg.id, h)">
+              <div class="horario-day">{{ getDiaLabel(h.dia) }}</div>
+              <div class="horario-time">
+                <q-icon name="access_time" size="14px" />
+                {{ h.hora_inicio }} - {{ h.hora_fin }}
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </div>
+
+    <!-- Paquete Dialog -->
+    <PaqueteDialog v-model="paqueteDialogOpen" :editing-package="editingPaquete" :discipline-options="disciplineOptions"
+      :nivel-options="nivelOptions" :dias-options="diasOptions" :paquetes="paquetes" @save="onPaqueteDialogSave" />
+
+    <!-- Horario dialog -->
+    <HorarioDialog v-model="horarioDialogOpen" :horario="editingHorario" :dias-options="diasOptions"
+      @save="onSaveHorario" @remove="onRemoveHorario" />
+
+    <!-- Delete dialog -->
     <q-dialog v-model="deleteDialogOpen" persistent>
       <q-card style="min-width: 320px; max-width: 560px;">
         <q-card-section class="row items-center">
@@ -381,15 +208,19 @@
 import { listarDisciplinas } from 'src/stores/disciplina-store'
 import { listarNiveles } from 'src/stores/nivel'
 import { actualizarPaquete, crearPaquete, eliminarPaquete, listarPaquetes } from 'src/stores/paquete-store'
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
+import PaqueteDialog from './PaqueteDialog.vue'
+import HorarioDialog from './HorarioDialog.vue'
 const $q = useQuasar();
 
 const today = new Date().toISOString().slice(0, 10)
 
 const paquetes = ref([])
-const editing = ref(false)
-const nextId = ref(1)
+
+// Dialog state
+const paqueteDialogOpen = ref(false)
+const editingPaquete = ref(null)
 
 // filtros y orden
 const estadoFilter = ref(true) // por defecto mostrar solo activos
@@ -435,27 +266,7 @@ watch([estadoFilter, nameFilter, orderOption, paquetes], () => {
   applyFilters()
 }, { immediate: true })
 
-// Form model
-const form = ref({
-  id: null,
-  id_disciplina: null,
-  nombre: 'paquete A',
-  edad_minima: null,
-  edad_maxima: null,
-  id_nivel: null,
-  max_estudiantes: null,
-  mensualidad: 100,
-  materiales: false,
-  costo_registro: 0,
-  estado: true,
-  habilitado: true,
-  fecha_inicio: today,
-  fecha_vencimiento: '',
-  usuario_registro: '',
-  horarios: []
-})
-
-// Opciones de ejemplo (reemplazar con datos reales)
+// Opciones de datos
 const disciplineOptions = ref([])
 const nivelOptions = ref([])
 const diasOptions = ref([
@@ -476,179 +287,34 @@ onMounted(async () => {
 })
 const listar = async () => {
   paquetes.value = await listarPaquetes()
-  console.log(paquetes.value);
-}
-const addHorario = () => {
-  // allow adding even if it conflicts; mark the horario with an inline error so user can edit it
-  const newH = { dia: 1, hora_inicio: '07:00', hora_fin: '09:00', estado: true, _invalidMessage: '' }
-  form.value.horarios.push(newH)
-  // validate newly added one (exclude itself from same-form check)
-  const err = validateHorarioInForm(newH, { excludePackageId: form.value.id })
-  if (err) {
-    newH._invalidMessage = err
-  } else {
-    newH._invalidMessage = ''
-    // si ya había un mensaje global de falta de horarios, limpiarlo
-    formHorarioError.value = ''
-  }
 }
 
-const removeHorario = (idx) => {
-  form.value.horarios.splice(idx, 1)
-  formHorarioError.value = ''
+const openAddDialog = () => {
+  editingPaquete.value = null
+  paqueteDialogOpen.value = true
 }
 
-const formHorarioError = ref('')
-
-function validateHorarioInForm(h, opts = {}) {
-  // opts.excludePackageId: id of package to exclude from other-packages check (e.g., when editing this package)
-  // convert time to minutes
-  const toMin = (t) => {
-    if (!t) return null
-    const [hh, mm] = t.split(':').map(Number)
-    return hh * 60 + (mm || 0)
-  }
-
-  const overlap = (aS, aE, bS, bE) => {
-    if (aS == null || aE == null || bS == null || bE == null) return false
-    return aS < bE && bS < aE
-  }
-
-  // hora_fin must be after hora_inicio
-  if (h.hora_inicio && h.hora_fin) {
-    const start = toMin(h.hora_inicio)
-    const end = toMin(h.hora_fin)
-    if (end <= start) return 'La hora de fin debe ser posterior a la hora de inicio.'
-  }
-
-  const aS = toMin(h.hora_inicio)
-  const aE = toMin(h.hora_fin)
-
-  // check overlaps inside current form.horarios (exclude same id)
-  const clash = form.value.horarios.find(x => x !== h && x.dia === h.dia && overlap(aS, aE, toMin(x.hora_inicio), toMin(x.hora_fin)))
-  if (clash) return 'Este horario se solapa con otro horario del mismo paquete (mismo día).'
-
-  // check against other paquetes of same disciplina (solo paquetes activos: estado === true)
-  const disciplinaId = form.value.id_disciplina
-  if (disciplinaId) {
-    const otherClash = paquetes.value.find(p => p.id !== opts.excludePackageId && p.estado === true && p.id_disciplina === disciplinaId && p.horarios && p.horarios.some(x => x.dia === h.dia && overlap(aS, aE, toMin(x.hora_inicio), toMin(x.hora_fin))))
-    if (otherClash) return `Otro paquete ('${otherClash.nombre || otherClash.id}') de la misma disciplina tiene un horario que se solapa.`
-  }
-
-  return null
-}
-
-// re-validate horarios when user edits them so inline errors update
-
-
-function pad(n) { return n.toString().padStart(2, '0') }
-
-function addHoursToTime(timeStr, hrs) {
-  if (!timeStr) return ''
-  const [hh, mm] = timeStr.split(':').map(Number)
-  const d = new Date(2000, 0, 1, hh, mm || 0)
-  d.setHours(d.getHours() + hrs)
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function compareTimes(a, b) {
-  if (!a || !b) return 0
-  const [ah, am] = a.split(':').map(Number)
-  const [bh, bm] = b.split(':').map(Number)
-  return (ah * 60 + (am || 0)) - (bh * 60 + (bm || 0))
-}
-
-watch(() => form.value.horarios, (newVal) => {
-  newVal.forEach(h => {
-    // if hora_inicio changed and hora_fin is empty or invalid, set default +2h
-    if (h.hora_inicio) {
-      if (!h.hora_fin || compareTimes(h.hora_fin, h.hora_inicio) <= 0) {
-        h.hora_fin = addHoursToTime(h.hora_inicio, 2)
-      }
+const onPaqueteDialogSave = async (packageData) => {
+  try {
+    if (packageData.id) {
+      await actualizarPaquete(packageData)
+    } else {
+      packageData.fecha_creacion = today
+      await crearPaquete(packageData)
     }
-    const err = validateHorarioInForm(h, { excludePackageId: form.value.id })
-    h._invalidMessage = err || ''
-  })
-  // si ya existe al menos un horario, borrar el error global
-  if (form.value.horarios && form.value.horarios.length > 0) {
-    formHorarioError.value = ''
-  }
-}, { deep: true })
-
-// when disciplina changes, revalidate all horarios against paquetes of that disciplina
-watch(() => form.value.id_disciplina, () => {
-  form.value.horarios.forEach(h => {
-    const err = validateHorarioInForm(h, { excludePackageId: form.value.id })
-    h._invalidMessage = err || ''
-  })
-})
-
-const resetForm = () => {
-  editing.value = false
-  form.value = {
-    id: null,
-    id_disciplina: null,
-    nombre: 'Paquete ' + Date.now(),
-    edad_minima: null,
-    edad_maxima: null,
-    id_nivel: null,
-    max_estudiantes: null,
-    mensualidad: 100,
-    materiales: false,
-    costo_registro: 0,
-    estado: true,
-    fecha_inicio: today,
-    habilitado: true,
-    fecha_vencimiento: '',
-    usuario_registro: '',
-    horarios: []
+    await listar()
+    $q.notify({ type: 'positive', message: 'Paquete guardado exitosamente', position: 'top' })
+  } catch (err) {
+    console.error('Error al guardar paquete:', err)
+    $q.notify({ type: 'negative', message: 'Error al guardar el paquete', position: 'top' })
   }
 }
 
-// Date picker control
-const openDatePicker = ref(false)
-const openDatePickerVencimiento = ref(false)
 
-const packageForm = ref(null)
-
-const savePackage = async () => {
-  // validate q-form
-  if (packageForm.value && packageForm.value.validate) {
-    const ok = await packageForm.value.validate()
-    if (!ok) {
-      return
-    }
-  }
-
-  // require at least one horario
-  if (!form.value.horarios || form.value.horarios.length === 0) {
-    formHorarioError.value = 'Se requiere al menos un horario para el paquete'
-    return
-  }
-  formHorarioError.value = ''
-
-  if (editing.value && form.value.id != null) {
-    const pkgModifcado = JSON.parse(JSON.stringify(form.value))
-    console.log('MODIFICANDO: ', pkgModifcado);
-    await actualizarPaquete(pkgModifcado)
-    listar()
-  } else {
-    const newPkg = JSON.parse(JSON.stringify(form.value))
-    // asignar id incremental
-    newPkg.id = nextId.value++
-    const current = JSON.parse(sessionStorage.getItem('user'))
-    newPkg.usuario_registro = current ? current.usuario : ''
-    // fecha_creacion se toma como hoy
-    newPkg.fecha_creacion = today
-    await crearPaquete(newPkg)
-    listar()
-  }
-  resetForm()
-}
 
 const editPackage = (pkg) => {
-  editing.value = true
-  form.value = JSON.parse(JSON.stringify(pkg))
+  editingPaquete.value = JSON.parse(JSON.stringify(pkg))
+  paqueteDialogOpen.value = true
 }
 
 const getDisciplinaName = (id) => {
@@ -691,7 +357,7 @@ const openHorarioDialog = (paqueteId, horario) => {
   horarioDialogOpen.value = true
 }
 
-const onSaveHorario = (h) => {
+const onSaveHorario = async (h) => {
   const pkgIdx = paquetes.value.findIndex(p => p.id === editingHorarioPaqueteId.value)
   if (pkgIdx === -1) return
   const pkg = paquetes.value[pkgIdx]
@@ -701,16 +367,30 @@ const onSaveHorario = (h) => {
   } else {
     pkg.horarios.splice(idx, 1, h)
   }
-  // limpiar posible mensaje global de falta de horarios
-  if (pkg.horarios && pkg.horarios.length > 0) formHorarioError.value = ''
+  try {
+    await actualizarPaquete(pkg)
+    await listar()
+    $q.notify({ type: 'positive', message: 'Horario guardado', position: 'top' })
+  } catch (err) {
+    console.error('Error al guardar horario:', err)
+    $q.notify({ type: 'negative', message: 'Error al guardar el horario', position: 'top' })
+  }
   horarioDialogOpen.value = false
 }
 
-const onRemoveHorario = (h) => {
+const onRemoveHorario = async (h) => {
   const pkgIdx = paquetes.value.findIndex(p => p.id === editingHorarioPaqueteId.value)
   if (pkgIdx === -1) return
   const pkg = paquetes.value[pkgIdx]
   pkg.horarios = pkg.horarios.filter(x => x.id !== h.id)
+  try {
+    await actualizarPaquete(pkg)
+    await listar()
+    $q.notify({ type: 'positive', message: 'Horario eliminado', position: 'top' })
+  } catch (err) {
+    console.error('Error al eliminar horario:', err)
+    $q.notify({ type: 'negative', message: 'Error al eliminar el horario', position: 'top' })
+  }
   horarioDialogOpen.value = false
 }
 
@@ -755,52 +435,7 @@ const canEditPackage = (pkg) => {
   return !hasHorarioErrors && !duplicate
 }
 
-// Computed para permitir/deshabilitar el guardado del formulario
-const canSaveForm = computed(() => {
-  const reason = { allowed: true, message: '' }
-  // campos requeridos básicos
-  if (!form.value.id_disciplina) {
-    reason.allowed = false
-    reason.message = 'Seleccione la disciplina (requerido)'
-    return reason
-  }
-  if (!form.value.nombre) {
-    reason.allowed = false
-    reason.message = 'Ingrese el nombre del paquete'
-    return reason
-  }
-  // id_nivel es opcional ahora; no bloquea el guardado
-  if (!form.value.fecha_inicio) {
-    reason.allowed = false
-    reason.message = 'Seleccione la fecha de inicio'
-    return reason
-  }
 
-  // al menos un horario
-  if (!form.value.horarios || form.value.horarios.length === 0) {
-    reason.allowed = false
-    reason.message = 'Se requiere al menos un horario para el paquete'
-    return reason
-  }
-
-  // errores en horarios (mensajes en rojo)
-  const bad = form.value.horarios.find(h => h._invalidMessage && h._invalidMessage.length > 0)
-  if (bad) {
-    reason.allowed = false
-    reason.message = bad._invalidMessage || 'Existe un error en los horarios'
-    return reason
-  }
-
-  // duplicidad con otros paquetes (excluir current when editing)
-  const duplicate = paquetes.value.find(p => p.id !== form.value.id && p.id_disciplina === form.value.id_disciplina && (p.id_nivel == form.value.id_nivel))
-  if (duplicate) {
-    reason.allowed = false
-    reason.message = `Ya existe otro paquete ('${duplicate.nombre || duplicate.id}') con la misma disciplina y nivel`
-    return reason
-  }
-
-  return reason
-})
 </script>
 
 <style scoped lang="scss">
@@ -936,6 +571,19 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Botón de nuevo paquete */
+.btn-add-package {
+  font-weight: 700;
+  padding: 10px 24px;
+  box-shadow: 0 4px 16px rgba(255, 111, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-add-package:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 111, 0, 0.5);
 }
 
 /* Formulario */
@@ -1168,8 +816,8 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 /* Grid de paquetes */
 .paquetes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
   animation: fadeIn 0.8s ease;
 }
 
@@ -1234,7 +882,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .card-header {
   background: linear-gradient(135deg, $pastel-green 0%, $pastel-green-light 100%);
-  padding: 20px;
+  padding: 12px 16px;
 }
 
 .body--dark .card-header {
@@ -1244,10 +892,10 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .package-title {
   display: flex;
   align-items: center;
-  font-size: 1.4em;
+  font-size: 1.1em;
   font-weight: 700;
   color: $color-green-dark;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .body--dark .package-title {
@@ -1280,7 +928,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .card-body {
-  padding: 20px;
+  padding: 12px 16px;
 }
 
 .body--dark .card-body {
@@ -1290,16 +938,16 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 8px;
 }
 
 .info-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px;
   background: $pastel-green-light;
-  border-radius: 12px;
+  border-radius: 8px;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
 }
@@ -1320,19 +968,22 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .info-icon {
-  font-size: 28px;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .info-content {
   flex: 1;
+  min-width: 0;
 }
 
 .info-label {
-  font-size: 0.75em;
+  font-size: 0.7em;
   color: #607d8b;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .body--dark .info-label {
@@ -1340,10 +991,11 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .info-value {
-  font-size: 1em;
+  font-size: 0.9em;
   font-weight: 700;
   color: #37474f;
   margin-top: 2px;
+  line-height: 1.2;
 }
 
 .body--dark .info-value {
@@ -1354,9 +1006,9 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
+  padding: 8px;
   background: $pastel-orange-light;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 2px solid $color-orange-light;
 }
 
@@ -1368,8 +1020,8 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .date-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.9em;
+  gap: 4px;
+  font-size: 0.75em;
   font-weight: 600;
   color: #424242;
 }
@@ -1398,7 +1050,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .card-actions {
   background: #fafafa;
-  padding: 16px 20px;
+  padding: 10px 16px;
 }
 
 .body--dark .card-actions {
@@ -1408,7 +1060,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .action-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
 }
 
 .btn-edit-card {
@@ -1437,7 +1089,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .card-horarios {
   background: linear-gradient(135deg, darken($pastel-green, 8%) 0%, darken($pastel-green-light, 5%) 100%);
-  padding: 16px 20px;
+  padding: 10px 16px;
   border-top: 3px solid rgba(46, 125, 50, 0.3);
 }
 
@@ -1449,10 +1101,11 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .horarios-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-weight: 700;
+  font-size: 0.9em;
   color: $color-green-dark;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .body--dark .horarios-title {
@@ -1472,17 +1125,17 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .horario-chip-modern {
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  min-width: 140px;
+  min-width: 110px;
 }
 
 .horario-chip-modern:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .horario-color-0 {
@@ -1517,9 +1170,10 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .horario-day {
   font-weight: 700;
-  font-size: 0.9em;
+  font-size: 0.75em;
   color: #37474f;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  line-height: 1;
 }
 
 .body--dark .horario-day {
@@ -1529,10 +1183,11 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .horario-time {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.85em;
+  gap: 3px;
+  font-size: 0.7em;
   color: #546e7a;
   font-weight: 600;
+  line-height: 1;
 }
 
 .body--dark .horario-time {
