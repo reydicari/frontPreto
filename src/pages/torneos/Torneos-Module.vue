@@ -290,6 +290,7 @@
     </q-dialog>
 
     <seguimiento-torneo-dialog v-model="showSeguimiento" :torneo="selectedTorneo" />
+    <!-- Descomentar componente arriba para usar dialog en vez de page -->
 
     <!-- Drawer de detalles a la derecha -->
     <q-drawer v-model="drawer" side="right" overlay width="520">
@@ -351,7 +352,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
-import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue'
+// import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue' // Descomentar para usar dialog en vez de page
 import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo, comenzarTorneo, suspenderTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
 import { listarNiveles } from 'src/stores/nivel'
@@ -369,6 +370,7 @@ const pagination = reactive({ page: 1, rowsPerPage: 10 })
 
 const selectedTorneo = ref(null)
 const drawer = ref(false)
+const showSeguimiento = ref(false)
 const showTorneoDialog = ref(false)
 const editingTorneo = ref(null)
 const showBorradoresDialog = ref(false)
@@ -579,7 +581,9 @@ async function onBorradoresStarted(evt) {
     const found = torneos.value.find(t => String(t.id) === String(id))
     if (found) selectedTorneo.value = found
   }
-  showSeguimiento.value = true
+
+  router.push({ path: `/torneos/seguimiento/${id}` }) // Comentar para usar dialog
+  // showSeguimiento.value = true // Descomentar para usar dialog en vez de page
   $q.notify({ type: 'positive', message: 'Torneo iniciado — mostrando seguimiento' })
 }
 
@@ -590,18 +594,7 @@ const suspendTarget = ref(null)
 const currentUserName = ref('')
 const showStartConfirm = ref(false)
 const startResponseMessage = ref(null)
-const showSeguimiento = ref(false)
-
-async function openSeguimiento() {
-  // recargar la lista principal antes de abrir seguimiento
-  try {
-    await loadTorneos()
-  } catch (e) {
-    console.warn('Error recargando torneos antes de abrir seguimiento', e)
-  }
-  showSeguimiento.value = true
-  showStartConfirm.value = false
-}
+// const showSeguimiento = ref(false) // Descomentar para usar dialog en vez de page
 
 onMounted(() => {
   try {
@@ -682,14 +675,11 @@ async function openDetails(evtOrRow, maybeRow) {
 
   selectedTorneo.value = item
 
-  // Si el estado es 2 (en marcha) o 3 (con ganador), abrir el diálogo de seguimiento
+  // Si el estado es 2 (en marcha) o 3 (con ganador), navegar a la página de seguimiento
   if (typeof item.estado !== 'undefined' && (Number(item.estado) === 2 || Number(item.estado) === 3)) {
-    try {
-      await loadTorneos()
-    } catch (e) {
-      console.warn('Error recargando torneos antes de abrir seguimiento', e)
-    }
-    showSeguimiento.value = true
+    showSeguimiento.value = false// Asegurar que esté cerrado
+    router.push({ path: `/torneos/seguimiento/${item.id}` }) // Comentar para usar dialog
+    // showSeguimiento.value = true // Descomentar para usar dialog en vez de page
     return
   }
 

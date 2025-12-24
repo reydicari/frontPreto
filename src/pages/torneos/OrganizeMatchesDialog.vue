@@ -1,55 +1,78 @@
 <template>
-  <q-dialog v-model="localVisible" persistent>
-    <q-card style="width: min(920px, 96vw); max-width: 920px;">
-      <q-card-section>
+  <q-dialog v-model="localVisible" persistent :maximized="$q.screen.lt.md">
+    <q-card style="width: min(920px, 96vw); max-width: 920px;" class="organize-dialog">
+      <q-card-section class="bg-gradient-teal text-white q-pa-md">
         <!-- Encabezado único: título + nombre del torneo (centrados) -->
-        <div class="organize-header column items-center justify-center q-pa-sm text-center">
-          <div class="text-h6">Ordenar partidos</div>
-          <div class="text-h5 text-primary q-mt-xs"><strong>{{ torneoNombre || '—' }}</strong></div>
+        <div class="column items-center justify-center text-center">
+          <div class="row items-center q-gutter-sm">
+            <q-icon name="sports" size="32px" />
+            <div class="text-h5 text-weight-medium">Organizar Partidos</div>
+          </div>
+          <div class="text-h6 q-mt-sm" style="opacity: 0.95;">{{ torneoNombre || '—' }}</div>
         </div>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-section class="q-pa-md">
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-8 d-flex">
-            <q-card flat bordered class="matches-container q-pa-sm">
-              <q-card-section>
-                <div class="q-mt-xs">
-                  <div class="text-h5 text-primary q-mt-xs"><strong>{{ phaseName || 'No especificada' }}</strong></div>
-                </div>
-                <div class="row items-center q-mt-sm">
-                  <!-- El botón 'Mezclar' se muestra solo en la sección de tipo 4 debajo del icono de ayuda. -->
+            <q-card flat bordered class="matches-container full-width">
+              <q-card-section class="bg-grey-2">
+                <div class="row items-center q-gutter-sm">
+                  <q-icon name="emoji_events" color="green-7" size="24px" />
+                  <div class="text-h6 text-weight-medium text-green-8">{{ phaseName || 'Fase no especificada' }}</div>
                 </div>
               </q-card-section>
 
               <q-separator />
 
-              <q-card-section>
-                <div v-if="loading" class="row items-center justify-center q-pa-md">
-                  <q-spinner-dots size="28px" />
+              <q-card-section class="q-pa-md">
+                <div v-if="loading" class="row items-center justify-center q-pa-xl">
+                  <div class="column items-center q-gutter-md">
+                    <q-spinner-dots size="48px" color="green-7" />
+                    <div class="text-body2 text-grey-7">Generando partidos...</div>
+                  </div>
                 </div>
                 <div v-else>
                   <div v-if="!matches.length" class="text-caption">
                     <div v-if="torneoType === 4" class="row column items-center justify-center q-pa-xl">
-                      <q-icon name="sports_soccer" size="56px" class="q-mb-md text-grey" />
-                      <div class="text-h6">Aún no hay desafíos generados</div>
-                      <div class="text-caption q-mt-sm">Ingrese la cantidad de desafíos y genere la distribución.</div>
+                      <q-icon name="sports_soccer" size="72px" class="q-mb-md text-grey-5" />
+                      <div class="text-h6 text-grey-7">Aún no hay desafíos generados</div>
+                      <div class="text-body2 text-grey-6 q-mt-sm">Ingrese la cantidad de desafíos y genere la
+                        distribución</div>
                     </div>
-                    <div v-else>No se generaron partidos.</div>
+                    <div v-else class="row column items-center justify-center q-pa-xl">
+                      <q-icon name="info" size="48px" class="text-grey-5" />
+                      <div class="text-body1 text-grey-7">No se generaron partidos</div>
+                    </div>
                   </div>
                   <div v-else class="matches-grid q-gutter-sm">
                     <q-card v-for="(m, idx) in displayedMatches" :key="`m-${idx}`" flat bordered
-                      class="q-pa-xs small-match-card bg-grey-1">
-                      <div class="row items-center justify-between">
-                        <div class="text-caption">{{ idx + 1 }}</div>
-                        <div class="row items-center" style="gap:8px;">
-                          <div class="text-caption">{{ m._phaseName || phaseName || '-' }}</div>
-                          <q-btn dense flat icon="swap_horiz" @click.stop="swapMatch(idx)" />
-                          <q-btn dense flat icon="delete" color="negative" @click.stop="removeMatch(idx)" />
+                      class="small-match-card">
+                      <q-card-section class="q-pa-sm">
+                        <div class="row items-center justify-between q-mb-xs">
+                          <q-badge color="green-7" :label="`#${idx + 1}`" />
+                          <div class="row items-center" style="gap:4px;">
+                            <q-chip dense size="sm" color="grey-3" text-color="grey-8" icon="category">
+                              {{ m._phaseName || phaseName || '-' }}
+                            </q-chip>
+                            <q-btn dense round flat icon="swap_horiz" color="green-7" size="sm"
+                              @click.stop="swapMatch(idx)">
+                              <q-tooltip>Intercambiar equipos</q-tooltip>
+                            </q-btn>
+                            <q-btn dense round flat icon="delete" color="deep-orange-6" size="sm"
+                              @click.stop="removeMatch(idx)">
+                              <q-tooltip>Eliminar partido</q-tooltip>
+                            </q-btn>
+                          </div>
                         </div>
-                      </div>
-                      <div class="q-mt-xs text-body2 text-center team-vs"><span class="team-left">{{
-                        findEquipoName(m.id_equipo_local) }}</span>
-                        <strong> VS </strong>
-                        <span class="team-right">{{ findEquipoName(m.id_equipo_visitante) }}</span>
-                      </div>
+                        <div class="q-mt-sm text-body2 text-center team-vs">
+                          <span class="team-left">{{ findEquipoName(m.id_equipo_local) }}</span>
+                          <strong class="text-green-8"> VS </strong>
+                          <span class="team-right">{{ findEquipoName(m.id_equipo_visitante) }}</span>
+                        </div>
+                      </q-card-section>
                     </q-card>
                   </div>
                 </div>
@@ -58,42 +81,64 @@
           </div>
 
           <div class="col-12 col-md-4">
-            <q-card flat bordered class="control-container q-pa-sm">
-              <q-card-section>
-                <div class="column q-gutter-sm">
+            <q-card flat bordered class="control-container">
+              <q-card-section class="bg-grey-2">
+                <div class="row items-center q-gutter-sm">
+                  <q-icon name="tune" color="green-7" size="24px" />
+                  <div class="text-h6 text-weight-medium text-green-8">Configuración</div>
+                </div>
+              </q-card-section>
+
+              <q-separator />
+
+              <q-card-section class="q-pa-md">
+                <div class="column q-gutter-md">
                   <!-- Para tipo 4 añadimos input 'cantidad de desafios' y habilitamos botones según su valor -->
-                  <div v-if="torneoType === 4" class="row q-col-gutter-sm">
-                    <q-input dense v-model.number="desafiosCount" type="number" min="1" max="5" class="col"
-                      label="Cantidad de desafíos" autofocus hint="Ingrese valor 1-5"
-                      :rules="[val => desafiosRule(val)]" :readonly="desafiosLocked" />
+                  <div v-if="torneoType === 4">
+                    <q-input outlined v-model.number="desafiosCount" type="number" min="1" max="5"
+                      label="Cantidad de Desafíos" autofocus hint="Ingrese valor entre 1 y 5"
+                      :rules="[val => desafiosRule(val)]" :readonly="desafiosLocked" color="teal" class="text-body1">
+                      <template v-slot:prepend>
+                        <q-icon name="filter_1" color="teal" />
+                      </template>
+                    </q-input>
                   </div>
 
-                  <q-btn v-if="torneoType !== 2 && torneoType !== 4" dense unelevated color="secondary"
-                    class="full-width" label="por orden de registro" @click="paresConImpares" />
-                  <q-btn dense unelevated color="orange" class="full-width" label="Sortear aleatorio"
+                  <q-btn v-if="torneoType !== 2 && torneoType !== 4" unelevated color="grey-7"
+                    icon="format_list_numbered" class="full-width" label="Por Orden de Registro"
+                    @click="paresConImpares" />
+                  <q-btn unelevated color="orange" icon="shuffle" class="full-width" label="Sortear Aleatorio"
                     @click="sortearAleatorio" :disable="torneoType === 4 ? !desafiosValid : false" />
-                  <q-btn v-if="torneoType !== 2 || torneoType === 4" dense unelevated
-                    :color="manualMode ? 'primary' : 'accent'" :outline="!manualMode"
-                    class="full-width q-pa-md text-weight-bold"
-                    :label="manualMode ? 'Salir modo manual' : 'orden manual'" :icon="manualMode ? 'close' : 'edit'"
-                    @click="organizarManual" :disable="torneoType === 4 ? !desafiosValid : false" />
+                  <q-btn v-if="torneoType !== 2 || torneoType === 4" unelevated :color="manualMode ? 'teal' : 'grey-7'"
+                    :outline="!manualMode" class="full-width" :label="manualMode ? 'Salir Modo Manual' : 'Orden Manual'"
+                    :icon="manualMode ? 'close' : 'edit'" @click="organizarManual"
+                    :disable="torneoType === 4 ? !desafiosValid : false" />
                 </div>
-                <div class="text-caption q-mt-xs">
-                  <template v-if="torneoType === 2">Todos los equipos juegan contra todos al menos una vez y están
-                    distribuidos equitativamente.</template>
-                  <template v-else>Elige una estrategia para generar los partidos.</template>
-                </div>
+                <q-banner rounded class="bg-blue-1 text-blue-9 q-mt-md">
+                  <template v-slot:avatar>
+                    <q-icon name="info" color="blue" />
+                  </template>
+                  <div class="text-body2">
+                    <template v-if="torneoType === 2">Todos los equipos juegan contra todos al menos una vez y están
+                      distribuidos equitativamente.</template>
+                    <template v-else>Elige una estrategia para generar los partidos.</template>
+                  </div>
+                </q-banner>
 
                 <!-- Mostrar aviso si faltan combinaciones en liga -->
-                <div v-if="torneoType === 2 && missingCount > 0" class="q-mt-sm">
-                  <q-banner dense class="bg-yellow-2 text-black">
-                    <div>Hay <strong>{{ missingCount }}</strong> combinaciones que no están jugando. Se recomienda
-                      volver a sortear.
+                <div v-if="torneoType === 2 && missingCount > 0" class="q-mt-md">
+                  <q-banner rounded class="bg-orange-1 text-orange-9">
+                    <template v-slot:avatar>
+                      <q-icon name="warning" color="orange" />
+                    </template>
+                    <div class="text-body2">
+                      Hay <strong>{{ missingCount }}</strong> combinaciones que no están jugando. Se recomienda volver a
+                      sortear.
                     </div>
                     <template v-slot:action>
-                      <q-btn dense flat color="primary" label="Sortear nuevamente" @click="sortearAleatorio" />
-                      <q-btn dense unelevated color="secondary" label="Completar los que faltan"
-                        @click="completarFaltantes" class="q-ml-sm" />
+                      <q-btn dense unelevated color="teal" label="Sortear" icon="shuffle" @click="sortearAleatorio" />
+                      <q-btn dense flat color="orange" label="Completar" icon="add" @click="completarFaltantes"
+                        class="q-ml-sm" />
                     </template>
                   </q-banner>
                 </div>
@@ -107,7 +152,7 @@
                       <div class="text-caption q-mb-sm">
                         <template v-if="!desafiador">Elegir quién desafía</template>
                         <template v-else>Elegir equipos desafiados ({{ desafiados.length }} / {{ desafiosCount || 0
-                        }})</template>
+                          }})</template>
                       </div>
                       <div class="row q-gutter-sm items-start">
                         <q-chip v-for="t in teamsForTipo4" :key="t.id" dense
@@ -180,59 +225,106 @@
 
       <q-separator />
 
-      <q-card-actions align="right">
-        <q-btn flat label="Cerrar" color="secondary" @click="close" />
-        <q-btn color="primary" label="Confirmar partidos" @click="confirm" :disable="matches.length === 0" />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn flat label="Cerrar" icon="close" color="grey-7" @click="close" class="text-body2" />
+        <q-btn unelevated color="teal" label="Confirmar Partidos" icon="check_circle" @click="confirm"
+          :disable="matches.length === 0" class="text-body2" />
       </q-card-actions>
     </q-card>
 
     <!-- Diálogo que advierte sobre equipos incompletos o combinaciones faltantes -->
-    <q-dialog v-model="showIncompleteDialog" persistent>
-      <q-card style="min-width:420px; max-width:560px;">
-        <q-toolbar class="bg-primary text-white">
-          <q-toolbar-title>Confirmar acción</q-toolbar-title>
-        </q-toolbar>
-        <q-card-section>
+    <q-dialog v-model="showIncompleteDialog" persistent :maximized="$q.screen.lt.md">
+      <q-card style="min-width:420px; max-width:560px;" class="incomplete-dialog">
+        <q-card-section class="bg-orange-7 text-white q-pa-md">
+          <div class="row items-center q-gutter-sm">
+            <q-icon name="warning" size="32px" />
+            <div class="text-h6 text-weight-medium">Confirmar Acción</div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-lg">
           <div v-if="incompleteDialogInfo.type === 4">
-            <div>Hay <strong>{{ incompleteDialogInfo.count }}</strong> equipos que no completaron sus desafíos (N = {{
-              desafiosCount }}).</div>
-            <div class="q-mt-sm text-caption">¿Desea continuar de todas formas y comenzar el torneo?</div>
-            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-sm">
-              <div class="text-subtitle2">Equipos:</div>
-              <ul>
-                <li v-for="t in incompleteDialogInfo.teams.slice(0, 5)" :key="t.id">{{ t.nombre }} ({{ t.actual }}
-                  partidos)
-                </li>
-              </ul>
+            <q-banner rounded class="bg-orange-1 text-orange-9">
+              <template v-slot:avatar>
+                <q-icon name="groups" color="orange" />
+              </template>
+              <div class="text-body1">
+                Hay <strong>{{ incompleteDialogInfo.count }}</strong> equipos que no completaron sus desafíos (N = {{
+                  desafiosCount }}).
+              </div>
+            </q-banner>
+            <div class="q-mt-md text-body2 text-grey-8">¿Desea continuar de todas formas y comenzar el torneo?</div>
+            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-md">
+              <div class="text-subtitle2 text-weight-medium">Equipos:</div>
+              <q-list bordered separator class="rounded-borders q-mt-sm">
+                <q-item v-for="t in incompleteDialogInfo.teams.slice(0, 5)" :key="t.id" dense>
+                  <q-item-section avatar>
+                    <q-icon name="sports" color="orange" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ t.nombre }}</q-item-label>
+                    <q-item-label caption>{{ t.actual }} partidos</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </div>
           </div>
           <div v-else-if="incompleteDialogInfo.type === 2">
-            <div>Faltan <strong>{{ incompleteDialogInfo.count }}</strong> combinaciones por generar para completar la
-              liga.
-            </div>
-            <div class="q-mt-sm text-caption">¿Desea continuar de todas formas y comenzar el torneo?</div>
+            <q-banner rounded class="bg-orange-1 text-orange-9">
+              <template v-slot:avatar>
+                <q-icon name="sports_soccer" color="orange" />
+              </template>
+              <div class="text-body1">
+                Faltan <strong>{{ incompleteDialogInfo.count }}</strong> combinaciones por generar para completar la
+                liga.
+              </div>
+            </q-banner>
+            <div class="q-mt-md text-body2 text-grey-8">¿Desea continuar de todas formas y comenzar el torneo?</div>
           </div>
           <div v-else-if="incompleteDialogInfo.type === 1">
-            <div>Se detectaron equipos sin participación en la generación actual.</div>
-            <div class="q-mt-sm">Equipos totales: <strong>{{ incompleteDialogInfo.totalTeams }}</strong>. Partidos
-              generados: <strong>{{ incompleteDialogInfo.actualMatches }}</strong>. Partidos esperados: <strong>{{
-                incompleteDialogInfo.expectedMatches }}</strong>.</div>
-            <div class="q-mt-sm text-caption">Algunos equipos no participan. Se recomienda volver a ordenar/sortear o
-              continuar de todas formas.</div>
-            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-sm">
-              <div class="text-subtitle2">Equipos sin participación:</div>
-              <ul>
-                <li v-for="t in incompleteDialogInfo.teams.slice(0, 10)" :key="t.id">{{ t.nombre }}</li>
-              </ul>
+            <q-banner rounded class="bg-orange-1 text-orange-9">
+              <template v-slot:avatar>
+                <q-icon name="info" color="orange" />
+              </template>
+              <div class="text-body1">Se detectaron equipos sin participación en la generación actual.</div>
+            </q-banner>
+            <div class="q-mt-md">
+              <div class="text-body2 text-grey-8">
+                Equipos totales: <strong>{{ incompleteDialogInfo.totalTeams }}</strong>.
+                Partidos generados: <strong>{{ incompleteDialogInfo.actualMatches }}</strong>.
+                Partidos esperados: <strong>{{ incompleteDialogInfo.expectedMatches }}</strong>.
+              </div>
+            </div>
+            <div class="q-mt-sm text-body2 text-grey-7">
+              Algunos equipos no participan. Se recomienda volver a ordenar/sortear o continuar de todas formas.
+            </div>
+            <div v-if="incompleteDialogInfo.teams && incompleteDialogInfo.teams.length" class="q-mt-md">
+              <div class="text-subtitle2 text-weight-medium">Equipos sin participación:</div>
+              <q-list bordered separator class="rounded-borders q-mt-sm">
+                <q-item v-for="t in incompleteDialogInfo.teams.slice(0, 10)" :key="t.id" dense>
+                  <q-item-section avatar>
+                    <q-icon name="sports" color="orange" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ t.nombre }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </div>
           </div>
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="secondary" @click="cancelIncompleteDialog" />
-          <q-btn v-if="incompleteDialogInfo.type === 1" flat label="Re-sortear" color="primary"
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="cancelIncompleteDialog" />
+          <q-btn v-if="incompleteDialogInfo.type === 1" unelevated label="Re-sortear" icon="shuffle" color="green-7"
             @click="reSortFromDialog" />
-          <q-btn unelevated label="Continuar" color="negative" @click="proceedDespiteIncomplete" />
+          <q-btn unelevated label="Continuar" icon="check" color="deep-orange-6" @click="proceedDespiteIncomplete" />
         </q-card-actions>
+
       </q-card>
     </q-dialog>
   </q-dialog>
@@ -1235,63 +1327,82 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.organize-dialog .q-card {
+  border-radius: 12px;
+}
+
+.bg-gradient-teal {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
+}
+
 .matches-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .small-match-card {
-  min-height: 48px;
-  padding: 6px !important;
-  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: linear-gradient(to right, #f1f8e9 0%, #ffffff 100%);
+  border-left: 3px solid #43a047;
+}
+
+.small-match-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
 }
 
 .phase-card {
-  background: linear-gradient(90deg, #1976d2 0%, #1565c0 100%);
-  border-radius: 6px;
+  background: linear-gradient(90deg, #2e7d32 0%, #43a047 100%);
+  border-radius: 8px;
 }
 
 .control-card {
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+.control-container {
+  position: sticky;
+  top: 0;
 }
 
 .team-vs {
-  color: #222
+  color: #424242;
+  font-weight: 500;
 }
 
 .team-left {
-  color: #0d47a1;
-  font-weight: 600
+  color: #2e7d32;
+  font-weight: 600;
 }
 
 .team-right {
-  color: #b71c1c;
-  font-weight: 600
+  color: #d84315;
+  font-weight: 600;
 }
 
 .selected-desafiado {
-  border: 2px solid var(--q-color-secondary) !important;
-  box-shadow: 0 0 0 4px rgba(144, 202, 249, 0.08);
-  background: transparent !important;
+  border: 2px solid #ff8f00 !important;
+  box-shadow: 0 0 0 4px rgba(255, 143, 0, 0.12);
+  background: #fff3e0 !important;
 }
 
 .completed-red {
   background: #ffecec !important;
-  color: #b71c1c !important;
+  color: #d84315 !important;
   border: 1px solid #ffb3b3 !important;
 }
 
 .disabled-by-complete {
   opacity: 0.6;
   pointer-events: auto;
-  /* keep pointer events so chip can show tooltip if needed */
 }
 
 .matches-container {
   height: 100%;
   flex: 1 1 auto;
   overflow: auto;
+  max-height: 600px;
 }
 
 .control-container .full-width {
@@ -1302,15 +1413,57 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
+.incomplete-dialog .q-card {
+  border-radius: 12px;
+}
+
+/* Animaciones y transiciones mejoradas */
+.q-chip {
+  transition: all 0.3s ease;
+}
+
+.q-chip:hover:not([disabled]) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.q-btn {
+  transition: all 0.3s ease;
+}
+
+/* Responsive */
 @media (max-width: 900px) {
   .matches-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .organize-dialog .q-card {
+    border-radius: 8px;
+  }
+
+  .matches-container {
+    max-height: 400px;
   }
 }
 
 @media (max-width: 600px) {
   .matches-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .organize-dialog .q-card,
+  .incomplete-dialog .q-card {
+    border-radius: 0;
+  }
+
+  .matches-container {
+    max-height: 300px;
+  }
+
+  .small-match-card {
+    border-left-width: 2px;
   }
 }
 </style>

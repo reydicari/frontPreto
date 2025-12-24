@@ -36,6 +36,10 @@ const routes = [
         component: () => import("pages/torneos/Torneos-Module.vue"),
       },
       {
+        path: "/torneos/seguimiento/:id",
+        component: () => import("pages/torneos/SeguimientoTorneoPage.vue"),
+      },
+      {
         path: "/entrenadores",
         component: () => import("pages/entrenadores/Entrenadores-Page.vue"),
       },

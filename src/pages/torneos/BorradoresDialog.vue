@@ -1,103 +1,157 @@
 <template>
-  <q-card style="width: min(920px, 96vw); max-width: 920px;">
-    <q-card-section class="row items-center">
-      <div>
-        <div class="text-h6">Equipos en torneo </div>
+  <q-card style="width: min(920px, 96vw); max-width: 920px;" class="borradores-dialog">
+    <q-card-section class="bg-gradient-teal text-white q-pa-md">
+      <div class="row items-center q-gutter-sm">
+        <q-icon name="groups" size="36px" />
+        <div class="col">
+          <div class="text-h5 text-weight-medium">Gestionar Equipos</div>
+          <div class="text-body2 q-mt-xs" style="opacity: 0.9;">Administre los equipos participantes del torneo</div>
+        </div>
+        <q-btn flat round dense icon="close" color="white" @click="onCancel" />
       </div>
-      <q-space />
-      <q-btn dense flat icon="close" @click="onCancel" />
     </q-card-section>
 
     <q-separator />
 
-    <q-card-section>
-      <div v-if="loading" class="row items-center justify-center q-pa-md">
-        <q-spinner-dots size="32px" />
+    <q-card-section class="q-pa-lg">
+      <div v-if="loading" class="row items-center justify-center q-pa-xl">
+        <div class="column items-center q-gutter-md">
+          <q-spinner-dots size="48px" color="green-7" />
+          <div class="text-body2 text-grey-7">Cargando equipos...</div>
+        </div>
       </div>
 
       <div v-else>
         <div class="cards-grid q-mb-md">
 
 
-          <div v-if="originals.length === 0" class="empty-caption">No hay borradores existentes.</div>
+          <div v-if="originals.length === 0" class="empty-caption text-center q-pa-md">
+            <q-icon name="info" size="24px" color="grey-6" />
+            <div class="text-body2 text-grey-7 q-mt-sm">No hay equipos existentes</div>
+          </div>
 
           <div v-for="(item, idx) in originals" :key="`orig-${item.id}`" class="team-grid-item">
-            <q-card flat bordered :class="[{ 'border-glow': item._highlight }, 'bg-grey-1', 'q-pa-xs']">
-              <div class="row items-center">
-                <div class="col">
-                  <div class="text-subtitle2">{{ item.nombre }}</div>
-                  <div class="text-caption">Nro: {{ idx + 1 }}</div>
+            <q-card flat bordered :class="[{ 'border-glow': item._highlight }, 'team-card']">
+              <q-card-section class="q-pa-sm">
+                <div class="row items-center">
+                  <q-avatar color="green-7" text-color="white" size="32px" class="q-mr-sm">
+                    <q-icon name="military_tech" size="18px" />
+                  </q-avatar>
+                  <div class="col">
+                    <div class="text-subtitle2 text-weight-medium">{{ item.nombre }}</div>
+                    <div class="text-caption text-grey-7">Equipo #{{ idx + 1 }}</div>
+                  </div>
+                  <div>
+                    <q-btn dense round flat color="deep-orange-6" icon="remove_circle" @click="removeOriginal(item)"
+                      size="sm">
+                      <q-tooltip>Quitar del torneo</q-tooltip>
+                    </q-btn>
+                  </div>
                 </div>
-                <div>
-                  <q-btn dense round flat color="negative" icon="remove_circle" @click="removeOriginal(item)"
-                    title="Quitar del borrador" />
-                </div>
-              </div>
+              </q-card-section>
             </q-card>
           </div>
         </div>
 
         <q-separator />
 
-        <div class="cards-grid q-mt-md">
-          <div class="col-12">
-            <div class="text-subtitle1 q-mb-sm">Agregar nuevos equipos</div>
-            <div class="text-caption q-mb-sm">Complete el nombre del equipo. Cuando termine uno se genera
-              automáticamente otro campo vacío.</div>
-            <div v-if="torneoData && Number(torneoData.estado) === 2" class="q-mt-sm text-negative">
-              No se pueden agregar equipos: el torneo ya fue iniciado.
+        <div class="q-mt-lg">
+          <div class="row items-center q-mb-md">
+            <q-icon name="add_circle" color="green-7" size="24px" class="q-mr-sm" />
+            <div class="text-h6 text-weight-medium">Agregar Nuevos Equipos</div>
+          </div>
+          <q-banner rounded class="bg-blue-1 text-blue-9 q-mb-md">
+            <template v-slot:avatar>
+              <q-icon name="info" color="blue" />
+            </template>
+            <div class="text-body2">
+              Complete el nombre del equipo. Al terminar uno se genera automáticamente otro campo vacío.
             </div>
+          </q-banner>
+          <div v-if="torneoData && Number(torneoData.estado) === 2" class="q-mb-md">
+            <q-banner rounded class="bg-orange-1 text-orange-9">
+              <template v-slot:avatar>
+                <q-icon name="warning" color="orange" />
+              </template>
+              <div class="text-body2 text-weight-medium">
+                No se pueden agregar equipos: el torneo ya fue iniciado.
+              </div>
+            </q-banner>
           </div>
 
-          <div v-for="(card, idx) in newCards" :key="card._tempId" class="team-grid-item">
-            <q-card class="q-pa-xs">
-              <div class="row items-center">
-                <div class="col">
-                  <q-input dense v-model="card.nombre" placeholder="Nombre del equipo" @input="onNewInput(idx)"
-                    @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)"
-                    :readonly="card.registered || (torneoData && Number(torneoData.estado) === 2)" />
-                </div>
-                <div class="row items-center" style="gap:8px;">
-                  <q-btn v-if="!card.registered && !(torneoData && Number(torneoData.estado) === 2)" dense round flat
-                    color="positive" icon="cloud_upload" @click="registerNew(idx)" title="Registrar equipo" />
-                  <!-- permitir quitar cualquier tarjeta, registrada o no -->
-                  <q-btn dense round flat color="negative" icon="close" @click="removeNew(idx)" title="Quitar" />
-                  <div v-if="card.registered" class="row items-center" style="gap:8px;">
-                    <q-badge color="positive" icon="check" />
-                    <div v-if="card.registeredType === 'nuevo'" class="text-caption text-positive">nuevo registro</div>
-                    <div v-else-if="card.registeredType === 'existente'" class="text-caption text-grey">existente</div>
+          <div class="cards-grid">
+            <div v-for="(card, idx) in newCards" :key="card._tempId" class="team-grid-item">
+              <q-card bordered class="new-team-card">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center q-gutter-sm">
+                    <q-avatar v-if="!card.registered" color="grey-4" text-color="grey-7" size="32px">
+                      <q-icon name="sports" size="18px" />
+                    </q-avatar>
+                    <q-avatar v-else :color="card.registeredType === 'nuevo' ? 'green-7' : 'grey'" text-color="white"
+                      size="32px">
+                      <q-icon name="check" size="18px" />
+                    </q-avatar>
+                    <div class="col">
+                      <q-input dense outlined v-model="card.nombre" placeholder="Nombre del equipo"
+                        @input="onNewInput(idx)" @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)"
+                        :readonly="card.registered || (torneoData && Number(torneoData.estado) === 2)" color="green-8"
+                        class="text-body2" />
+                    </div>
+                    <div class="row items-center no-wrap" style="gap:4px;">
+                      <q-btn v-if="!card.registered && !(torneoData && Number(torneoData.estado) === 2)" dense round
+                        flat color="green-7" icon="cloud_upload" @click="registerNew(idx)" size="sm">
+                        <q-tooltip>Registrar equipo</q-tooltip>
+                      </q-btn>
+                      <q-btn dense round flat color="deep-orange-6" icon="close" @click="removeNew(idx)" size="sm">
+                        <q-tooltip>Quitar</q-tooltip>
+                      </q-btn>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </q-card>
+                  <div v-if="card.registered" class="row items-center q-gutter-xs q-mt-xs q-ml-sm">
+                    <q-badge :color="card.registeredType === 'nuevo' ? 'green-7' : 'grey'"
+                      :label="card.registeredType === 'nuevo' ? 'Nuevo registro' : 'Existente'" />
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
           </div>
         </div>
 
-        <q-separator class="q-mt-md" />
+        <q-separator class="q-mt-lg" />
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
-          <q-btn v-if="!isTorneoFinished" flat label="Asignar encargados" color="secondary"
-            @click="showAssignDialog = true" />
-          <q-btn flat label="Cancelar" color="secondary" @click="onCancel" />
-          <q-btn v-if="torneoData && Number(torneoData.estado) === 2" flat label="Seguir torneo" color="primary"
-            @click="showSeguimiento = true" />
-          <q-btn v-else-if="!isTorneoFinished" flat label="Comenzar" color="accent" @click="openStartFlow" />
-          <q-btn v-if="!isTorneoFinished" label="Guardar equipos" color="primary" @click="onSave" />
+          <q-btn v-if="!isTorneoFinished" flat label="Asignar Encargados" icon="people" color="grey-7"
+            @click="showAssignDialog = true" class="text-body2" />
+          <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="onCancel" class="text-body2" />
+          <q-btn v-if="torneoData && Number(torneoData.estado) === 2" unelevated label="Seguir Torneo" icon="visibility"
+            color="green-7" @click="showSeguimiento = true" class="text-body2" />
+          <q-btn v-else-if="!isTorneoFinished" unelevated label="Comenzar" icon="flag" color="deep-orange-6"
+            @click="openStartFlow" class="text-body2" />
+          <q-btn v-if="!isTorneoFinished" unelevated label="Guardar Equipos" icon="save" color="green-7" @click="onSave"
+            class="text-body2" />
         </div>
       </div>
     </q-card-section>
   </q-card>
 
   <!-- Diálogo de aviso: la fecha de inicio aún no llega -->
-  <q-dialog v-model="showDateWarning">
-    <q-card>
-      <q-card-section>
-        <div class="text-h6">Fecha de inicio no permitida</div>
-        <div class="q-mt-sm">La fecha de inicio del torneo es futura. No es posible comenzar el torneo antes de la fecha
-          de inicio.</div>
+  <q-dialog v-model="showDateWarning" :maximized="$q.screen.lt.md">
+    <q-card class="warning-dialog" style="min-width: 320px;">
+      <q-card-section class="bg-orange-7 text-white q-pa-md">
+        <div class="row items-center q-gutter-sm">
+          <q-icon name="warning" size="32px" />
+          <div class="text-h6 text-weight-medium">Fecha de Inicio No Permitida</div>
+        </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="Cerrar" color="primary" @click="showDateWarning = false" />
+      <q-separator />
+      <q-card-section class="q-pa-lg">
+        <p class="text-body1">La fecha de inicio del torneo es futura. No es posible comenzar el torneo antes de la
+          fecha
+          de inicio.</p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn unelevated label="Entendido" icon="check" color="orange" @click="showDateWarning = false" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -113,16 +167,24 @@
     @assigned="handleAssignedEncargados" />
 
   <!-- Diálogo para confirmar/comenzar el torneo y mostrar resultado -->
-  <q-dialog v-model="showStartDialog">
-    <q-card style="min-width: 320px;">
-      <q-card-section>
-        <div class="text-h6">Comenzar torneo</div>
-        <div class="q-mt-sm">{{ startResponseMessage || '¿Desea comenzar el torneo ahora?' }}</div>
+  <q-dialog v-model="showStartDialog" :maximized="$q.screen.lt.md">
+    <q-card style="min-width: 320px;" class="start-dialog">
+      <q-card-section class="bg-gradient-green text-white q-pa-md">
+        <div class="row items-center q-gutter-sm">
+          <q-icon name="flag" size="32px" />
+          <div class="text-h6 text-weight-medium">Comenzar Torneo</div>
+        </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="Cancelar" color="secondary" @click="closeStartDialog" />
-        <q-btn v-if="!startResponseMessage" color="primary" label="Confirmar" @click="confirmarComenzar" />
-        <q-btn v-else flat label="Aceptar" color="primary" @click="closeStartDialog" />
+      <q-separator />
+      <q-card-section class="q-pa-lg">
+        <p class="text-body1">{{ startResponseMessage || '¿Desea comenzar el torneo ahora?' }}</p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="closeStartDialog" />
+        <q-btn v-if="!startResponseMessage" unelevated label="Confirmar" icon="check_circle" color="green-7"
+          @click="confirmarComenzar" />
+        <q-btn v-else unelevated label="Aceptar" icon="check" color="green-7" @click="closeStartDialog" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -478,22 +540,62 @@ function onCancel() {
 </script>
 
 <style scoped>
-.q-card {
-  overflow: visible
+.borradores-dialog .q-card {
+  overflow: visible;
+  border-radius: 12px;
+}
+
+.bg-gradient-teal {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
+}
+
+.team-card {
+  transition: all 0.3s ease;
+  background: linear-gradient(to right, #f1f8e9 0%, #ffffff 100%);
+}
+
+.team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+}
+
+.new-team-card {
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.new-team-card:hover {
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1);
 }
 
 /* Resalte temporal para un equipo que ya existe en los borradores */
 .border-glow {
-  /* Borde más grueso y sombra ligeramente mayor para visibilidad */
-  box-shadow: 0 0 0 6px rgba(0, 150, 136, 0.16);
-  border: 2px solid rgba(0, 150, 136, 0.8);
+  box-shadow: 0 0 0 6px rgba(46, 125, 50, 0.16);
+  border: 2px solid rgba(67, 160, 71, 0.8);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px rgba(0, 150, 136, 0.16);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 150, 136, 0.24);
+  }
 }
 
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 12px;
 }
 
 .team-grid-item {
@@ -503,19 +605,36 @@ function onCancel() {
 .empty-caption {
   grid-column: 1 / -1;
   color: var(--q-color-grey-6);
-  padding: 8px;
+  padding: 16px;
 }
 
-/* Responsive: 2 columns on small screens, 1 on extra small */
+.warning-dialog .q-card,
+.start-dialog .q-card {
+  border-radius: 12px;
+}
+
+/* Responsive: 2 columns on medium screens, 1 on small */
 @media (max-width: 900px) {
   .cards-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .borradores-dialog .q-card {
+    border-radius: 8px;
   }
 }
 
 @media (max-width: 600px) {
   .cards-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .borradores-dialog .q-card,
+  .warning-dialog .q-card,
+  .start-dialog .q-card {
+    border-radius: 0;
   }
 }
 </style>

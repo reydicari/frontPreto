@@ -1,28 +1,58 @@
 <template>
-  <q-dialog v-model="localVisible" persistent>
-    <q-card style="min-width:420px; max-width:640px;">
-      <q-card-section>
-        <div class="text-h6">Asignar encargados</div>
-        <div class="text-caption q-mt-sm">Seleccione uno o varios entrenadores para encargarse del torneo.</div>
+  <q-dialog v-model="localVisible" persistent :maximized="$q.screen.lt.md">
+    <q-card style="min-width:420px; max-width:640px;" class="encargado-dialog">
+      <q-card-section class="bg-gradient-green text-white q-pa-md">
+        <div class="row items-center q-gutter-sm">
+          <q-icon name="people" size="32px" />
+          <div class="col">
+            <div class="text-h5 text-weight-medium">Asignar Encargados</div>
+            <div class="text-body2 q-mt-xs" style="opacity: 0.9;">Seleccione uno o varios entrenadores para encargarse
+              del torneo</div>
+          </div>
+          <q-btn flat round dense icon="close" color="white" @click="close" />
+        </div>
       </q-card-section>
 
       <q-separator />
 
-      <q-card-section>
-        <div v-if="loading" class="row items-center justify-center q-pa-md">
-          <q-spinner-dots size="28px" />
+      <q-card-section class="q-pa-lg">
+        <div v-if="loading" class="row items-center justify-center q-pa-xl">
+          <div class="column items-center q-gutter-md">
+            <q-spinner-dots size="48px" color="teal" />
+            <div class="text-body2 text-grey-7">Cargando entrenadores...</div>
+          </div>
         </div>
-        <div v-else>
-          <q-select dense multiple use-chips v-model="selectedIds" :options="personOptions" option-value="value"
-            option-label="label" label="Entrenadores" hint="Escriba para filtrar" map-options emit-value />
+        <div v-else class="q-gutter-md">
+          <q-select outlined multiple use-chips v-model="selectedIds" :options="personOptions" option-value="value"
+            option-label="label" label="Entrenadores" hint="Escriba para filtrar" map-options emit-value color="green-8"
+            class="text-body1">
+            <template v-slot:prepend>
+              <q-icon name="search" color="green-8" />
+            </template>
+            <template v-slot:selected-item="scope">
+              <q-chip removable @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex" color="green-7"
+                text-color="white" class="q-ma-xs">
+                <q-avatar color="white" text-color="green-7" icon="person" />
+                {{ scope.opt.label }}
+              </q-chip>
+            </template>
+          </q-select>
 
-          <div class="q-mt-md text-caption">Seleccionados: {{ selectedIds.length }}</div>
+          <q-banner v-if="selectedIds.length > 0" rounded class="bg-orange-1 text-orange-9">
+            <template v-slot:avatar>
+              <q-icon name="info" color="orange" />
+            </template>
+            <span class="text-weight-medium">{{ selectedIds.length }}</span>
+            {{ selectedIds.length === 1 ? 'entrenador seleccionado' : 'entrenadores seleccionados' }}
+          </q-banner>
         </div>
       </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn flat label="Cerrar" color="secondary" @click="close" />
-        <q-btn label="Confirmar" color="primary" @click="confirm" :disable="selectedIds.length === 0" />
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn flat label="Cerrar" icon="close" color="grey-7" @click="close" class="text-body2" />
+        <q-btn unelevated label="Confirmar" icon="check_circle" color="green-7" @click="confirm"
+          :disable="selectedIds.length === 0" class="text-body2" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -114,7 +144,22 @@ function confirm() {
 </script>
 
 <style scoped>
-.q-card {
-  overflow: visible
+.encargado-dialog .q-card {
+  overflow: visible;
+  border-radius: 12px;
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
+}
+
+.encargado-dialog .q-card-section {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 599px) {
+  .encargado-dialog .q-card {
+    border-radius: 0;
+  }
 }
 </style>

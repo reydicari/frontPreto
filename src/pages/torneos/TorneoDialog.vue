@@ -1,48 +1,84 @@
 <template>
-  <q-card style="min-width: 420px; max-width: 720px;">
-    <q-card-section>
-      <div class="text-h6">{{ isEdit ? 'Editar torneo' : 'Nuevo torneo' }}</div>
+  <q-card style="min-width: 420px; max-width: 720px;" class="torneo-dialog">
+    <q-card-section class="bg-gradient-teal q-pa-md">
+      <div class="row items-center q-gutter-sm">
+        <q-icon :name="isEdit ? 'edit' : 'add_circle'" size="32px" color="white" />
+        <div class="text-h5 text-white text-weight-medium">{{ isEdit ? 'Editar Torneo' : 'Nuevo Torneo' }}</div>
+      </div>
     </q-card-section>
 
     <q-separator />
 
-    <q-card-section>
-      <q-form @submit.prevent="submit" ref="formRef">
-        <q-input dense v-model="form.nombre" label="Nombre" :rules="[val => !!val || 'Requerido']" autofocus />
+    <q-card-section class="q-pa-lg">
+      <q-form @submit.prevent="submit" ref="formRef" class="q-gutter-md">
+        <q-input outlined v-model="form.nombre" label="Nombre del Torneo"
+          :rules="[val => !!val || 'El nombre es requerido']" autofocus color="green-8" class="text-body1">
+          <template v-slot:prepend>
+            <q-icon name="sports_soccer" color="green-7" />
+          </template>
+        </q-input>
 
-        <div class="row q-col-gutter-md q-mt-sm">
-          <div class="col-6">
-            <q-input dense v-model="form.fecha_inicio" label="Fecha inicio" type="date" />
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6">
+            <q-input outlined v-model="form.fecha_inicio" label="Fecha de Inicio" type="date" color="green-8"
+              class="text-body1">
+              <template v-slot:prepend>
+                <q-icon name="event" color="green-7" />
+              </template>
+            </q-input>
           </div>
-          <div class="col-6">
-            <q-input dense v-model="form.fecha_fin" label="Fecha fin" type="date" :min="minFechaFin" />
-            <div class="text-caption q-mt-xs">Mínimo permitido: {{ minFechaFin }}</div>
+          <div class="col-12 col-sm-6">
+            <q-input outlined v-model="form.fecha_fin" label="Fecha de Fin" type="date" :min="minFechaFin"
+              color="green-8" class="text-body1">
+              <template v-slot:prepend>
+                <q-icon name="event_available" color="green-7" />
+              </template>
+            </q-input>
+            <div class="text-caption text-grey-7 q-mt-xs q-ml-sm">
+              <q-icon name="info" size="14px" color="orange" />
+              Mínimo: {{ minFechaFin }}
+            </div>
           </div>
         </div>
 
-        <div class="row q-col-gutter-md q-mt-sm">
-          <div class="col-6">
-            <q-select dense v-model="form.id_tipo" :options="tiposOptions" label="Tipo de torneo" emit-value map-options
-              clearable />
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6">
+            <q-select outlined v-model="form.id_tipo" :options="tiposOptions" label="Tipo de Torneo" emit-value
+              map-options clearable color="green-8" class="text-body1">
+              <template v-slot:prepend>
+                <q-icon name="category" color="green-7" />
+              </template>
+            </q-select>
           </div>
-          <div class="col-6">
-            <q-select dense v-model="form.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
-              map-options clearable />
+          <div class="col-12 col-sm-6">
+            <q-select outlined v-model="form.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
+              map-options clearable color="green-8" class="text-body1">
+              <template v-slot:prepend>
+                <q-icon name="place" color="green-7" />
+              </template>
+            </q-select>
           </div>
         </div>
 
-        <div class="row q-col-gutter-md q-mt-sm">
+        <div class="row q-col-gutter-md">
           <div class="col-12">
-            <q-select dense v-model="form.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
-              clearable />
+            <q-select outlined v-model="form.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
+              clearable color="green-8" class="text-body1">
+              <template v-slot:prepend>
+                <q-icon name="military_tech" color="green-7" />
+              </template>
+            </q-select>
           </div>
         </div>
 
-        <div class="row q-mt-md">
-          <q-space />
-          <q-btn flat label="Cancelar" color="secondary" @click="$emit('cancel')" />
-          <q-btn flat label="Asignar encargados" color="secondary" @click="showAssignDialog = true" />
-          <q-btn label="Guardar" color="primary" :disable="!canSave" @click="submit" />
+        <q-separator class="q-my-md" />
+
+        <div class="row q-gutter-sm justify-end">
+          <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="$emit('cancel')" class="text-body2" />
+          <q-btn outline label="Asignar Encargados" icon="people" color="deep-orange-6" @click="showAssignDialog = true"
+            class="text-body2" />
+          <q-btn unelevated label="Guardar" icon="save" color="green-7" :disable="!canSave" @click="submit"
+            class="text-body2" />
         </div>
       </q-form>
     </q-card-section>
@@ -187,7 +223,26 @@ function submit() {
 </script>
 
 <style scoped>
-.q-card {
-  overflow: visible
+.torneo-dialog .q-card {
+  overflow: visible;
+  border-radius: 12px;
+}
+
+.bg-gradient-teal {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
+}
+
+.torneo-dialog .q-field--outlined .q-field__control:before {
+  transition: border-color 0.3s ease;
+}
+
+.torneo-dialog .q-field--outlined.q-field--focused .q-field__control:before {
+  border-width: 2px;
+}
+
+@media (max-width: 599px) {
+  .torneo-dialog .q-card {
+    border-radius: 0;
+  }
 }
 </style>

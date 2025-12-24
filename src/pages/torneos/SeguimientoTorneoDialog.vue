@@ -275,7 +275,7 @@
                   <div class="partido-acciones">
                     <template v-if="isEncargado">
                       <q-btn color="primary" unelevated v-if="p.id_equipo_ganador == null && p.finalizado !== true"
-                        label="Finalizar" @click="finishMatch(p, $event.currentTarget)" />
+                        :label="getFinishButtonLabel(p)" @click="finishMatch(p, $event.currentTarget)" />
                     </template>
                   </div>
                   <!-- Mobile layout duplicates (visible only on small screens) -->
@@ -1174,6 +1174,28 @@ function displayGoal(p, side) {
     : Number(p.goles_visitante ?? p.golesVisitante ?? 0)
 }
 
+function getFinishButtonLabel(p) {
+  if (!p) return 'Finalizar'
+  const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
+  const gv = Number(p.goles_visitante ?? p.golesVisitante ?? 0)
+  const tipo = displayTorneo.value?.id_tipo_torneo
+
+  // Si ambos goles son -1: "Reprogramar"
+  if (gl === -1 && gv === -1) return 'Reprogramar'
+
+  // Si ambos goles son 0
+  if (gl === 0 && gv === 0) {
+    // Si es tipo 1: "Reprogramar", caso contrario: "Empate"
+    return tipo === 1 ? 'Reprogramar' : 'Empate'
+  }
+
+  // Si ambos goles son > 0: "Finalizar"
+  if (gl > 0 && gv > 0) return 'Finalizar'
+
+  // Por defecto: "Finalizar"
+  return 'Finalizar'
+}
+
 function statusLabelColor(p) {
   if (!p) return { label: '-', color: 'grey' }
   const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
@@ -1185,7 +1207,7 @@ function statusLabelColor(p) {
   const tipo = displayTorneo.value?.id_tipo_torneo
   if (tipo === 2 || tipo === 4) {
     // Si alguno es < 0, considerarlo reprogramado
-    if (gl < 0 || gv < 0) return { label: 'Reprogramado', color: 'grey' }
+    if (gl < 0 || gv < 0) return { label: 'Reprogramado', color: 'white' }
     // Empates (incluyendo 0-0) se muestran como Empate en color azul
     if (gl === gv) return { label: 'Empate', color: 'info' }
     if (p.finalizado) return { label: 'Finalizado', color: 'positive' }
