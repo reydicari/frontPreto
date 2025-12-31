@@ -3,7 +3,8 @@
     <q-card-section class="bg-gradient-teal q-pa-md">
       <div class="row items-center q-gutter-sm">
         <q-icon :name="isEdit ? 'edit' : 'add_circle'" size="32px" color="white" />
-        <div class="text-h5 text-white text-weight-medium">{{ isEdit ? 'Editar Torneo' : 'Nuevo Torneo' }}</div>
+        <div class="text-h5 text-white text-weight-medium">{{ props.isRescheduling ? 'Reprogramar Torneo' : (isEdit ?
+          'Editar Torneo' : 'Nuevo Torneo') }}</div>
       </div>
     </q-card-section>
 
@@ -96,7 +97,7 @@ import { listarNiveles } from 'src/stores/nivel'
 import AsignarEncargadoDialog from './AsignarEncargadoDialog.vue'
 import { Notify } from 'quasar'
 
-const props = defineProps({ initial: { type: [Object, null], default: null } })
+const props = defineProps({ initial: { type: [Object, null], default: null }, isRescheduling: { type: Boolean, default: false } })
 const emit = defineEmits(['save', 'cancel'])
 
 const isEdit = computed(() => !!props.initial)

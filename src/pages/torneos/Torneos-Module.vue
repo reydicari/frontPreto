@@ -226,10 +226,14 @@
 
         <q-card-actions align="right" class="card-actions">
           <q-btn flat dense icon="visibility" label="Ver" class="action-btn" />
-          <q-btn v-if="torneo.estado != 2" flat dense icon="edit" color="brown-7" @click.stop="onEdit(torneo)"
-            title="Editar" />
-          <q-btn v-if="torneo.estado != 0" flat dense icon="pause_circle" color="negative"
+          <q-btn v-if="torneo.estado != 2 && torneo.estado != 3 && torneo.estado != 0" flat dense icon="edit"
+            color="brown-7" @click.stop="onEdit(torneo)" title="Editar" />
+          <q-btn v-if="torneo.estado != 0 && torneo.estado != 3" flat dense icon="pause_circle" color="negative"
             @click.stop="onDelete(torneo)" title="Suspender" />
+          <q-btn v-if="torneo.estado == 0 || torneo.estado == 3" flat dense icon="event_repeat" color="purple-7"
+            @click.stop="onReschedule(torneo)" title="Reprogramar">
+            <q-tooltip>Reprogramar torneo</q-tooltip>
+          </q-btn>
           <q-btn flat dense icon="groups" color="orange" @click.stop="openBorradores(torneo)" title="Borradores" />
         </q-card-actions>
       </q-card>
@@ -237,7 +241,8 @@
 
     <!-- Dialog para crear/editar torneo -->
     <q-dialog v-model="showTorneoDialog" persistent>
-      <torneo-dialog :initial="editingTorneo" @save="onSaveTorneo" @cancel="showTorneoDialog = false" />
+      <torneo-dialog :initial="editingTorneo" :is-rescheduling="isRescheduling" @save="onSaveTorneo"
+        @cancel="showTorneoDialog = false" />
     </q-dialog>
 
     <!-- Dialog de borradores -->
@@ -373,6 +378,7 @@ const drawer = ref(false)
 const showSeguimiento = ref(false)
 const showTorneoDialog = ref(false)
 const editingTorneo = ref(null)
+const isRescheduling = ref(false)
 const showBorradoresDialog = ref(false)
 const activeTorneoForBorradores = ref(null)
 
@@ -539,6 +545,7 @@ function clearFilters() {
 
 function onAdd() {
   editingTorneo.value = null
+  isRescheduling.value = false
   showTorneoDialog.value = true
 }
 
@@ -551,7 +558,20 @@ function onEdit(row) {
   console.log(row);
 
   editingTorneo.value = JSON.parse(JSON.stringify(row))
+  isRescheduling.value = false
   showTorneoDialog.value = true
+}
+
+function onReschedule(row) {
+  // Abrir el diálogo de edición para permitir reprogramar el torneo
+  editingTorneo.value = JSON.parse(JSON.stringify(row))
+  isRescheduling.value = true
+  showTorneoDialog.value = true
+  $q.notify({
+    type: 'info',
+    message: 'Puede modificar las fechas y configuración para reprogramar el torneo',
+    position: 'top'
+  })
 }
 
 const onSaveTorneo = async (payload) => {

@@ -153,7 +153,7 @@
     <div class="payments-list">
       <q-infinite-scroll @load="onLoad" :offset="250">
         <div class="row q-col-gutter-md">
-          <div v-for="pago in displayedPagos" :key="pago.id" class="col-12 col-sm-6 col-lg-4">
+          <div v-for="pago in displayedPagos" :key="pago.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="payment-card">
               <div class="payment-header">
                 <div class="payment-date">
@@ -282,7 +282,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -303,7 +303,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -584,23 +584,19 @@ function anularPago(pago) {
 </script>
 
 <style scoped lang="scss">
-/* Paleta de colores verdosos moderna */
-$color-emerald: #10b981;
-$color-jade: #059669;
-$color-mint: #6ee7b7;
-$color-sage: #34d399;
-$color-forest: #047857;
-$color-lime: #84cc16;
-
-$pastel-mint: #d1fae5;
-$pastel-sage: #ecfdf5;
-$pastel-lime: #f7fee7;
-$pastel-emerald: #a7f3d0;
+@import 'src/css/quasar.variables.scss';
 
 .payments-page {
   padding: 24px;
-  background: linear-gradient(135deg, #ffffff 0%, $pastel-sage 100%);
   min-height: 100vh;
+
+  &.bg-grey-4 {
+    background: linear-gradient(135deg, #f0f9ff 0%, rgba($primary, 0.15) 100%);
+  }
+
+  &:not(.bg-grey-4) {
+    background: linear-gradient(135deg, $dark 0%, rgba($primary, 0.25) 100%);
+  }
 }
 
 .page-header {
@@ -609,15 +605,20 @@ $pastel-emerald: #a7f3d0;
 }
 
 .header-content {
-  background: linear-gradient(135deg, $pastel-mint 0%, $pastel-emerald 50%, $pastel-sage 100%);
+  background: linear-gradient(135deg, rgba($primary, 0.25) 0%, rgba($primary, 0.15) 100%);
   padding: 24px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-  border: 2px solid $color-mint;
+  box-shadow: 0 4px 16px rgba($primary, 0.35);
+  border: 2px solid rgba($primary, 0.5);
+
+  :global(.body--dark) & {
+    background: linear-gradient(135deg, rgba($primary, 0.35) 0%, rgba($primary, 0.2) 100%);
+    border-color: rgba($primary, 0.7);
+  }
 }
 
 .page-icon {
-  color: $color-emerald;
+  color: $secondary;
   vertical-align: middle;
   margin-right: 12px;
 }
@@ -626,30 +627,39 @@ $pastel-emerald: #a7f3d0;
   display: inline-block;
   font-size: 2em;
   font-weight: 700;
-  color: $color-forest;
+  color: $primary;
   margin: 0;
   vertical-align: middle;
+
+  :global(.body--dark) & {
+    color: $primary;
+  }
 }
 
 .header-subtitle {
-  color: $color-jade;
+  color: $grey-7;
   margin: 8px 0 0 60px;
   font-size: 1em;
+
+  :global(.body--dark) & {
+    color: $grey-5;
+  }
 }
 
 .btn-add-header {
-  background: linear-gradient(135deg, $color-emerald 0%, $color-jade 100%);
+  background: $primary;
   color: white;
   font-weight: 600;
   padding: 12px 24px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba($primary, 0.3);
   transition: all 0.3s ease;
   white-space: nowrap;
 
   &:hover {
+    background: darken($primary, 8%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 6px 16px rgba($primary, 0.4);
   }
 }
 
@@ -669,30 +679,59 @@ $pastel-emerald: #a7f3d0;
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 
+  :global(.body--dark) & {
+    background: $dark-page;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+
+    :global(.body--dark) & {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
   }
 }
 
 .stat-card-total {
-  border-left-color: $color-emerald;
-  background: linear-gradient(135deg, white 0%, $pastel-mint 100%);
+  border-left-color: $primary;
+  border-left-width: 5px;
+  background: linear-gradient(135deg, white 0%, rgba($primary, 0.2) 100%);
+
+  :global(.body--dark) & {
+    background: linear-gradient(135deg, $dark-page 0%, rgba($primary, 0.35) 100%);
+  }
 }
 
 .stat-card-month {
-  border-left-color: $color-jade;
-  background: linear-gradient(135deg, white 0%, $pastel-emerald 100%);
+  border-left-color: $secondary;
+  border-left-width: 5px;
+  background: linear-gradient(135deg, white 0%, rgba($secondary, 0.2) 100%);
+
+  :global(.body--dark) & {
+    background: linear-gradient(135deg, $dark-page 0%, rgba($secondary, 0.35) 100%);
+  }
 }
 
 .stat-card-count {
-  border-left-color: $color-sage;
-  background: linear-gradient(135deg, white 0%, $pastel-sage 100%);
+  border-left-color: $accent;
+  border-left-width: 5px;
+  background: linear-gradient(135deg, white 0%, rgba($accent, 0.2) 100%);
+
+  :global(.body--dark) & {
+    background: linear-gradient(135deg, $dark-page 0%, rgba($accent, 0.35) 100%);
+  }
 }
 
 .stat-card-average {
-  border-left-color: $color-lime;
-  background: linear-gradient(135deg, white 0%, $pastel-lime 100%);
+  border-left-color: $positive;
+  border-left-width: 5px;
+  background: linear-gradient(135deg, white 0%, rgba($positive, 0.2) 100%);
+
+  :global(.body--dark) & {
+    background: linear-gradient(135deg, $dark-page 0%, rgba($positive, 0.35) 100%);
+  }
 }
 
 .stat-content {
@@ -711,13 +750,21 @@ $pastel-emerald: #a7f3d0;
 .stat-value {
   font-size: 1.8em;
   font-weight: 700;
-  color: $color-forest;
+  color: $primary;
+
+  :global(.body--dark) & {
+    color: lighten($primary, 10%);
+  }
 }
 
 .stat-icon {
   font-size: 48px;
-  color: $color-mint;
+  color: $primary;
   opacity: 0.6;
+
+  :global(.body--dark) & {
+    opacity: 0.8;
+  }
 }
 
 .toolbar-section {
@@ -727,6 +774,10 @@ $pastel-emerald: #a7f3d0;
 .search-input {
   background: white;
   border-radius: 12px;
+
+  :global(.body--dark) & {
+    background: $dark-page;
+  }
 
   :deep(.q-field__control) {
     border-radius: 12px;
@@ -739,6 +790,11 @@ $pastel-emerald: #a7f3d0;
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+
+  :global(.body--dark) & {
+    background: $dark-page;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .filters-header {
@@ -747,11 +803,19 @@ $pastel-emerald: #a7f3d0;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 100%);
+  background: rgba($primary, 0.2);
   transition: all 0.3s ease;
 
+  :global(.body--dark) & {
+    background: rgba($primary, 0.25);
+  }
+
   &:hover {
-    background: linear-gradient(135deg, $pastel-mint 0%, $pastel-emerald 100%);
+    background: rgba($primary, 0.3);
+
+    :global(.body--dark) & {
+      background: rgba($primary, 0.4);
+    }
   }
 }
 
@@ -760,13 +824,17 @@ $pastel-emerald: #a7f3d0;
   align-items: center;
   gap: 12px;
   font-weight: 600;
-  color: $color-forest;
+  color: $primary;
   font-size: 1.1em;
 }
 
 .filters-content {
   padding: 20px;
   background: white;
+
+  :global(.body--dark) & {
+    background: $dark-page;
+  }
 }
 
 .filter-input {
@@ -783,14 +851,25 @@ $pastel-emerald: #a7f3d0;
   background: white;
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba($primary, 0.12);
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 2px solid rgba($primary, 0.15);
+
+  :global(.body--dark) & {
+    background: $dark-page;
+    box-shadow: 0 4px 12px rgba($primary, 0.25);
+    border-color: rgba($primary, 0.3);
+  }
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
-    border-color: $color-mint;
+    box-shadow: 0 8px 24px rgba($primary, 0.3);
+    border-color: $primary;
+
+    :global(.body--dark) & {
+      box-shadow: 0 8px 24px rgba($primary, 0.5);
+      border-color: lighten($primary, 10%);
+    }
   }
 }
 
@@ -800,7 +879,11 @@ $pastel-emerald: #a7f3d0;
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 2px solid $pastel-mint;
+  border-bottom: 3px solid rgba($primary, 0.4);
+
+  :global(.body--dark) & {
+    border-bottom-color: rgba($primary, 0.6);
+  }
 }
 
 .payment-date {
@@ -808,7 +891,7 @@ $pastel-emerald: #a7f3d0;
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: $color-jade;
+  color: $secondary;
   font-size: 0.9em;
 }
 
@@ -820,18 +903,23 @@ $pastel-emerald: #a7f3d0;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    color: #4b5563;
+    color: $grey-7;
     font-size: 0.95em;
 
+    :global(.body--dark) & {
+      color: $grey-5;
+    }
+
     .q-icon {
-      color: $color-sage;
+      color: $primary;
+      opacity: 1;
     }
   }
 }
 
 .payment-person {
-  font-weight: 600;
-  color: $color-forest !important;
+  font-weight: 700;
+  color: $primary !important;
   font-size: 1.1em !important;
 }
 
@@ -839,20 +927,28 @@ $pastel-emerald: #a7f3d0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 100%);
+  background: rgba($primary, 0.2);
   padding: 12px;
   border-radius: 12px;
   margin-top: 12px;
 
+  :global(.body--dark) & {
+    background: rgba($primary, 0.3);
+  }
+
   .amount-label {
     font-weight: 600;
-    color: $color-jade;
+    color: $grey-8;
+
+    :global(.body--dark) & {
+      color: $grey-4;
+    }
   }
 
   .amount-value {
     font-size: 1.5em;
     font-weight: 700;
-    color: $color-emerald;
+    color: $primary;
   }
 }
 
@@ -860,20 +956,24 @@ $pastel-emerald: #a7f3d0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff7ed;
+  background: rgba($secondary, 0.2);
   padding: 8px 12px;
   border-radius: 8px;
   margin-top: 8px;
 
+  :global(.body--dark) & {
+    background: rgba($secondary, 0.3);
+  }
+
   .discount-label {
     font-weight: 600;
-    color: #ea580c;
+    color: $secondary;
     font-size: 0.9em;
   }
 
   .discount-value {
     font-weight: 700;
-    color: #ea580c;
+    color: $secondary;
   }
 }
 
@@ -882,7 +982,11 @@ $pastel-emerald: #a7f3d0;
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid $pastel-mint;
+  border-top: 1px solid rgba($primary, 0.2);
+
+  :global(.body--dark) & {
+    border-top-color: rgba($primary, 0.3);
+  }
 }
 
 .no-results {
@@ -914,15 +1018,19 @@ $pastel-emerald: #a7f3d0;
 }
 
 .detail-header {
-  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 50%, $pastel-emerald 100%);
-  border-bottom: 3px solid $color-mint;
-  color: $color-forest;
+  background: rgba($primary, 0.25);
+  border-bottom: 4px solid $primary;
+  color: $primary;
   flex-shrink: 0;
+
+  :global(.body--dark) & {
+    background: rgba($primary, 0.35);
+  }
 }
 
 .separator-gradient {
   height: 3px;
-  background: linear-gradient(90deg, $color-forest 0%, $color-jade 50%, $color-emerald 100%);
+  background: linear-gradient(90deg, $primary 0%, $secondary 50%, $accent 100%);
 }
 
 .detail-body {
@@ -948,19 +1056,31 @@ $pastel-emerald: #a7f3d0;
   .q-item {
     border-radius: 12px;
     margin-bottom: 8px;
-    background: $pastel-sage;
+    background: rgba($primary, 0.12);
     transition: all 0.3s ease;
 
+    :global(.body--dark) & {
+      background: rgba($primary, 0.2);
+    }
+
     &:hover {
-      background: $pastel-mint;
+      background: rgba($primary, 0.2);
       transform: translateX(4px);
+
+      :global(.body--dark) & {
+        background: rgba($primary, 0.3);
+      }
     }
   }
 }
 
 .detail-actions {
-  border-top: 1px solid $pastel-mint;
+  border-top: 1px solid rgba($primary, 0.2);
   flex-shrink: 0;
+
+  :global(.body--dark) & {
+    border-top-color: rgba($primary, 0.3);
+  }
 }
 
 .comprobante-dialog {
@@ -979,9 +1099,13 @@ $pastel-emerald: #a7f3d0;
 }
 
 .comprobante-header {
-  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 100%);
-  color: $color-forest;
+  background: rgba($primary, 0.1);
+  color: $primary;
   flex-shrink: 0;
+
+  :global(.body--dark) & {
+    background: rgba($primary, 0.2);
+  }
 }
 
 .comprobante-content {

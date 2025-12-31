@@ -469,6 +469,11 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .page-container {
   animation: fadeIn 0.5s ease;
+  background: linear-gradient(to bottom, #fafafa 0%, $pastel-green-light 100%);
+}
+
+.body--dark .page-container {
+  background: $grey-10;
 }
 
 @keyframes fadeIn {
@@ -507,10 +512,11 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .header-title {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, $color-green-dark 0%, $color-primary-green 50%, $color-green-medium 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: $color-primary-green;
+
+  .q-icon {
+    color: $color-primary-green;
+  }
 }
 
 .page-title {
@@ -534,28 +540,32 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .stat-card {
-  background: linear-gradient(135deg, $color-primary-green 0%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
   padding: 16px 24px;
   border-radius: 16px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
   transition: all 0.3s ease;
   min-width: 100px;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.5);
+  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.4);
+  background: $color-green-dark;
 }
 
 .stat-card-alt {
-  background: linear-gradient(135deg, $color-green-medium 0%, $color-green-light 100%);
-  box-shadow: 0 4px 12px rgba(67, 160, 71, 0.4);
+  background: white;
+  color: $color-primary-green;
+  border: 2px solid $color-primary-green;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
 }
 
 .stat-card-alt:hover {
-  box-shadow: 0 8px 20px rgba(67, 160, 71, 0.5);
+  background: $pastel-green-light;
+  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.2);
 }
 
 .stat-number {
@@ -612,14 +622,14 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .form-header {
-  background: linear-gradient(135deg, $color-green-dark 0%, $color-primary-green 50%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
   padding: 20px 24px;
   display: flex;
   align-items: center;
   font-size: 1.3em;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
 }
 
 .form-title {
@@ -647,15 +657,15 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .toggles-section {
-  background: $pastel-green-light;
+  background: white;
   padding: 16px;
   border-radius: 12px;
   border-left: 4px solid $color-orange;
 }
 
 .body--dark .toggles-section {
-  background: rgba(232, 245, 233, 0.1);
-  border-left-color: $color-orange-light;
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: $color-orange;
 }
 
 .toggle-item {
@@ -663,15 +673,15 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .horarios-section {
-  background: $pastel-green;
+  background: white;
   padding: 20px;
   border-radius: 12px;
   border-left: 4px solid $color-primary-green;
 }
 
 .body--dark .horarios-section {
-  background: rgba(200, 230, 201, 0.1);
-  border-left-color: $color-green-light;
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: $color-primary-green;
 }
 
 .section-title {
@@ -705,14 +715,15 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .btn-delete-horario {
-  background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+  background: #e53935;
   color: white;
   transition: all 0.3s ease;
 }
 
 .btn-delete-horario:hover {
+  background: #c62828;
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
 }
 
 .btn-add-horario {
@@ -744,29 +755,31 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .btn-save {
-  background: linear-gradient(135deg, $color-primary-green 0%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
   transition: all 0.3s ease;
 }
 
 .btn-save:hover {
+  background: $color-green-dark;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.5);
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
 }
 
 .btn-update {
-  background: linear-gradient(135deg, $color-green-medium 0%, $color-green-light 100%);
+  background: $color-primary-green;
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(67, 160, 71, 0.4);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
   transition: all 0.3s ease;
 }
 
 .btn-update:hover {
+  background: $color-green-dark;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(67, 160, 71, 0.5);
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
 }
 
 /* Filtros */
@@ -831,17 +844,18 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .paquete-card {
   border-radius: 16px;
   overflow: hidden;
-  border: 2px solid rgba(46, 125, 50, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 2px solid rgba(46, 125, 50, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   opacity: 0;
   animation: cardFadeIn 0.6s ease forwards;
+  background: white;
 }
 
 .body--dark .paquete-card {
   background: $grey-9;
-  border-color: rgba(102, 187, 106, 0.3);
+  border-color: rgba(46, 125, 50, 0.3);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -853,8 +867,13 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 
 .paquete-card:hover {
   transform: translateY(-8px) scale(1.02);
-  border-color: rgba(46, 125, 50, 0.4);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  border-color: $color-primary-green;
+  box-shadow: 0 12px 36px rgba(46, 125, 50, 0.2);
+}
+
+.body--dark .paquete-card:hover {
+  border-color: $color-primary-green;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
 }
 
 .card-ribbon {
@@ -871,22 +890,24 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .ribbon-active {
-  background: linear-gradient(135deg, $color-primary-green 0%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
 }
 
 .ribbon-inactive {
-  background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+  background: #9e9e9e;
   color: white;
 }
 
 .card-header {
-  background: linear-gradient(135deg, $pastel-green 0%, $pastel-green-light 100%);
+  background: $pastel-green-light;
   padding: 12px 16px;
+  border-bottom: 2px solid rgba(46, 125, 50, 0.1);
 }
 
 .body--dark .card-header {
-  background: linear-gradient(135deg, darken($color-primary-green, 20%) 0%, darken($color-green-medium, 15%) 100%);
+  background: rgba(46, 125, 50, 0.15);
+  border-bottom-color: rgba(102, 187, 106, 0.3);
 }
 
 .package-title {
@@ -914,17 +935,17 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .chip-disciplina {
-  background: linear-gradient(135deg, $color-primary-green 0%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
 }
 
 .chip-nivel {
-  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%);
+  background: $color-orange;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.4);
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.3);
 }
 
 .card-body {
@@ -946,25 +967,28 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: $pastel-green-light;
+  background: white;
   border-radius: 8px;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
+  border: 1px solid rgba(46, 125, 50, 0.1);
 }
 
 .info-item:hover {
-  background: $pastel-green;
+  background: $pastel-green-light;
   transform: translateX(4px);
-  border-left-color: $color-orange;
+  border-left-color: $color-primary-green;
+  border-left-width: 3px;
 }
 
 .body--dark .info-item {
-  background: rgba(46, 125, 50, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(46, 125, 50, 0.2);
 }
 
 .body--dark .info-item:hover {
-  background: rgba(46, 125, 50, 0.25);
-  border-left-color: $color-orange-light;
+  background: rgba(46, 125, 50, 0.15);
+  border-left-color: $color-primary-green;
 }
 
 .info-icon {
@@ -1007,14 +1031,14 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  background: $pastel-orange-light;
+  background: white;
   border-radius: 8px;
-  border: 2px solid $color-orange-light;
+  border: 2px solid $color-orange;
 }
 
 .body--dark .date-range {
-  background: rgba(255, 111, 0, 0.15);
-  border-color: rgba(255, 143, 0, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: $color-orange;
 }
 
 .date-item {
@@ -1036,10 +1060,10 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .chip-materiales-si {
-  background: linear-gradient(135deg, $color-green-dark 0%, $color-primary-green 100%);
+  background: $color-green-dark;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
 }
 
 .chip-materiales-no {
@@ -1064,38 +1088,40 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .btn-edit-card {
-  background: linear-gradient(135deg, $color-primary-green 0%, $color-green-medium 100%);
+  background: $color-primary-green;
   color: white;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
 }
 
 .btn-edit-card:hover {
+  background: $color-green-dark;
   transform: scale(1.15) rotate(5deg);
-  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.6);
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
 }
 
 .btn-delete-card {
-  background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+  background: #e53935;
   color: white;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
 }
 
 .btn-delete-card:hover {
+  background: #c62828;
   transform: scale(1.15) rotate(-5deg);
-  box-shadow: 0 6px 16px rgba(239, 83, 80, 0.6);
+  box-shadow: 0 6px 16px rgba(229, 57, 53, 0.4);
 }
 
 .card-horarios {
-  background: linear-gradient(135deg, darken($pastel-green, 8%) 0%, darken($pastel-green-light, 5%) 100%);
+  background: $pastel-green-light;
   padding: 10px 16px;
-  border-top: 3px solid rgba(46, 125, 50, 0.3);
+  border-top: 3px solid $color-primary-green;
 }
 
 .body--dark .card-horarios {
-  background: linear-gradient(135deg, rgba(46, 125, 50, 0.2) 0%, rgba(67, 160, 71, 0.15) 100%);
-  border-top-color: rgba(102, 187, 106, 0.4);
+  background: rgba(46, 125, 50, 0.1);
+  border-top-color: $color-primary-green;
 }
 
 .horarios-title {
@@ -1113,7 +1139,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .horarios-count {
-  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%);
+  background: $color-orange;
   color: white;
   font-weight: 700;
 }
@@ -1139,33 +1165,39 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .horario-color-0 {
-  background: linear-gradient(135deg, $pastel-green 0%, lighten($pastel-green, 3%) 100%);
+  background: white;
   border-left: 4px solid $color-primary-green;
+  border: 1px solid rgba(46, 125, 50, 0.2);
 }
 
 .horario-color-1 {
-  background: linear-gradient(135deg, $pastel-green-light 0%, $pastel-green 100%);
+  background: $pastel-green-light;
   border-left: 4px solid $color-green-medium;
+  border: 1px solid rgba(67, 160, 71, 0.2);
 }
 
 .horario-color-2 {
-  background: linear-gradient(135deg, $pastel-orange-light 0%, $pastel-orange 100%);
+  background: white;
   border-left: 4px solid $color-orange;
+  border: 1px solid rgba(255, 111, 0, 0.2);
 }
 
 .horario-color-3 {
-  background: linear-gradient(135deg, lighten($pastel-green, 5%) 0%, $pastel-green-light 100%);
+  background: $pastel-green;
   border-left: 4px solid $color-green-light;
+  border: 1px solid rgba(102, 187, 106, 0.2);
 }
 
 .horario-color-4 {
-  background: linear-gradient(135deg, $pastel-orange 0%, lighten($pastel-orange, 5%) 100%);
-  border-left: 4px solid $color-orange-accent;
+  background: $pastel-orange-light;
+  border-left: 4px solid $color-orange;
+  border: 1px solid rgba(255, 111, 0, 0.2);
 }
 
 .horario-color-5 {
-  background: linear-gradient(135deg, $pastel-green 0%, $pastel-green-light 100%);
+  background: white;
   border-left: 4px solid $color-green-dark;
+  border: 1px solid rgba(27, 94, 32, 0.2);
 }
 
 .horario-day {

@@ -32,7 +32,7 @@
                 <q-icon name="event" size="18px" class="q-mr-xs" />
                 <span>{{ formatDateShort(displayTorneo?.fecha_inicio) }} → {{
                   formatDateShort(displayTorneo?.fecha_fin)
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -642,15 +642,17 @@ async function finishMatch(p) {
         const partidosEnMarcha = partidos.value.filter(partido => !partido.finalizado)
         if (partidosEnMarcha.length === 1 && partidosEnMarcha[0].id === p.id) {
           const tipo = displayTorneo.value?.id_tipo_torneo
-          if (tipo === 1) {
-            if (p.id_equipo_ganador != null) {
+          const gl = Number(p.goles_local || p.golesLocal || 0)
+          const gv = Number(p.goles_visitante || p.golesVisitante || 0)
+
+          // Para empates en tipo 2 y 4, finalizar el torneo
+          if (tipo === 2 || tipo === 4) {
+            if (gl >= 0 && gv >= 0) {
               await finalizarTorneo(displayTorneo.value.id)
-            }
-          } else if (tipo === 2 || tipo === 4) {
-            if (p.id_equipo_ganador != null || p.goles_local != -1 || p.goles_visitante != -1) {
-              await finalizarTorneo(displayTorneo.value.id)
+              Notify.create({ type: 'info', message: 'Torneo finalizado' })
             }
           }
+          // Tipo 1 no finaliza en empates (se reprograma)
         }
       } catch (err) {
         console.error('Error guardando empate', err)
@@ -696,7 +698,6 @@ async function finishMatch(p) {
   p.id_equipo_ganador = (winnerObj && (winnerObj.id || winnerObj.id_equipo)) || winnerId
   p.estado_partido = 'Finalizado'
   // marcar flag explícita para UI
-  p.finalizado = true
   console.log('Finalizando partido:', JSON.parse(JSON.stringify(p)))
   try {
     const now = getTodayDateAndTime()
@@ -704,20 +705,29 @@ async function finishMatch(p) {
   } catch (e) {
     console.warn('Error al asignar fecha_fin', e)
   }
-  await actualizarPartido(p)
   Notify.create({ type: 'positive', message: 'Partido finalizado' })
-
   // Verificar si este es el último partido en marcha
   const partidosEnMarcha = partidos.value.filter(partido => !partido.finalizado)
+  p.finalizado = true
+  await actualizarPartido(p)
   if (partidosEnMarcha.length === 1 && partidosEnMarcha[0].id === p.id) {
     const tipo = displayTorneo.value?.id_tipo_torneo
+    const gl = Number(p.goles_local || p.golesLocal || 0)
+    const gv = Number(p.goles_visitante || p.golesVisitante || 0)
+
     if (tipo === 1) {
-      if (p.id_equipo_ganador != null) {
+      // Tipo 1: finalizar si hay goles válidos y diferentes (hay ganador)
+      if ((gl > 0 || gv > 0) && gl !== gv) {
+        console.log('--------------------------finalizando torneo');
+
         await finalizarTorneo(displayTorneo.value.id)
+        Notify.create({ type: 'info', message: 'Torneo finalizado' })
       }
     } else if (tipo === 2 || tipo === 4) {
-      if (p.id_equipo_ganador != null || p.goles_local != -1 || p.goles_visitante != -1) {
+      // Tipo 2 y 4: finalizar si ambos goles son >= 0
+      if (gl >= 0 && gv >= 0) {
         await finalizarTorneo(displayTorneo.value.id)
+        Notify.create({ type: 'info', message: 'Torneo finalizado' })
       }
     }
   }
@@ -986,7 +996,43 @@ const nroEquipos = computed(() => {
 // cuando hay >= nroEquipos - 1 partidos con ganador, el siguiente partido con ganador
 // se considera el partido decisivo (ganador final). Aquí tomamos como heurística
 // el partido con ganador de mayor id cuando ya se alcanzó el umbral.
+// Para tipo 1: el ganador definitivo es el del partido con fecha_fin más reciente
 const finalWinnerMatchId = computed(() => {
+  const tipo = displayTorneo.value?.id_tipo_torneo
+
+  // Para tipo 1, buscar el partido con fecha_fin más reciente que tenga ganador
+  if (tipo === 1) {
+    let latestMatch = null
+    let latestDate = null
+
+    for (const p of partidos.value || []) {
+      const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
+      if (!hasWinner || !p.fecha_fin) continue
+
+      try {
+        // Parsear fecha formato "31 Dic 2025 10:26:43"
+        const [dia, mes, anio, hora] = p.fecha_fin.split(' ')
+        const meses = {
+          'Ene': 0, 'Feb': 1, 'Mar': 2, 'Abr': 3, 'May': 4, 'Jun': 5,
+          'Jul': 6, 'Ago': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dic': 11
+        }
+        const [hh, mm, ss] = hora.split(':')
+        const fecha = new Date(parseInt(anio), meses[mes] || 0, parseInt(dia),
+          parseInt(hh), parseInt(mm), parseInt(ss))
+
+        if (!latestDate || fecha > latestDate) {
+          latestDate = fecha
+          latestMatch = p
+        }
+      } catch (e) {
+        console.warn('Error parseando fecha_fin:', p.fecha_fin, e)
+      }
+    }
+
+    return latestMatch ? Number(latestMatch.id || latestMatch.id_partido || 0) : null
+  }
+
+  // Para otros tipos, usar la lógica anterior
   const n = nroEquipos.value || 0
   if (n <= 0) return null
   if ((winnersWithWinnerCount.value || 0) < Math.max(0, n - 1)) return null
@@ -1138,6 +1184,16 @@ function shouldPaintFinal(p) {
   const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
   if (!hasWinner) return false
 
+  const tipo = displayTorneo.value?.id_tipo_torneo
+
+  // Para tipo 1: pintar el partido con fecha_fin más reciente
+  if (tipo === 1) {
+    const fid = finalWinnerMatchId.value
+    if (!fid) return false
+    return Number(p.id || p.id_partido || 0) === fid
+  }
+
+  // Para otros tipos: usar la lógica de tabla de posiciones
   // Solo mostrar el estilo dorado cuando TODOS los partidos estén finalizados
   const allFinished = (partidos.value || []).every(x => x.finalizado === true)
   if (!allFinished) return false
@@ -1236,7 +1292,7 @@ function getFinishButtonLabel(p) {
 }
 
 function statusLabelColor(p) {
-  if (!p) return { label: '-', color: 'grey' }
+  if (!p) return { label: '-', color: 'white' }
   const gl = Number(p.goles_local ?? p.golesLocal ?? 0)
   const gv = Number(p.goles_visitante ?? p.golesVisitante ?? 0)
   const hasWinner = Boolean(p.id_equipo_ganador) || Boolean(p.equipoGanador)
@@ -1250,12 +1306,12 @@ function statusLabelColor(p) {
     // Empates (incluyendo 0-0) se muestran como Empate en color azul
     if (gl === gv) return { label: 'Empate', color: 'info' }
     if (p.finalizado) return { label: 'Finalizado', color: 'positive' }
-    return { label: '-', color: 'grey' }
+    return { label: '-', color: 'white' }
   }
 
   // Comportamiento por defecto para otros tipos
   if (gl < 0 || gv < 0) return { label: '-', color: 'grey' }
-  if (gl === 0 && gv === 0) return { label: 'Reprogramado', color: 'grey' }
+  if (gl === 0 && gv === 0) return { label: 'Reprogramado', color: 'white' }
   if (gl === gv && gl > 0) return { label: 'Empate', color: 'amber' }
   if (p.finalizado) return { label: 'Finalizado', color: 'positive' }
   return { label: '-', color: 'grey' }

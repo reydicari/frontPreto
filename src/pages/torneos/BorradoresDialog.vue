@@ -13,6 +13,22 @@
 
     <q-separator />
 
+    <!-- Banner de torneo suspendido -->
+    <q-banner v-if="isTorneoSuspended" class="bg-red-1 text-red-9 q-pa-md" dense>
+      <template v-slot:avatar>
+        <q-icon name="block" color="red" size="32px" />
+      </template>
+      <div class="text-h6 text-weight-bold">Torneo Suspendido</div>
+      <div v-if="suspendedByUser" class="text-body2 q-mt-xs">
+        Suspendido por: <span class="text-weight-bold">{{ suspendedByUser }}</span>
+      </div>
+      <div class="text-body2 q-mt-xs">
+        No se pueden agregar equipos ni iniciar el torneo mientras esté suspendido.
+      </div>
+    </q-banner>
+
+    <q-separator v-if="isTorneoSuspended" />
+
     <q-card-section class="q-pa-lg">
       <div v-if="loading" class="row items-center justify-center q-pa-xl">
         <div class="column items-center q-gutter-md">
@@ -43,7 +59,7 @@
                   </div>
                   <div>
                     <q-btn dense round flat color="deep-orange-6" icon="remove_circle" @click="removeOriginal(item)"
-                      size="sm">
+                      size="sm" :disable="cannotModifyTeams">
                       <q-tooltip>Quitar del torneo</q-tooltip>
                     </q-btn>
                   </div>
@@ -68,13 +84,23 @@
               Complete el nombre del equipo. Al terminar uno se genera automáticamente otro campo vacío.
             </div>
           </q-banner>
-          <div v-if="torneoData && Number(torneoData.estado) === 2" class="q-mb-md">
+          <div v-if="isTorneoSuspended" class="q-mb-md">
+            <q-banner rounded class="bg-red-1 text-red-9">
+              <template v-slot:avatar>
+                <q-icon name="block" color="red" />
+              </template>
+              <div class="text-body2 text-weight-medium">
+                No se pueden agregar equipos: el torneo está suspendido.
+              </div>
+            </q-banner>
+          </div>
+          <div v-else-if="cannotModifyTeams" class="q-mb-md">
             <q-banner rounded class="bg-orange-1 text-orange-9">
               <template v-slot:avatar>
                 <q-icon name="warning" color="orange" />
               </template>
               <div class="text-body2 text-weight-medium">
-                No se pueden agregar equipos: el torneo ya fue iniciado.
+                No se pueden agregar equipos: {{ modificationBlockReason }}.
               </div>
             </q-banner>
           </div>
@@ -94,15 +120,17 @@
                     <div class="col">
                       <q-input dense outlined v-model="card.nombre" placeholder="Nombre del equipo"
                         @input="onNewInput(idx)" @keyup.enter="onEnter(idx)" :ref="el => setInputRef(el, idx)"
-                        :readonly="card.registered || (torneoData && Number(torneoData.estado) === 2)" color="green-8"
-                        class="text-body2" />
+                        :readonly="card.registered || isTorneoSuspended || (torneoData && Number(torneoData.estado) === 2)"
+                        color="green-8" class="text-body2" />
                     </div>
                     <div class="row items-center no-wrap" style="gap:4px;">
-                      <q-btn v-if="!card.registered && !(torneoData && Number(torneoData.estado) === 2)" dense round
-                        flat color="green-7" icon="cloud_upload" @click="registerNew(idx)" size="sm">
+                      <q-btn
+                        v-if="!card.registered && !isTorneoSuspended && !(torneoData && Number(torneoData.estado) === 2)"
+                        dense round flat color="green-7" icon="cloud_upload" @click="registerNew(idx)" size="sm">
                         <q-tooltip>Registrar equipo</q-tooltip>
                       </q-btn>
-                      <q-btn dense round flat color="deep-orange-6" icon="close" @click="removeNew(idx)" size="sm">
+                      <q-btn dense round flat color="deep-orange-6" icon="close" @click="removeNew(idx)" size="sm"
+                        :disable="isTorneoSuspended">
                         <q-tooltip>Quitar</q-tooltip>
                       </q-btn>
                     </div>
@@ -120,15 +148,15 @@
         <q-separator class="q-mt-lg" />
 
         <div class="row items-center justify-end q-gutter-sm q-mt-md">
-          <q-btn v-if="!isTorneoFinished" flat label="Asignar Encargados" icon="people" color="grey-7"
-            @click="showAssignDialog = true" class="text-body2" />
+          <q-btn v-if="!isTorneoFinished" flat :label="isTorneoSuspended ? 'Ver Encargados' : 'Asignar Encargados'"
+            icon="people" color="grey-7" @click="showAssignDialog = true" class="text-body2" />
           <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="onCancel" class="text-body2" />
           <q-btn v-if="torneoData && Number(torneoData.estado) === 2" unelevated label="Seguir Torneo" icon="visibility"
             color="green-7" @click="showSeguimiento = true" class="text-body2" />
-          <q-btn v-else-if="!isTorneoFinished" unelevated label="Comenzar" icon="flag" color="deep-orange-6"
-            @click="openStartFlow" class="text-body2" />
-          <q-btn v-if="!isTorneoFinished" unelevated label="Guardar Equipos" icon="save" color="green-7" @click="onSave"
-            class="text-body2" />
+          <q-btn v-else-if="!isTorneoFinished && !isTorneoSuspended" unelevated label="Comenzar" icon="flag"
+            color="deep-orange-6" @click="openStartFlow" class="text-body2" />
+          <q-btn v-if="!isTorneoFinished && !isTorneoSuspended" unelevated label="Guardar Equipos" icon="save"
+            color="green-7" @click="onSave" class="text-body2" />
         </div>
       </div>
     </q-card-section>
@@ -232,6 +260,38 @@ const isTorneoFinished = computed(() => {
   return fechaFin < hoy
 })
 
+// Computed para verificar si el torneo está suspendido (estado == 0)
+const isTorneoSuspended = computed(() => {
+  return torneoData.value && Number(torneoData.value.estado) === 0
+})
+
+// Computed para verificar si el torneo NO permite modificaciones de equipos
+// Estados: 0=suspendido, 2=iniciado, 3=finalizado
+const cannotModifyTeams = computed(() => {
+  if (!torneoData.value) return false
+  const estado = Number(torneoData.value.estado)
+  return estado === 0 || estado === 2 || estado === 3
+})
+
+// Computed para obtener mensaje de por qué no se pueden modificar equipos
+const modificationBlockReason = computed(() => {
+  if (!torneoData.value) return ''
+  const estado = Number(torneoData.value.estado)
+  if (estado === 0) return 'el torneo está suspendido'
+  if (estado === 2) return 'el torneo ya fue iniciado'
+  if (estado === 3) return 'el torneo ya finalizó'
+  return ''
+})
+
+// Computed para obtener el nombre del usuario que suspendió el torneo
+const suspendedByUser = computed(() => {
+  if (!isTorneoSuspended.value) return null
+  if (torneoData.value?.id_usuario_suspende && torneoData.value?.usuario?.usuario) {
+    return torneoData.value.usuario.usuario
+  }
+  return null
+})
+
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend
 const desechados = ref([]) // los borrados desde originals
@@ -294,8 +354,8 @@ function removeOriginal(item) {
 function onNewInput(idx) {
   const card = newCards.value[idx]
   if (!card) return
-  // Si el torneo ya fue iniciado, no permitir crear nuevas tarjetas
-  if (torneoData.value && Number(torneoData.value.estado) === 2) return
+  // Si el torneo no permite modificaciones, no permitir crear nuevas tarjetas
+  if (cannotModifyTeams.value) return
   // si estamos en la última tarjeta y se escribió algo, agregar otra vacía
   if (idx === newCards.value.length - 1 && card.nombre && card.nombre.trim() !== '') {
     // comprobar si al añadir otra tarjeta se supera el máximo final (16)
@@ -329,6 +389,11 @@ function onEnter(idx) {
 }
 
 function openStartFlow() {
+  // Si el torneo está suspendido, no permitir comenzar
+  if (isTorneoSuspended.value) {
+    Notify.create({ type: 'negative', message: 'No se puede comenzar: el torneo está suspendido' })
+    return
+  }
   // verificar que exista al menos un encargado asignado al torneo
   try {
     const encs = torneoData.value?.encargados || []
@@ -426,9 +491,9 @@ function removeNew(idx) {
 }
 
 async function registerNew(idx) {
-  // Si el torneo ya fue iniciado, impedir registro de nuevos equipos
-  if (torneoData.value && Number(torneoData.value.estado) === 2) {
-    Notify.create({ type: 'negative', message: 'No se pueden agregar equipos: el torneo ya fue iniciado' })
+  // Si el torneo no permite modificaciones, impedir registro de nuevos equipos
+  if (cannotModifyTeams.value) {
+    Notify.create({ type: 'negative', message: `No se pueden agregar equipos: ${modificationBlockReason.value}` })
     return
   }
   const card = newCards.value[idx]
@@ -491,6 +556,11 @@ async function registerNew(idx) {
 }
 
 async function onSave() {
+  // Si el torneo no permite modificaciones, no permitir guardar
+  if (cannotModifyTeams.value) {
+    Notify.create({ type: 'negative', message: `No se puede guardar: ${modificationBlockReason.value}` })
+    return
+  }
   // tomar los nuevos que el usuario "registró" explícitamente (nuevosCollected)
   const nuevos = nuevosCollected.value.slice()
   const existentesCopy = existente.value.slice()
