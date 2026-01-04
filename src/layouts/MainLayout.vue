@@ -81,7 +81,7 @@
                       <q-icon name="badge" size="18px" class="info-icon" />
                       <span class="info-label">CI:</span>
                       <span class="info-value">{{ userData?.persona?.ci }} {{ userData?.persona?.complemento || ''
-                      }}</span>
+                        }}</span>
                     </div>
 
                     <div class="info-row">
@@ -610,12 +610,28 @@ onMounted(() => {
     // Cargar roles del usuario desde localStorage
     if (current.rols && current.rols.length > 0) {
       userRoles.value = current.rols
-      // Establecer el primer rol como seleccionado por defecto
-      selectedRole.value = current.rols[0]
+
+      // Seleccionar el rol con mayor número de permisos
+      let rolConMasPermisos = current.rols[0]
+      let maxPermisos = 0
+
+      current.rols.forEach(rolItem => {
+        if (rolItem.permisos) {
+          // Contar los permisos (separados por comas)
+          const numPermisos = rolItem.permisos.split(',').filter(p => p.trim()).length
+          if (numPermisos > maxPermisos) {
+            maxPermisos = numPermisos
+            rolConMasPermisos = rolItem
+          }
+        }
+      })
+
+      // Establecer el rol con más permisos como seleccionado
+      selectedRole.value = rolConMasPermisos
       // Actualizar el rol actual
-      rol.value = current.rols[0].nombre
+      rol.value = rolConMasPermisos.nombre
       // Inicializar permisos
-      actualizarPermisos(current.rols[0])
+      actualizarPermisos(rolConMasPermisos)
     }
   } catch (error) {
     console.log(error)

@@ -4,13 +4,13 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-title-section">
-          <div class="row items-center">
-            <div class="col-12 col-sm-auto">
+          <div class="row items-center justify-between">
+            <div class="col-auto">
               <q-icon name="payments" size="48px" class="page-icon" />
-              <h1 class="page-title">Gestión de Pagos</h1>
-              <p class="header-subtitle">Registro y control de transacciones</p>
+              <h1 class="page-title q-ma-none">Gestión de Pagos</h1>
+              <!-- <p class="header-subtitle">Registro y control de transacciones</p> -->
             </div>
-            <div class="col-12 col-sm-auto q-ml-sm-auto">
+            <div class="col-auto">
               <q-btn icon="add_circle" label="Nuevo Pago" class="btn-add-header" @click="openDialog" />
             </div>
           </div>
@@ -154,7 +154,7 @@
       <q-infinite-scroll @load="onLoad" :offset="250">
         <div class="row q-col-gutter-md">
           <div v-for="pago in displayedPagos" :key="pago.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <div class="payment-card">
+            <div class="payment-card" @click="verPago(pago)">
               <div class="payment-header">
                 <div class="payment-date">
                   <q-icon name="event" size="18px" />
@@ -184,25 +184,70 @@
                   <span>{{ pago.metodo.nombre || pago.metodo }}</span>
                 </div>
 
-                <div class="payment-amount">
-                  <div class="amount-label">Monto</div>
-                  <div class="amount-value">Bs {{ pago.monto }}</div>
-                </div>
+                <!-- Caso: tiene descuento -->
+                <template v-if="pago.descuento && pago.descuento > 0">
+                  <div class="row q-mt-sm">
+                    <div class="col-6">
+                      <div class="payment-amount-small">
+                        <div class="amount-label-small">Monto</div>
+                        <div class="amount-value-small">Bs {{ pago.monto }}</div>
+                      </div>
+                    </div>
+                    <div class="col-5">
+                      <div class="payment-discount-small">
+                        <div class="discount-label-small">Descuento</div>
+                        <div class="discount-value-small">Bs {{ pago.descuento }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Mostrar Total Pagado o Saldo Pendiente según saldo real -->
+                  <div v-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" class="payment-saldo">
+                    <div class="saldo-label">Saldo Pendiente</div>
+                    <div class="saldo-value">Bs {{ calcularSaldoReal(pago).toFixed(2) }}</div>
+                  </div>
+                  <div v-else class="payment-total">
+                    <div class="total-label">{{ pago.estado === 2 && calcularSaldoReal(pago) === 0 ? 'Monto Pagado' :
+                      'Total Pagado' }}</div>
+                    <div class="total-value">Bs {{ (pago.monto - pago.descuento).toFixed(2) }}</div>
+                  </div>
+                </template>
 
-                <div class="payment-discount" v-if="pago.descuento && pago.descuento > 0">
-                  <div class="discount-label">Descuento</div>
-                  <div class="discount-value">Bs {{ pago.descuento }}</div>
-                </div>
+                <!-- Caso: no tiene descuento -->
+                <template v-else>
+                  <!-- Si estado es 1 (Pagado), mostrar como Total Pagado -->
+                  <div v-if="pago.estado === 1" class="payment-total">
+                    <div class="total-label">Total Pagado</div>
+                    <div class="total-value">Bs {{ pago.monto }}</div>
+                  </div>
+                  <!-- Si estado es 2 (Parcial), verificar saldo real -->
+                  <div v-else-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" class="payment-saldo">
+                    <div class="saldo-label">Saldo Pendiente</div>
+                    <div class="saldo-value">Bs {{ calcularSaldoReal(pago).toFixed(2) }}</div>
+                  </div>
+                  <!-- Si estado es 2 pero saldo real es 0, mostrar como pagado -->
+                  <div v-else-if="pago.estado === 2 && calcularSaldoReal(pago) === 0" class="payment-total">
+                    <div class="total-label">Monto Pagado</div>
+                    <div class="total-value">Bs {{ pago.monto }}</div>
+                  </div>
+                  <!-- Otros estados, mostrar monto normal -->
+                  <div v-else class="payment-amount">
+                    <div class="amount-label">Monto</div>
+                    <div class="amount-value">Bs {{ pago.monto }}</div>
+                  </div>
+                </template>
               </div>
 
               <div class="payment-footer">
-                <q-btn flat dense icon="visibility" color="green-7" @click="verPago(pago)">
-                  <q-tooltip>Ver detalles</q-tooltip>
+                <q-btn v-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" flat dense icon="payment" color="primary"
+                  @click.stop="pagarDeuda(pago)">
+                  <q-tooltip>Pagar deuda</q-tooltip>
                 </q-btn>
-                <q-btn v-if="pago.estado != 0" flat dense icon="cancel" color="negative" @click="anularPago(pago)">
+                <q-btn v-if="pago.estado != 0" flat dense icon="money_off" color="negative"
+                  @click.stop="anularPago(pago)">
                   <q-tooltip>Anular pago</q-tooltip>
                 </q-btn>
-                <q-btn v-if="pago.comprobante" flat dense icon="image" color="primary" @click="verComprobante(pago)">
+                <q-btn v-if="pago.comprobante" flat dense icon="image" color="primary"
+                  @click.stop="verComprobante(pago)">
                   <q-tooltip>Ver comprobante</q-tooltip>
                 </q-btn>
               </div>
@@ -323,7 +368,7 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label caption>Usuario cobrador</q-item-label>
-                    <q-item-label>{{ selectedPago?.usuario_cobrador || '-' }}</q-item-label>
+                    <q-item-label>{{ selectedPago?.usuario.usuario || '-' }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -339,6 +384,67 @@
                   </q-item-section>
                 </q-item>
               </q-list>
+            </div>
+          </div>
+
+          <!-- Sección de Pagos Derivados (SubPagos) -->
+          <div v-if="selectedPago?.pagosDerivados && selectedPago.pagosDerivados.length > 0" class="col-12 q-mt-md">
+            <div class="subpagos-section">
+              <div class="subpagos-header">
+                <q-icon name="account_balance_wallet" size="20px" class="q-mr-sm" />
+                <span class="text-h6">Pagos Realizados</span>
+              </div>
+              <q-separator class="q-my-sm" />
+
+              <div class="subpagos-list">
+                <div v-for="subPago in selectedPago.pagosDerivados" :key="subPago.id" class="subpago-item">
+                  <div class="subpago-content">
+                    <div class="subpago-info">
+                      <div class="subpago-row">
+                        <q-icon name="event" size="16px" color="grey-7" />
+                        <span class="subpago-label">{{ formatDate(subPago.fecha) }}</span>
+                      </div>
+                      <div class="subpago-row">
+                        <q-icon name="credit_card" size="16px" color="green-7" />
+                        <span class="subpago-label">{{ subPago.metodo?.nombre || subPago.metodo || '-' }}</span>
+                      </div>
+                      <div class="subpago-row">
+                        <q-icon name="account_circle" size="16px" color="blue-7" />
+                        <span class="subpago-label">{{ subPago.usuario?.usuario || '-' }}</span>
+                      </div>
+                      <div class="subpago-row">
+                        <q-badge :color="estadoColor(subPago.estado)" :label="estadoLabel(subPago.estado)" />
+                      </div>
+                      <div class="subpago-row" v-if="subPago.comprobante">
+                        <q-btn flat dense round icon="attach_file" color="primary" size="sm"
+                          @click.stop="verComprobanteSubPago(subPago)">
+                          <q-tooltip>Ver comprobante</q-tooltip>
+                        </q-btn>
+                      </div>
+                    </div>
+                    <div class="subpago-amount">
+                      <div class="subpago-monto">Bs {{ subPago.monto }}</div>
+                      <q-btn v-if="subPago.estado != 0" flat dense round icon="money_off" color="negative" size="sm"
+                        @click.stop="anularPago(subPago)">
+                        <q-tooltip>Anular pago</q-tooltip>
+                      </q-btn>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resumen de saldo -->
+              <q-separator class="q-my-sm" />
+              <div class="saldo-resumen">
+                <div v-if="estaDeudaCubierta(selectedPago)" class="saldo-cubierto">
+                  <q-icon name="check_circle" size="24px" color="positive" />
+                  <span class="text-weight-bold text-positive">Deuda Totalmente Pagada</span>
+                </div>
+                <div v-else class="saldo-pendiente-resumen">
+                  <span class="saldo-label-resumen">Saldo Pendiente:</span>
+                  <span class="saldo-value-resumen">Bs {{ calcularSaldoReal(selectedPago).toFixed(2) }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </q-card-section>
@@ -369,8 +475,29 @@
       </q-card>
     </q-dialog>
 
+    <!-- Dialog comprobante de subpago -->
+    <q-dialog v-model="comprobanteSubPagoDialog">
+      <q-card class="comprobante-dialog scrollable-comprobante">
+        <q-card-section class="comprobante-header">
+          <div class="text-h6">Comprobante de Pago Parcial</div>
+        </q-card-section>
+
+        <q-card-section class="comprobante-content">
+          <q-img v-if="selectedSubPago && selectedSubPago.comprobante"
+            :src="comprobanteUrl(selectedSubPago.comprobante)" class="comprobante-full-image" />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn v-if="selectedSubPago && selectedSubPago.comprobante"
+            :href="comprobanteUrl(selectedSubPago.comprobante)" target="_blank" label="Abrir" color="primary"
+            icon="open_in_new" />
+          <q-btn flat label="Cerrar" color="negative" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Dialog externo para Nuevo/Editar Pago -->
-    <NuevoPagoDialog v-model="dialogVisible" @saved="onPagoSaved" />
+    <NuevoPagoDialog v-model="dialogVisible" :pago-deuda="pagoDeuda" @saved="onPagoSaved" />
   </q-page>
 </template>
 
@@ -399,7 +526,10 @@ const filterEstado = ref(null)
 const dialogVisible = ref(false)
 const detalleDialog = ref(false)
 const comprobanteDialog = ref(false)
+const comprobanteSubPagoDialog = ref(false)
 const selectedPago = ref(null)
+const selectedSubPago = ref(null)
+const pagoDeuda = ref(null)
 
 // Opciones
 const personOptions = ref([])
@@ -452,6 +582,24 @@ const activeFiltersCount = computed(() => {
   if (filterEstado.value !== null && filterEstado.value !== undefined) count++
   return count
 })
+
+// Computed para calcular saldo real considerando pagosDerivados
+const calcularSaldoReal = (pago) => {
+  if (!pago) return 0
+  const totalPago = (pago.monto || 0) - (pago.descuento || 0)
+  const pagosDerivados = pago.pagosDerivados || []
+  const totalSubPagos = pagosDerivados
+    .filter(sp => sp.estado !== 0) // Excluir anulados
+    .reduce((sum, sp) => sum + (sp.monto || 0), 0)
+  console.log('pagos prueba' + totalSubPagos + ' XD ' + pagosDerivados);
+
+  return totalPago - totalSubPagos
+}
+
+const estaDeudaCubierta = (pago) => {
+  const saldoReal = calcularSaldoReal(pago)
+  return saldoReal <= 0
+}
 
 // Utilidades
 function estadoColor(estado) {
@@ -508,6 +656,8 @@ async function loadPagos() {
     const response = await listarPagos(params)
     pagos.value = Array.isArray(response) ? response : (response.data || [])
     displayedPagos.value = pagos.value.slice(0, 12)
+    console.log('pagossss: ', displayedPagos.value);
+
   } catch (e) {
     console.error(e)
     $q.notify({ type: 'negative', message: 'Error cargando pagos' })
@@ -541,6 +691,12 @@ onMounted(async () => {
 
 // Acciones
 function openDialog() {
+  pagoDeuda.value = null
+  dialogVisible.value = true
+}
+
+function pagarDeuda(pago) {
+  pagoDeuda.value = pago
   dialogVisible.value = true
 }
 
@@ -562,6 +718,11 @@ function verPago(pago) {
 function verComprobante(pago) {
   selectedPago.value = pago
   comprobanteDialog.value = true
+}
+
+function verComprobanteSubPago(subPago) {
+  selectedSubPago.value = subPago
+  comprobanteSubPagoDialog.value = true
 }
 
 function anularPago(pago) {
@@ -606,7 +767,7 @@ function anularPago(pago) {
 
 .header-content {
   background: linear-gradient(135deg, rgba($primary, 0.25) 0%, rgba($primary, 0.15) 100%);
-  padding: 24px;
+  padding: 12px 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba($primary, 0.35);
   border: 2px solid rgba($primary, 0.5);
@@ -695,42 +856,74 @@ function anularPago(pago) {
 }
 
 .stat-card-total {
-  border-left-color: $primary;
+  border-left-color: #2e7d32;
   border-left-width: 5px;
-  background: linear-gradient(135deg, white 0%, rgba($primary, 0.2) 100%);
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
 
   :global(.body--dark) & {
-    background: linear-gradient(135deg, $dark-page 0%, rgba($primary, 0.35) 100%);
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.3) 0%, rgba(46, 125, 50, 0.4) 100%);
+  }
+
+  .stat-value {
+    color: #1b5e20;
+  }
+
+  .stat-icon {
+    color: #2e7d32;
   }
 }
 
 .stat-card-month {
-  border-left-color: $secondary;
+  border-left-color: #558b2f;
   border-left-width: 5px;
-  background: linear-gradient(135deg, white 0%, rgba($secondary, 0.2) 100%);
+  background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 50%, #c5e1a5 100%);
 
   :global(.body--dark) & {
-    background: linear-gradient(135deg, $dark-page 0%, rgba($secondary, 0.35) 100%);
+    background: linear-gradient(135deg, rgba(85, 139, 47, 0.3) 0%, rgba(85, 139, 47, 0.4) 100%);
+  }
+
+  .stat-value {
+    color: #33691e;
+  }
+
+  .stat-icon {
+    color: #558b2f;
   }
 }
 
 .stat-card-count {
-  border-left-color: $accent;
+  border-left-color: #ff6f00;
   border-left-width: 5px;
-  background: linear-gradient(135deg, white 0%, rgba($accent, 0.2) 100%);
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 50%, #ffcc80 100%);
 
   :global(.body--dark) & {
-    background: linear-gradient(135deg, $dark-page 0%, rgba($accent, 0.35) 100%);
+    background: linear-gradient(135deg, rgba(255, 111, 0, 0.3) 0%, rgba(255, 111, 0, 0.4) 100%);
+  }
+
+  .stat-value {
+    color: #e65100;
+  }
+
+  .stat-icon {
+    color: #ff6f00;
   }
 }
 
 .stat-card-average {
-  border-left-color: $positive;
+  border-left-color: #7cb342;
   border-left-width: 5px;
-  background: linear-gradient(135deg, white 0%, rgba($positive, 0.2) 100%);
+  background: linear-gradient(135deg, #f9fbe7 0%, #f0f4c3 30%, #ffecb3 70%, #ffe082 100%);
 
   :global(.body--dark) & {
-    background: linear-gradient(135deg, $dark-page 0%, rgba($positive, 0.35) 100%);
+    background: linear-gradient(135deg, rgba(124, 179, 66, 0.3) 0%, rgba(255, 160, 0, 0.3) 100%);
+  }
+
+  .stat-value {
+    color: #689f38;
+  }
+
+  .stat-icon {
+    color: #8bc34a;
   }
 }
 
@@ -854,6 +1047,7 @@ function anularPago(pago) {
   box-shadow: 0 4px 12px rgba($primary, 0.12);
   transition: all 0.3s ease;
   border: 2px solid rgba($primary, 0.15);
+  cursor: pointer;
 
   :global(.body--dark) & {
     background: $dark-page;
@@ -952,28 +1146,116 @@ function anularPago(pago) {
   }
 }
 
-.payment-discount {
+.payment-amount-small {
+  background: rgba($primary, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+
+  :global(.body--dark) & {
+    background: rgba($primary, 0.25);
+  }
+
+  .amount-label-small {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: $grey-7;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+
+    :global(.body--dark) & {
+      color: $grey-5;
+    }
+  }
+
+  .amount-value-small {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: $primary;
+  }
+}
+
+.payment-discount-small {
+  background: rgba($secondary, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+
+  :global(.body--dark) & {
+    background: rgba($secondary, 0.25);
+  }
+
+  .discount-label-small {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: $grey-7;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+
+    :global(.body--dark) & {
+      color: $grey-5;
+    }
+  }
+
+  .discount-value-small {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: $secondary;
+  }
+}
+
+.payment-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba($secondary, 0.2);
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba($primary, 0.25) 0%, rgba($primary, 0.15) 100%);
+  padding: 12px;
+  border-radius: 12px;
   margin-top: 8px;
+  border: 2px solid rgba($primary, 0.3);
 
   :global(.body--dark) & {
-    background: rgba($secondary, 0.3);
+    background: linear-gradient(135deg, rgba($primary, 0.35) 0%, rgba($primary, 0.25) 100%);
   }
 
-  .discount-label {
-    font-weight: 600;
-    color: $secondary;
+  .total-label {
+    font-weight: 700;
+    color: $primary;
+    font-size: 0.95em;
+    text-transform: uppercase;
+  }
+
+  .total-value {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: $primary;
+  }
+}
+
+.payment-saldo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(#f59e0b, 0.2);
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-top: 8px;
+  border: 2px solid rgba(#f59e0b, 0.4);
+
+  :global(.body--dark) & {
+    background: rgba(#f59e0b, 0.3);
+  }
+
+  .saldo-label {
+    font-weight: 700;
+    color: #d97706;
     font-size: 0.9em;
   }
 
-  .discount-value {
+  .saldo-value {
+    font-size: 1.3em;
     font-weight: 700;
-    color: $secondary;
+    color: #d97706;
   }
 }
 
@@ -1161,6 +1443,127 @@ function anularPago(pago) {
   }
 }
 
+.subpagos-section {
+  background: rgba($primary, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  border: 2px solid rgba($primary, 0.2);
+
+  :global(.body--dark) & {
+    background: rgba($primary, 0.15);
+    border-color: rgba($primary, 0.3);
+  }
+}
+
+.subpagos-header {
+  display: flex;
+  align-items: center;
+  color: $primary;
+  font-weight: 700;
+}
+
+.subpagos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.subpago-item {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba($primary, 0.2);
+  transition: all 0.3s ease;
+
+  :global(.body--dark) & {
+    background: $dark-page;
+    border-color: rgba($primary, 0.3);
+  }
+
+  &:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba($primary, 0.2);
+  }
+}
+
+.subpago-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.subpago-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subpago-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.subpago-label {
+  color: $grey-7;
+
+  :global(.body--dark) & {
+    color: $grey-5;
+  }
+}
+
+.subpago-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.subpago-monto {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: $primary;
+}
+
+.saldo-resumen {
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+
+  :global(.body--dark) & {
+    background: $dark-page;
+  }
+}
+
+.saldo-cubierto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1.1em;
+}
+
+.saldo-pendiente-resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.saldo-label-resumen {
+  font-weight: 700;
+  color: #d97706;
+  font-size: 1.05em;
+}
+
+.saldo-value-resumen {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #d97706;
+}
+
 @media (max-width: 599px) {
   .payments-page {
     padding: 12px;
@@ -1215,6 +1618,18 @@ function anularPago(pago) {
 
   .comprobante-full-image {
     max-height: 60vh;
+  }
+
+  .subpago-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .subpago-amount {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 </style>
