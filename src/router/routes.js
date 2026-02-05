@@ -85,8 +85,8 @@ const routes = [
         component: () => import("pages/reportes/reporteGastos-page.vue"),
       },
       {
-        path: "/paisaje",
-        component: () => import("pages/vista/paisaje-Page.vue"),
+        path: "/area",
+        component: () => import("pages/vista/area-personal.vue"),
       },
       { path: "/pagos", component: () => import("pages/pagos/pagos-page.vue") },
       {

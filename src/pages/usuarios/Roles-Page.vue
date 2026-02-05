@@ -114,15 +114,21 @@
                 <div class="permissions-grid">
                   <div v-for="mod in modules" :key="mod.id" class="permission-card">
                     <q-card flat class="permission-item"
-                      :class="{ 'permission-active': hasPerm(currentRole.permisos, mod.id) }"
-                      @click="togglePerm(mod.id, !hasPerm(currentRole.permisos, mod.id))">
+                      :class="{ 'permission-active': hasPerm(currentRole.permisos, mod.id), 'permission-required': mod.id === 1 }"
+                      @click="mod.id !== 1 ? togglePerm(mod.id, !hasPerm(currentRole.permisos, mod.id)) : null">
                       <q-card-section class="permission-content">
                         <div class="permission-info">
-                          <div class="permission-number">{{ mod.id }}</div>
-                          <div class="permission-name">{{ mod.label }}</div>
+                          <div class="permission-number" :class="{ 'required-badge': mod.id === 1 }">{{ mod.id }}</div>
+                          <div class="permission-name">
+                            {{ mod.label }}
+                            <q-badge v-if="mod.id === 1" color="orange" class="required-label" label="OBLIGATORIO" />
+                          </div>
                         </div>
                         <q-checkbox :model-value="hasPerm(currentRole.permisos, mod.id)"
-                          @update:model-value="val => togglePerm(mod.id, val)" color="green-8" @click.stop size="md" />
+                          @update:model-value="val => mod.id !== 1 ? togglePerm(mod.id, val) : null" color="green-8"
+                          @click.stop size="md" :disable="mod.id === 1">
+                          <q-tooltip v-if="mod.id === 1">Este permiso es obligatorio para todos los roles</q-tooltip>
+                        </q-checkbox>
                       </q-card-section>
                     </q-card>
                   </div>
@@ -191,12 +197,24 @@ const roleForm = ref(null)
 const openDialog = (role) => {
   if (role) {
     editMode.value = true
-    currentRole.value = { id: role.id, nombre: role.nombre, permisos: role.permisos }
+    // Asegurar que siempre tenga el permiso de Área Personal (id: 1)
+    const permisos = ensureAreaPersonalPermission(role.permisos)
+    currentRole.value = { id: role.id, nombre: role.nombre, permisos }
   } else {
     editMode.value = false
-    currentRole.value = { id: null, nombre: '', permisos: '' }
+    // Nuevo rol siempre incluye Área Personal por defecto
+    currentRole.value = { id: null, nombre: '', permisos: '1' }
   }
   dialogOpen.value = true
+}
+
+// Función para asegurar que el permiso de Área Personal siempre esté incluido
+const ensureAreaPersonalPermission = (perms) => {
+  const arr = toPermArray(perms)
+  if (!arr.includes(1)) {
+    arr.push(1)
+  }
+  return arr.sort((a, b) => a - b).join(',')
 }
 
 const toPermArray = (perms) => {
@@ -210,6 +228,16 @@ const hasPerm = (perms, id) => {
 }
 
 const togglePerm = (id, enabled) => {
+  // No permitir desactivar el permiso de Área Personal (id: 1)
+  if (Number(id) === 1 && !enabled) {
+    $q.notify({
+      type: 'warning',
+      message: 'El permiso de Área Personal es obligatorio y no puede ser removido',
+      position: 'top'
+    })
+    return
+  }
+
   const arr = toPermArray(currentRole.value.permisos)
   const idx = arr.indexOf(Number(id))
   if (enabled && idx === -1) {
@@ -228,6 +256,10 @@ const saveRole = async () => {
     if (!ok) { $q.notify({ type: 'negative', message: 'Corrige los errores del formulario' }); return }
   }
   if (!currentRole.value.nombre) { $q.notify({ type: 'negative', message: 'El nombre del rol es requerido' }); return }
+
+  // Asegurar que siempre incluya el permiso de Área Personal antes de guardar
+  currentRole.value.permisos = ensureAreaPersonalPermission(currentRole.value.permisos)
+
   // si edicion, actualizar
   if (editMode.value) {
     await modificarRol(currentRole.value)
@@ -672,6 +704,17 @@ $color-amber: #ffa726;
     border-color: $color-leaf;
     box-shadow: 0 4px 16px rgba(46, 125, 50, 0.2);
   }
+
+  &.permission-required {
+    background: linear-gradient(135deg, rgba(255, 111, 0, 0.08) 0%, rgba(255, 143, 0, 0.05) 100%);
+    border-color: $color-orange;
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      border-color: $color-orange;
+    }
+  }
 }
 
 .permission-content {
@@ -710,6 +753,20 @@ $color-amber: #ffa726;
   color: $color-forest;
   font-size: 0.9em;
   line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.required-label {
+  font-size: 0.65em;
+  padding: 2px 6px !important;
+  font-weight: 700;
+}
+
+.required-badge {
+  background: linear-gradient(135deg, $color-orange 0%, $color-orange-light 100%) !important;
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.3);
 }
 
 // ===== ACCIONES DEL DIALOG =====

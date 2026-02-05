@@ -11,8 +11,7 @@
         </div>
       </div>
       <div class="header-right">
-        <q-badge :color="getStatusColor(training.estado)" :label="getStatusLabel(training.estado)"
-          class="status-badge" />
+        <q-badge :color="getStatusColor(training)" :label="getStatusLabel(training)" class="status-badge" />
       </div>
     </q-card-section>
 
@@ -132,12 +131,19 @@
 
         <!-- Acciones -->
         <div class="side-actions">
-          <q-btn unelevated class="action-btn primary-action" color="green-8" icon="how_to_reg" label="Tomar asistencia"
-            @click="asistenciaDialog = true" />
-          <q-btn flat class="action-btn secondary-action" color="brown-7" icon="visibility" label="Ver asistencias"
+          <q-btn unelevated class="action-btn primary-action" :color="puedeTomarAsistencia ? 'green-8' : 'grey-6'"
+            icon="how_to_reg" label="Tomar asistencia" :disable="!puedeTomarAsistencia"
+            @click="intentarTomarAsistencia">
+            <q-tooltip v-if="!puedeTomarAsistencia" class="bg-negative">
+              {{ razonNoAsistencia }}
+            </q-tooltip>
+          </q-btn>
+          <q-btn flat class="action-btn secondary-action" color="white" icon="visibility" label="Ver asistencias"
             @click="verAsistenciasDialog = true" />
-          <q-btn outlined class="action-btn tertiary-action" color="amber-9" icon="star" label="Evaluar"
+          <q-btn outlined class="action-btn tertiary-action" color="amber-9" icon="star" label="Evaluar entrenamiento"
             @click="openEvaluateDialog" />
+          <q-btn flat class="action-btn quaternary-action" color="white" icon="list" label="Ver evaluaciones"
+            @click="verEvaluacionesDialog = true" />
         </div>
       </aside>
     </q-card-section>
@@ -158,17 +164,22 @@
 
     <!-- Dialog para ver asistencias -->
     <VerAsistencias v-model:modelValue="verAsistenciasDialog" :entrenamientoId="training.id" />
+
+    <!-- Dialog para ver evaluaciones -->
+    <VerEvaluaciones v-model:modelValue="verEvaluacionesDialog" :entrenamientoId="training.id" />
   </q-card>
 </template>
 
 <script setup>
-import { defineProps, ref, onMounted } from 'vue'
+import { defineProps, ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import EvaluarEntrenamiento from './EvaluarEntrenamiento.vue'
 import TomarAsistencia from './TomarAsistencia.vue'
 import VerAsistencias from './VerAsistencias.vue'
+import VerEvaluaciones from './VerEvaluaciones.vue'
 import { guardarAsistencias } from 'stores/asistencia-store.js'
 import { listar } from 'stores/persona-store.js'
+import { agregarEvaluaciones } from 'src/stores/evaluacion-store'
 
 // 1. Declara la prop “training” y su tipo
 const { training } = defineProps({
@@ -186,6 +197,7 @@ const evaluateDialog = ref(false)
 // Dialog estado para asistencia
 const asistenciaDialog = ref(false)
 const verAsistenciasDialog = ref(false)
+const verEvaluacionesDialog = ref(false)
 
 // Listas necesarias para evaluar
 const personas = ref([])
@@ -234,9 +246,19 @@ const openEvaluateDialog = () => {
 // Manejar guardado desde el componente de evaluación
 const onSaveEvaluaciones = async (payload) => {
   // Aquí puedes llamar a tu store o API para persistir
-  console.log('Evaluaciones a guardar:', payload)
-  evaluateDialog.value = false
-  $q.notify({ type: 'positive', message: 'Evaluación enviada' })
+  console.log('=== EVALUACIÓN DE ENTRENAMIENTO ===')
+  console.log('Payload completo:', payload)
+
+  // Filtrar solo evaluaciones con calificación > 0
+  const evaluacionesFiltradas = payload.evaluaciones.filter(ev => ev.valor !== null && ev.valor !== 0 && ev.valor > 0)
+
+  console.log('Evaluaciones filtradas (solo con calificación):', evaluacionesFiltradas)
+  console.log('Total a enviar:', evaluacionesFiltradas.length, 'de', payload.evaluaciones.length)
+
+  // TODO: Descomentar cuando tengas el store listo
+  const res = await agregarEvaluaciones(evaluacionesFiltradas)
+
+  if (res.ok) { evaluateDialog.value = false }
 }
 
 const onCancelEvaluacion = () => {
@@ -246,11 +268,16 @@ const onCancelEvaluacion = () => {
 // Guardar asistencias: recibe payload { asistencias }
 const onSaveAsistencias = async (payload) => {
   const asistencias = payload?.asistencias || []
+
+  console.log('=== ASISTENCIAS REGISTRADAS ===')
+  console.log('Total de asistencias:', asistencias.length)
+
+
   try {
     await guardarAsistencias(asistencias)
-    $q.notify({ type: 'positive', message: 'Asistencias guardadas correctamente' })
+    $q.notify({ type: 'positive', message: 'Asistencias guardadas correctamente', icon: 'check_circle' })
   } catch (e) {
-    console.error('Error guardando asistencias:', e)
+    console.error('❌ Error guardando asistencias:', e)
     // guardarAsistencias ya notificó, aquí se puede manejar rollback si es necesario
   } finally {
     asistenciaDialog.value = false
@@ -279,40 +306,103 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('es-ES', options)
 }
 
-// Obtener color para el estado (-1: suspendido, 0: terminado, 1: en marcha, 2: sin comenzar)
-const getStatusColor = (status) => {
-  const colors = {
-    '-1': 'orange',   // Suspendido
-    0: 'grey',        // Terminado
-    1: 'positive',    // En marcha
-    2: 'warning'      // Sin comenzar
+// Obtener fecha en zona horaria de Bolivia (UTC-4)
+const obtenerFechaBolivia = (fechaString) => {
+  if (!fechaString) return null
+  const fecha = new Date(fechaString + 'T00:00:00-04:00')
+  return fecha
+}
+
+// Obtener fecha actual en Bolivia
+const obtenerHoyBolivia = () => {
+  const ahora = new Date()
+  const utc = ahora.getTime() + (ahora.getTimezoneOffset() * 60000)
+  const boliviaTime = new Date(utc + (3600000 * -4)) // UTC-4
+  boliviaTime.setHours(0, 0, 0, 0)
+  return boliviaTime
+}
+
+// Calcular estado real basado en fechas
+const calcularEstadoReal = (entrenamiento) => {
+  // Si estado es 0, está suspendido
+  if (entrenamiento.estado === 0) {
+    return { estado: 'suspendido', color: 'negative', label: 'Suspendido', puedeTomarAsistencia: false, razon: 'El entrenamiento está suspendido' }
   }
-  return colors[status] || 'grey'
+
+  // Si estado es 1, revisar fechas
+  if (entrenamiento.estado === 1) {
+    const hoy = obtenerHoyBolivia()
+    const fechaInicio = obtenerFechaBolivia(entrenamiento.fecha_inicio)
+    const fechaFin = obtenerFechaBolivia(entrenamiento.fecha_fin)
+
+    if (!fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar', puedeTomarAsistencia: false, razon: 'El entrenamiento no ha comenzado aún' }
+    }
+
+    // Sin comenzar: hoy < fecha_inicio
+    if (hoy < fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar', puedeTomarAsistencia: false, razon: 'El entrenamiento no ha comenzado aún' }
+    }
+
+    // Terminado: hoy > fecha_fin
+    if (fechaFin && hoy > fechaFin) {
+      return { estado: 'terminado', color: 'grey', label: 'Terminado', puedeTomarAsistencia: false, razon: 'El entrenamiento ya finalizó' }
+    }
+
+    // En marcha: hoy >= fecha_inicio && hoy <= fecha_fin
+    return { estado: 'en-marcha', color: 'positive', label: 'En marcha', puedeTomarAsistencia: true, razon: '' }
+  }
+
+  // Otros estados (por compatibilidad)
+  return { estado: 'desconocido', color: 'grey', label: 'Desconocido', puedeTomarAsistencia: false, razon: 'Estado desconocido' }
+}
+
+// Obtener color para el estado
+const getStatusColor = (entrenamiento) => {
+  return calcularEstadoReal(entrenamiento).color
 }
 
 // Obtener texto para el estado
-const getStatusLabel = (status) => {
-  const labels = {
-    '-1': 'Suspendido',
-    0: 'Terminado',
-    1: 'En marcha',
-    2: 'Sin comenzar'
+const getStatusLabel = (entrenamiento) => {
+  return calcularEstadoReal(entrenamiento).label
+}
+
+// Verificar si se puede tomar asistencia
+const puedeTomarAsistencia = computed(() => {
+  return calcularEstadoReal(training).puedeTomarAsistencia
+})
+
+// Obtener razón por la cual no se puede tomar asistencia
+const razonNoAsistencia = computed(() => {
+  return calcularEstadoReal(training).razon
+})
+
+// Manejar click en botón de asistencia cuando está deshabilitado
+const intentarTomarAsistencia = () => {
+  if (!puedeTomarAsistencia.value) {
+    $q.notify({
+      type: 'warning',
+      message: razonNoAsistencia.value,
+      icon: 'warning',
+      position: 'top'
+    })
+  } else {
+    asistenciaDialog.value = true
   }
-  return labels[status] || 'Desconocido'
 }
 
 // Calcular edad desde fecha de nacimiento
-const calcularEdad = (fechaNacimiento) => {
-  if (!fechaNacimiento) return ''
-  const hoy = new Date()
-  const nacimiento = new Date(fechaNacimiento)
-  let edad = hoy.getFullYear() - nacimiento.getFullYear()
-  const m = hoy.getMonth() - nacimiento.getMonth()
-  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-    edad--
-  }
-  return edad
-}
+// const calcularEdad = (fechaNacimiento) => {
+//   if (!fechaNacimiento) return ''
+//   const hoy = new Date()
+//   const nacimiento = new Date(fechaNacimiento)
+//   let edad = hoy.getFullYear() - nacimiento.getFullYear()
+//   const m = hoy.getMonth() - nacimiento.getMonth()
+//   if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+//     edad--
+//   }
+//   return edad
+// }
 
 </script>
 
@@ -337,12 +427,25 @@ $color-amber: #ffb300;
 }
 
 .detail-header {
-  background: linear-gradient(135deg, $color-forest-dark 0%, $color-forest 40%, $color-wood 65%);
-  padding: 20px 24px;
+  background: linear-gradient(135deg, #1a5e3f 0%, #2e7d52 30%, #3d9970 60%, #4caf7d 100%);
+  padding: 24px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
 
   .header-left {
     display: flex;
@@ -357,19 +460,28 @@ $color-amber: #ffb300;
   }
 
   .icon-circle {
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border: 3px solid rgba(255, 255, 255, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), inset 0 1px 3px rgba(255, 255, 255, 0.3);
     flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+
+    &:hover {
+      transform: scale(1.05) rotate(-5deg);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
 
     .q-icon {
       color: white;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     }
   }
 
@@ -395,11 +507,22 @@ $color-amber: #ffb300;
 
   .status-badge {
     font-size: 0.8rem;
-    padding: 6px 14px;
-    border-radius: 20px;
+    padding: 8px 18px;
+    border-radius: 24px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+    }
   }
 }
 
@@ -472,16 +595,18 @@ $color-amber: #ffb300;
 }
 
 .side-card {
-  background: linear-gradient(135deg, rgba($color-forest, 0.08) 0%, rgba($color-leaf, 0.04) 100%);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba($color-forest, 0.1);
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, rgba($color-forest, 0.06) 0%, rgba($color-leaf, 0.03) 100%);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba($color-forest, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(5px);
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), inset 0 1px 3px rgba(255, 255, 255, 0.6);
+    transform: translateY(-4px) scale(1.01);
+    border-color: rgba($color-forest, 0.25);
   }
 }
 
@@ -490,13 +615,32 @@ $color-amber: #ffb300;
   align-items: center;
   color: $color-forest;
   font-weight: 800;
-  font-size: 1rem;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid $color-leaf;
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, $color-forest 0%, $color-leaf 50%, transparent 100%);
+  border-image-slice: 1;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: $color-leaf;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
 
   .q-icon {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    margin-right: 8px;
+    padding: 6px;
+    background: linear-gradient(135deg, rgba($color-forest, 0.1) 0%, rgba($color-leaf, 0.05) 100%);
+    border-radius: 8px;
   }
 }
 
@@ -572,31 +716,95 @@ $color-amber: #ffb300;
 .side-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 
   .action-btn {
     width: 100%;
     font-weight: 700;
-    padding: 10px 16px;
-    transition: all 0.3s ease;
+    padding: 14px 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: none;
     font-size: 0.95rem;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    &:hover::before {
+      width: 300px;
+      height: 300px;
+    }
 
     &.primary-action {
-      box-shadow: 0 2px 8px rgba($color-forest, 0.3);
+      background: linear-gradient(135deg, #2e7d52 0%, #3d9970 100%);
+      box-shadow: 0 4px 15px rgba(46, 125, 82, 0.4);
+      border: none;
 
       &:hover {
-        box-shadow: 0 4px 12px rgba($color-forest, 0.4);
-        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(46, 125, 82, 0.5);
+        transform: translateY(-3px) scale(1.02);
+      }
+
+      &:active {
+        transform: translateY(-1px) scale(0.98);
       }
     }
 
-    &.secondary-action:hover {
-      background: rgba($color-wood, 0.1);
+    &.secondary-action {
+      background: linear-gradient(135deg, #6d4c41 0%, #8d6e63 100%);
+      color: white;
+      box-shadow: 0 3px 12px rgba(109, 76, 65, 0.3);
+
+      &:hover {
+        background: linear-gradient(135deg, #5d4037 0%, #6d4c41 100%);
+        box-shadow: 0 5px 20px rgba(109, 76, 65, 0.4);
+        transform: translateY(-3px) scale(1.02);
+      }
     }
 
-    &.tertiary-action:hover {
-      background: rgba($color-amber, 0.08);
+    &.tertiary-action {
+      background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
+      color: white;
+      box-shadow: 0 3px 12px rgba(255, 167, 38, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+
+      &:hover {
+        background: linear-gradient(135deg, #ff9800 0%, #ffa726 100%);
+        box-shadow: 0 5px 20px rgba(255, 167, 38, 0.5);
+        transform: translateY(-3px) scale(1.02);
+      }
+    }
+
+    &.quaternary-action {
+      background: linear-gradient(135deg, #ffca28 0%, #ffd54f 100%);
+      color: white;
+      box-shadow: 0 3px 12px rgba(255, 202, 40, 0.3);
+
+      &:hover {
+        background: linear-gradient(135deg, #ffb300 0%, #ffca28 100%);
+        box-shadow: 0 5px 20px rgba(255, 202, 40, 0.5);
+        transform: translateY(-3px) scale(1.02);
+      }
+    }
+
+    .q-icon {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .q-icon {
+      transform: scale(1.1) rotate(-5deg);
     }
   }
 }

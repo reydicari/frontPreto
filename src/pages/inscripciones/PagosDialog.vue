@@ -6,19 +6,9 @@
       </q-card-section>
 
       <q-card-section>
-        <q-table
-          :rows="inscripcion?.pagos || []"
-          :columns="columns"
-          row-key="id"
-          dense
-        >
+        <q-table :rows="inscripcion?.pagos || []" :columns="columns" row-key="id" dense>
           <template v-slot:top>
-            <q-btn
-              color="primary"
-              icon="add"
-              label="Nuevo Pago"
-              @click="showPagoDialog(null)"
-            />
+            <q-btn color="primary" icon="add" label="Nuevo Pago" @click="showPagoDialog(null)" />
           </template>
 
           <template v-slot:body-cell-monto="props">
@@ -92,5 +82,7 @@ const columns = [
 
 function showPagoDialog(pago) {
   // Lógica para mostrar diálogo de pago
+  console.log('pago: ', pago);
+
 }
 </script>

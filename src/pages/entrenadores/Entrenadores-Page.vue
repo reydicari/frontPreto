@@ -1,3 +1,4 @@
+<!-- eslint-disable no-unused-vars -->
 <template>
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-gradient'">
     <!-- Header con estadísticas -->
@@ -25,12 +26,21 @@
             <q-icon name="groups" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.total }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.totalEntrenadores }}</div>
             <div class="stat-label">Total Entrenadores</div>
           </div>
         </div>
 
-        <div class="stat-card stat-card-active">
+        <div v-if="esAdministrador" class="stat-card stat-card-total">
+          <div class="stat-icon">
+            <q-icon name="groups" size="36px" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ estadisticasPrincipales.totalAdministradores }}</div>
+            <div class="stat-label">Total Administradores</div>
+          </div>
+        </div>
+        <!-- <div class="stat-card stat-card-active">
           <div class="stat-icon">
             <q-icon name="person_check" size="36px" />
           </div>
@@ -48,9 +58,9 @@
             <div class="stat-number">{{ estadisticas.inactivos }}</div>
             <div class="stat-label">Inactivos</div>
           </div>
-        </div>
+        </div> -->
 
-        <div class="stat-card stat-card-experience">
+        <!-- <div class="stat-card stat-card-experience">
           <div class="stat-icon">
             <q-icon name="workspace_premium" size="36px" />
           </div>
@@ -58,14 +68,14 @@
             <div class="stat-number">{{ estadisticas.experienciaPromedio }}</div>
             <div class="stat-label">Experiencia Promedio</div>
           </div>
-        </div>
+        </div> -->
 
         <div class="stat-card stat-card-birthday">
           <div class="stat-icon">
             <q-icon name="celebration" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.cumpleanosEsteMes }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
             <div class="stat-label">Cumpleaños este Mes</div>
           </div>
         </div>
@@ -99,20 +109,20 @@
             <div class="row q-col-gutter-md">
               <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
                 emit-value map-options label="Estado" outlined dense clearable
-                class="col-12 col-sm-6 col-md-3 filter-input">
+                class="col-12 col-sm-4 col-md-3 filter-input">
                 <template v-slot:prepend>
                   <q-icon name="toggle_on" class="text-brown-6" />
                 </template>
               </q-select>
 
               <q-select v-model="filterType" :options="typeOptions" label="Tipo de Persona" outlined dense clearable
-                emit-value map-options class="col-12 col-sm-6 col-md-3 filter-input">
+                emit-value map-options class="col-12 col-sm-4 col-md-3 filter-input">
                 <template v-slot:prepend>
                   <q-icon name="category" class="text-green-8" />
                 </template>
               </q-select>
 
-              <q-input v-model="filterExperienciaMin" type="number" label="Experiencia Mínima (años)" outlined dense
+              <!-- <q-input v-model="filterExperienciaMin" type="number" label="Experiencia Mínima (años)" outlined dense
                 clearable class="col-12 col-sm-6 col-md-3 filter-input" :min="0">
                 <template v-slot:prepend>
                   <q-icon name="timeline" class="text-light-green-8" />
@@ -124,13 +134,20 @@
                 <template v-slot:prepend>
                   <q-icon name="payments" class="text-amber-8" />
                 </template>
-              </q-input>
+              </q-input> -->
+
+              <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
+                emit-value map-options class="col-12 col-sm-4 col-md-3 filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="wc" class="text-green-6" />
+                </template>
+              </q-select>
             </div>
 
-            <div class="row justify-end q-mt-md q-gutter-sm">
+            <!-- <div class="row justify-end q-mt-md q-gutter-sm">
               <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
               <q-btn label="Aplicar filtros" class="btn-apply-filters" icon="check" @click="applyFilters" unelevated />
-            </div>
+            </div> -->
           </div>
         </q-expansion-item>
       </q-card-section>
@@ -193,13 +210,19 @@
                 <span class="info-value">{{ persona.telefono || 'N/A' }}</span>
               </div>
 
+              <div v-if="persona.fecha_nacimiento" class="info-row">
+                <q-icon name="cake" size="18px" class="info-icon text-pink-7" />
+                <span class="info-label">Edad:</span>
+                <span class="info-value">{{ calcularEdad(persona.fecha_nacimiento) }} años</span>
+              </div>
+
               <div v-if="persona.experiencia" class="info-row">
                 <q-icon name="workspace_premium" size="18px" class="info-icon text-amber-8" />
                 <span class="info-label">Experiencia:</span>
                 <span class="info-value">{{ persona.experiencia }} año{{ persona.experiencia !== 1 ? 's' : '' }}</span>
               </div>
 
-              <div v-if="persona.salario" class="info-row">
+              <div v-if="persona.salario && esAdministrador" class="info-row">
                 <q-icon name="payments" size="18px" class="info-icon text-green-8" />
                 <span class="info-label">Salario:</span>
                 <span class="info-value">Bs. {{ persona.salario }}</span>
@@ -261,7 +284,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import PersonaDialog from '../entrenadores/PersonaDialog.vue'
 import PersonaDetails from '../estudiantes/PersonaDetails.vue'
-import { agregar, listar, categoriasUnicas, modificar, cambiarEstado } from 'src/stores/persona-store.js'
+import { agregar, listar, categoriasUnicas, modificar, cambiarEstado, datosEntrenadoresAdministradores } from 'src/stores/persona-store.js'
 
 const $q = useQuasar()
 const host = 'http://localhost:3001/uploads/'
@@ -281,8 +304,16 @@ const filterStatus = ref(true)
 const filterType = ref('')
 const filterExperienciaMin = ref(null)
 const filterSalarioMin = ref(null)
+const filterGenero = ref(null)
 const filtersExpanded = ref(false)
 let searchTimeout = null
+
+// Opciones de género
+const generoOptions = [
+  { label: 'Masculino', value: 'M' },
+  { label: 'Femenino', value: 'F' },
+  { label: 'Otro', value: 'O' }
+]
 
 // Computed para contar filtros activos
 const activeFiltersCount = computed(() => {
@@ -291,44 +322,32 @@ const activeFiltersCount = computed(() => {
   if (filterType.value) count++
   if (filterExperienciaMin.value) count++
   if (filterSalarioMin.value) count++
+  if (filterGenero.value) count++
   return count
 })
 
-// Computed para estadísticas
-const estadisticas = computed(() => {
-  const total = personas.value.length
-  const activos = personas.value.filter(p => p.estado).length
-  const inactivos = total - activos
+// Estadísticas principales desde el backend
+const estadisticasPrincipales = ref({
+  totalEntrenadores: 0,
+  totalAdministradores: 0,
+  cumpleanosEsteMes: 0
+})
 
-  let sumaExperiencia = 0
-  let countExperiencia = 0
-  let cumpleanosEsteMes = 0
+const cargarEstadisticas = async () => {
+  try {
+    const datos = await datosEntrenadoresAdministradores()
+    estadisticasPrincipales.value = datos
+    console.log('estadistica principales:-------------------------', datos);
 
-  const mesActual = new Date().getMonth() // 0-11
-
-  personas.value.forEach(p => {
-    if (p.experiencia && !isNaN(p.experiencia)) {
-      sumaExperiencia += p.experiencia
-      countExperiencia++
-    }
-
-    // Verificar si el cumpleaños es este mes
-    if (p.fecha_nacimiento) {
-      const fechaNac = new Date(p.fecha_nacimiento)
-      if (fechaNac.getMonth() === mesActual) {
-        cumpleanosEsteMes++
-      }
-    }
-  })
-  const experienciaPromedio = countExperiencia > 0 ? Math.round(sumaExperiencia / countExperiencia) : 0
-
-  return {
-    total,
-    activos,
-    inactivos,
-    experienciaPromedio,
-    cumpleanosEsteMes
+  } catch (error) {
+    console.error('Error al cargar estadísticas:', error)
   }
+}
+
+// Computed para verificar si el usuario actual es administrador
+const esAdministrador = computed(() => {
+  const idRol = parseInt(sessionStorage.getItem('selectedRoleId') || 0)
+  return idRol === 4
 })
 
 // Función para manejar la búsqueda con debounce
@@ -362,6 +381,7 @@ const typeOptions = ['entrenador', 'administrador']
 const categoryOptions = ref([])
 
 // Columnas de la tabla
+// eslint-disable-next-line no-unused-vars
 const columns = [
   {
     name: 'fotografia',
@@ -413,6 +433,7 @@ const columns = [
 ]
 
 // Paginación
+// eslint-disable-next-line no-unused-vars
 const pagination = ref({
   sortBy: 'nombres',
   descending: false,
@@ -445,7 +466,7 @@ function createEmptyPersona() {
     apellido_paterno: '',
     apellido_materno: '',
     categoria: '',
-    estado: 1,
+    estado: true,
     fotografia: null,
     telefono: '',
     fecha_nacimiento: '',
@@ -553,6 +574,7 @@ function viewPersonaDetails(persona) {
 }
 
 // Limpiar filtros
+// eslint-disable-next-line no-unused-vars
 function clearFilters() {
   searchTerm.value = ''
   searchInput.value = ''
@@ -561,10 +583,12 @@ function clearFilters() {
   filterType.value = ''
   filterExperienciaMin.value = null
   filterSalarioMin.value = null
+  filterGenero.value = null
   loadStudents(1, false)
 }
 
 // Aplicar filtros
+// eslint-disable-next-line no-unused-vars
 function applyFilters() {
   loadStudents(1, false)
 }
@@ -585,6 +609,7 @@ const loadStudents = async (page = 1, append = false) => {
       tipo_persona: filterType.value,
       estado: filterStatus.value,
       categoria: filterCategory.value,
+      genero: filterGenero.value,
       search: searchTerm.value,
       page,
       limit: itemsPerPage,
@@ -628,7 +653,7 @@ const loadMore = async (index, done) => {
 }
 
 // Cuando cambian los filtros o búsqueda
-watch([filterType, filterStatus, filterCategory, searchTerm], () => {
+watch([filterType, filterStatus, filterCategory, filterGenero, searchTerm], () => {
   currentPage.value = 1
   if (infiniteScrollRef.value) {
     infiniteScrollRef.value.reset()
@@ -638,6 +663,8 @@ watch([filterType, filterStatus, filterCategory, searchTerm], () => {
 // Cargar datos iniciales
 onMounted(async () => {
   try {
+    await cargarEstadisticas()
+    await loadStudents()
     const response = await categoriasUnicas()
     // Asegurarse de que la respuesta sea un array
     if (Array.isArray(response)) {
@@ -649,7 +676,7 @@ onMounted(async () => {
       console.log('Categorías cargadas:', categoryOptions.value)
     }
   } catch (error) {
-    console.error('Error al cargar categorías:', error)
+    console.error('Error al cargar datos iniciales:', error)
   }
 })
 </script>

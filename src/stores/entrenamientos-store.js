@@ -1,9 +1,9 @@
 import { api } from "boot/axios.js";
 const URL_PART = "/api/entrenamiento";
 import { Notify } from "quasar";
-export const listarEntrenamientos = async () => {
+export const listarEntrenamientos = async (params) => {
   try {
-    const response = await api.get(URL_PART + "/listar");
+    const response = await api.get(URL_PART + "/listar", { params });
     return response.data;
   } catch (error) {
     Notify.create({

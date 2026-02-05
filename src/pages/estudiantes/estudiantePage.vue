@@ -7,9 +7,9 @@
           <div class="col-12 col-sm-auto">
             <div class="header-title">
               <q-icon name="school" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Gestión de Estudiantes</h2>
+              <h2 class="page-title">Estudiantes</h2>
             </div>
-            <p class="header-subtitle">Administra el registro y seguimiento de estudiantes</p>
+            <!-- <p class="header-subtitle">Administra el registro y seguimiento de estudiantes</p> -->
           </div>
           <div class="col-12 col-sm-auto">
             <q-btn class="btn-add-header" icon="person_add" label="Agregar Estudiante" @click="showPersonaDialog"
@@ -25,7 +25,7 @@
             <q-icon name="groups" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.total }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.total }}</div>
             <div class="stat-label">Total Estudiantes</div>
           </div>
         </div>
@@ -35,7 +35,7 @@
             <q-icon name="person_check" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.activos }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.activos }}</div>
             <div class="stat-label">Activos</div>
           </div>
         </div>
@@ -45,12 +45,12 @@
             <q-icon name="person_off" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.inactivos }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.inactivos }}</div>
             <div class="stat-label">Inactivos</div>
           </div>
         </div>
 
-        <div class="stat-card stat-card-age">
+        <!-- <div class="stat-card stat-card-age">
           <div class="stat-icon">
             <q-icon name="cake" size="36px" />
           </div>
@@ -58,14 +58,14 @@
             <div class="stat-number">{{ estadisticas.edadPromedio }}</div>
             <div class="stat-label">Edad Promedio</div>
           </div>
-        </div>
+        </div> -->
 
         <div class="stat-card stat-card-birthday">
           <div class="stat-icon">
             <q-icon name="celebration" size="36px" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ estadisticas.cumpleanosEsteMes }}</div>
+            <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
             <div class="stat-label">Cumpleaños este Mes</div>
           </div>
         </div>
@@ -98,61 +98,52 @@
           <div class="filters-body q-pt-md">
             <div class="row q-col-gutter-md">
               <q-select v-model="filterCategory" :options="categoryOptions" label="Categoría" outlined dense clearable
-                emit-value map-options @update:model-value="() => loadStudents(1, false)"
-                class="col-12 col-sm-6 col-md-3 filter-input">
+                emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
                 <template v-slot:prepend>
                   <q-icon name="category" class="text-green-8" />
                 </template>
               </q-select>
 
+              <q-select v-model="filterDisciplina" :options="disciplinaOptions" label="Disciplina" outlined dense
+                clearable emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="sports_martial_arts" class="text-green-7" />
+                </template>
+              </q-select>
+
               <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
                 emit-value map-options label="Estado" outlined dense clearable
-                class="col-12 col-sm-6 col-md-3 filter-input">
+                class="col-12 col-sm-4 col-md-2 filter-input">
                 <template v-slot:prepend>
                   <q-icon name="toggle_on" class="text-brown-6" />
                 </template>
               </q-select>
 
+              <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
+                emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="wc" class="text-green-6" />
+                </template>
+              </q-select>
+
               <q-input v-model="filterEdadMin" type="number" label="Edad Mínima" outlined dense clearable
-                class="col-12 col-sm-6 col-md-3 filter-input" :min="0" :max="99">
+                class="col-12 col-sm-4 col-md-2 filter-input" :min="0" :max="99">
                 <template v-slot:prepend>
                   <q-icon name="child_care" class="text-light-green-8" />
                 </template>
               </q-input>
 
               <q-input v-model="filterEdadMax" type="number" label="Edad Máxima" outlined dense clearable
-                class="col-12 col-sm-6 col-md-3 filter-input" :min="0" :max="99">
+                class="col-12 col-sm-4 col-md-2 filter-input" :min="0" :max="99">
                 <template v-slot:prepend>
                   <q-icon name="elderly" class="text-brown-8" />
                 </template>
               </q-input>
-
-              <q-input v-model="filterTelefono" label="Teléfono" outlined dense clearable
-                class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="phone" class="text-green-7" />
-                </template>
-              </q-input>
-
-              <q-select v-model="filterOrden" :options="ordenOptions" label="Ordenar por" outlined dense clearable
-                emit-value map-options class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="sort" class="text-brown-7" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
-                emit-value map-options class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="wc" class="text-green-6" />
-                </template>
-              </q-select>
             </div>
-
+            <!--
             <div class="row justify-end q-mt-md q-gutter-sm">
               <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
-              <q-btn label="Aplicar filtros" class="btn-apply-filters" icon="check" @click="applyFilters" unelevated />
-            </div>
+            </div> -->
           </div>
         </q-expansion-item>
       </q-card-section>
@@ -301,7 +292,8 @@ import { useQuasar } from 'quasar'
 import PersonaDialog from './PersonaDialog.vue'
 import PersonaDetails from './PersonaDetails.vue'
 import PagosPersonaDialog from 'src/components/PagosPersonaDialog.vue'
-import { agregar, listar, categoriasUnicas, modificar, cambiarEstado } from 'src/stores/persona-store.js'
+import { agregar, listar, categoriasUnicas, modificar, cambiarEstado, datosEstudiantes } from 'src/stores/persona-store.js'
+import { listarDisciplinas } from 'src/stores/disciplina-store.js'
 
 const $q = useQuasar()
 const host = 'http://localhost:3001/uploads/'
@@ -321,22 +313,15 @@ const filterStatus = ref(true)
 const filterType = ref('estudiante')
 const filterEdadMin = ref(null)
 const filterEdadMax = ref(null)
-const filterTelefono = ref(null)
-const filterOrden = ref(null)
+const filterDisciplina = ref(null)
 const filterGenero = ref(null)
 const filtersExpanded = ref(false)
 // nivel removed: backend no longer provides nivel object
 let searchTimeout = null
+let edadMinTimeout = null
+let edadMaxTimeout = null
 
 // Opciones adicionales para filtros
-const ordenOptions = [
-  { label: 'Nombre (A-Z)', value: 'nombre_asc' },
-  { label: 'Nombre (Z-A)', value: 'nombre_desc' },
-  { label: 'Edad (menor a mayor)', value: 'edad_asc' },
-  { label: 'Edad (mayor a menor)', value: 'edad_desc' },
-  { label: 'Fecha registro (reciente)', value: 'fecha_desc' }
-]
-
 const generoOptions = [
   { label: 'Masculino', value: 'M' },
   { label: 'Femenino', value: 'F' },
@@ -350,49 +335,27 @@ const activeFiltersCount = computed(() => {
   if (filterStatus.value !== null && filterStatus.value !== true) count++
   if (filterEdadMin.value) count++
   if (filterEdadMax.value) count++
-  if (filterTelefono.value) count++
-  if (filterOrden.value) count++
+  if (filterDisciplina.value) count++
   if (filterGenero.value) count++
   return count
 })
 
-// Computed para estadísticas
-const estadisticas = computed(() => {
-  const total = personas.value.length
-  const activos = personas.value.filter(p => p.estado).length
-  const inactivos = total - activos
-
-  let sumaEdades = 0
-  let countEdades = 0
-  let cumpleanosEsteMes = 0
-
-  const mesActual = new Date().getMonth() // 0-11
-
-  personas.value.forEach(p => {
-    if (p.fecha_nacimiento) {
-      const edad = calcularEdad(p.fecha_nacimiento)
-      if (!isNaN(edad)) {
-        sumaEdades += edad
-        countEdades++
-      }
-
-      // Verificar si el cumpleaños es este mes
-      const fechaNac = new Date(p.fecha_nacimiento)
-      if (fechaNac.getMonth() === mesActual) {
-        cumpleanosEsteMes++
-      }
-    }
-  })
-  const edadPromedio = countEdades > 0 ? Math.round(sumaEdades / countEdades) : 0
-
-  return {
-    total,
-    activos,
-    inactivos,
-    edadPromedio,
-    cumpleanosEsteMes
-  }
+// Estadísticas principales desde el backend
+const estadisticasPrincipales = ref({
+  total: 0,
+  activos: 0,
+  inactivos: 0,
+  cumpleanosEsteMes: 0
 })
+
+const cargarEstadisticas = async () => {
+  try {
+    const datos = await datosEstudiantes()
+    estadisticasPrincipales.value = datos
+  } catch (error) {
+    console.error('Error al cargar estadísticas:', error)
+  }
+}
 
 // nivelOptions removed: backend no longer provides nivel object
 const pagosDialog = ref(false)
@@ -429,6 +392,7 @@ const statusOptions = [
   { label: 'Inactivo', value: false }
 ]
 const categoryOptions = ref([])
+const disciplinaOptions = ref([])
 
 // pagination not used in card-based infinite scroll
 
@@ -568,23 +532,18 @@ function viewPersonaDetails(persona) {
 }
 
 // Limpiar filtros
-function clearFilters() {
-  searchTerm.value = ''
-  searchInput.value = ''
-  filterCategory.value = null
-  filterStatus.value = true
-  filterEdadMin.value = null
-  filterEdadMax.value = null
-  filterTelefono.value = null
-  filterOrden.value = null
-  filterGenero.value = null
-  loadStudents(1, false)
-}
+// function clearFilters() {
+//   searchTerm.value = ''
+//   searchInput.value = ''
+//   filterCategory.value = null
+//   filterStatus.value = true
+//   filterEdadMin.value = null
+//   filterEdadMax.value = null
+//   filterDisciplina.value = null
+//   filterGenero.value = null
+//   loadStudents(1, false)
+// }
 
-// Aplicar filtros
-function applyFilters() {
-  loadStudents(1, false)
-}
 const loadStudents = async (page = 1, append = false) => {
   try {
     if (append) loadingMore.value = true
@@ -600,6 +559,10 @@ const loadStudents = async (page = 1, append = false) => {
       tipo_persona: filterType.value,
       estado: filterStatus.value,
       categoria: filterCategory.value,
+      id_disciplina: filterDisciplina.value,
+      edad_min: filterEdadMin.value,
+      edad_max: filterEdadMax.value,
+      genero: filterGenero.value,
       search: searchTerm.value,
       page,
       limit: itemsPerPage
@@ -643,30 +606,69 @@ const loadMore = async (index, done) => {
   }, 100)
 }
 
-// Cuando cambian los filtros o búsqueda
-watch([filterType, filterStatus, filterCategory, searchTerm], () => {
+// Watches para filtros que recargan inmediatamente
+watch([filterType, filterStatus, filterCategory, filterDisciplina, filterGenero, searchTerm], () => {
   currentPage.value = 1
   if (infiniteScrollRef.value) {
     infiniteScrollRef.value.reset()
   }
   loadStudents(1, false)
 })
+
+// Watch con debounce para edad mínima
+watch(filterEdadMin, () => {
+  if (edadMinTimeout) {
+    clearTimeout(edadMinTimeout)
+  }
+  edadMinTimeout = setTimeout(() => {
+    currentPage.value = 1
+    if (infiniteScrollRef.value) {
+      infiniteScrollRef.value.reset()
+    }
+    loadStudents(1, false)
+  }, 2000)
+})
+
+// Watch con debounce para edad máxima
+watch(filterEdadMax, () => {
+  if (edadMaxTimeout) {
+    clearTimeout(edadMaxTimeout)
+  }
+  edadMaxTimeout = setTimeout(() => {
+    currentPage.value = 1
+    if (infiniteScrollRef.value) {
+      infiniteScrollRef.value.reset()
+    }
+    loadStudents(1, false)
+  }, 2000)
+})
 // Cargar datos iniciales
 onMounted(async () => {
   try {
-    // niveles removed: no cargar opciones
+    await cargarEstadisticas()
+    await loadStudents()
+
+    // Cargar categorías
     const response = await categoriasUnicas()
-    // Asegurarse de que la respuesta sea un array
     if (Array.isArray(response)) {
-      // Mapear las categorías al formato esperado por q-select
       categoryOptions.value = response.map(categoria => ({
         label: categoria,
         value: categoria
       }))
       console.log('Categorías cargadas:', categoryOptions.value)
     }
+
+    // Cargar disciplinas
+    const disciplinas = await listarDisciplinas()
+    if (Array.isArray(disciplinas)) {
+      disciplinaOptions.value = disciplinas.map(disciplina => ({
+        label: disciplina.nombre,
+        value: disciplina.id
+      }))
+      console.log('Disciplinas cargadas:', disciplinaOptions.value)
+    }
   } catch (error) {
-    console.error('Error al cargar categorías:', error)
+    console.error('Error al cargar datos iniciales:', error)
   }
 })
 </script>

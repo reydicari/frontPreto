@@ -16,6 +16,11 @@
               <q-tooltip>Registrar nuevo gasto</q-tooltip>
             </q-btn>
 
+            <q-btn unelevated icon="add_card" label="Agregar Pago" @click="showPagoDialog" class="action-btn pago-btn"
+              no-caps>
+              <q-tooltip>Registrar nuevo pago</q-tooltip>
+            </q-btn>
+
             <q-select v-model="selectedRole" :options="userRoles" option-label="nombre" option-value="id"
               label="Rol Actual" dense outlined bg-color="white" class="role-select"
               :display-value="selectedRole ? selectedRole.nombre : 'Seleccionar rol'" dropdown-icon="expand_more">
@@ -143,6 +148,16 @@
             </q-btn>
           </div>
 
+          <!-- Botones móviles (solo íconos) -->
+          <div class="mobile-actions">
+            <q-btn round unelevated icon="add_circle" @click="showGastoDialog" class="mobile-icon-btn gasto-btn">
+              <q-tooltip>Agregar Gasto</q-tooltip>
+            </q-btn>
+            <q-btn round unelevated icon="add_card" @click="showPagoDialog" class="mobile-icon-btn pago-btn">
+              <q-tooltip>Agregar Pago</q-tooltip>
+            </q-btn>
+          </div>
+
           <!-- Menú desplegable para móvil -->
           <q-btn flat round icon="more_vert" class="mobile-menu-btn">
             <q-menu anchor="bottom right" self="top right" transition-show="jump-down" transition-hide="jump-up">
@@ -167,9 +182,18 @@
 
                 <q-item clickable v-close-popup @click="showGastoDialog">
                   <q-item-section avatar>
-                    <q-icon name="add_circle" color="green-8" />
+                    <q-icon name="add_circle" color="orange" />
                   </q-item-section>
                   <q-item-section>Agregar Gasto</q-item-section>
+                </q-item>
+
+                <q-separator />
+
+                <q-item clickable v-close-popup @click="showPagoDialog">
+                  <q-item-section avatar>
+                    <q-icon name="add_card" color="green" />
+                  </q-item-section>
+                  <q-item-section>Agregar Pago</q-item-section>
                 </q-item>
 
                 <q-separator />
@@ -229,7 +253,7 @@
           </q-item>
 
           <!-- Área Personal -->
-          <q-item clickable v-ripple v-if="tienePermiso(1)" @click="navegar('inicio')" class="menu-item"
+          <q-item clickable v-ripple v-if="tienePermiso(1)" @click="navegar('area')" class="menu-item"
             active-class="menu-item-active">
             <q-item-section avatar>
               <q-icon name="account_circle" class="menu-icon" />
@@ -500,6 +524,12 @@
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut" />
       <router-view />
     </q-page-container>
+
+    <!-- Dialog de Nuevo Gasto -->
+    <NuevoGastoDialog v-model="dialogGasto" @saved="onGastoSaved" />
+
+    <!-- Dialog de Nuevo Pago -->
+    <NuevoPagoDialog v-model="dialogPago" @saved="onPagoSaved" />
   </q-layout>
 </template>
 
@@ -508,6 +538,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { refrescarUsuario } from 'src/stores/usuario-store'
+import NuevoGastoDialog from 'src/pages/gastos/NuevoGastoDialog.vue'
+import NuevoPagoDialog from 'src/pages/pagos/NuevoPagoDialog.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -519,11 +551,98 @@ const userRoles = ref([])
 const selectedRole = ref(null)
 const permisosActuales = ref([])
 const userData = ref(null)
+const dialogGasto = ref(false)
+const dialogPago = ref(false)
 
-watch(selectedRole, (newRole) => {
+// Mapeo de rutas a permisos requeridos
+const routePermissions = {
+  '/main': 0,
+  '/area': 1,
+  '/usuarios': 2,
+  '/roles': 3,
+  '/menus': 3,
+  '/inscripciones': 4,
+  '/paquetes': 5,
+  '/estudiantes': 6,
+  '/entrenadores': 7,
+  '/gastos': 8,
+  '/pagos': 9,
+  '/disciplinas': 10,
+  '/entrenamientos': 11,
+  '/torneos': 12,
+  '/niveles': 13,
+  '/ubicaciones': 14,
+  '/reportePagos': 15,
+  '/reporteEntrenamientos': 15,
+  '/reporteTorneos': 15,
+  '/reporteEstudiantes': 15,
+  '/reporteInscripciones': 15,
+  '/reporteEntrenadores': 15,
+  '/reportePaquetes': 15,
+  '/reporteGastos': 15,
+  '/paisaje': 16
+}
+
+// Rutas ordenadas por prioridad (orden de preferencia para redirección)
+const priorityRoutes = [
+  { path: '/main', permission: 0 },
+  { path: '/area', permission: 1 },
+  { path: '/inscripciones', permission: 4 },
+  { path: '/estudiantes', permission: 6 },
+  { path: '/paquetes', permission: 5 },
+  { path: '/entrenamientos', permission: 11 },
+  { path: '/pagos', permission: 9 },
+  { path: '/gastos', permission: 8 },
+  { path: '/disciplinas', permission: 10 },
+  { path: '/entrenadores', permission: 7 },
+  { path: '/torneos', permission: 12 },
+  { path: '/niveles', permission: 13 },
+  { path: '/ubicaciones', permission: 14 },
+  { path: '/reportePagos', permission: 15 },
+  { path: '/usuarios', permission: 2 },
+  { path: '/roles', permission: 3 }
+]
+
+watch(selectedRole, (newRole, oldRole) => {
   if (newRole) {
     rol.value = newRole.nombre
     actualizarPermisos(newRole)
+    // Guardar el rol seleccionado en sessionStorage
+    sessionStorage.setItem('selectedRoleId', newRole.id.toString())
+
+    // Verificar si el nuevo rol tiene permiso para ver la ruta actual
+    if (oldRole && router.currentRoute.value) {
+      const currentPath = router.currentRoute.value.path
+      const requiredPermission = routePermissions[currentPath]
+
+      if (requiredPermission !== undefined && !tienePermiso(requiredPermission)) {
+        // El nuevo rol no tiene permiso para ver esta ruta
+        // Buscar la primera ruta disponible según los permisos del nuevo rol
+        const firstAvailableRoute = priorityRoutes.find(route => tienePermiso(route.permission))
+
+        if (firstAvailableRoute) {
+          $q.notify({
+            type: 'warning',
+            message: `No tienes permisos para ver este módulo con el rol ${newRole.nombre}. Redirigiendo...`,
+            position: 'top',
+            timeout: 2000
+          })
+          setTimeout(() => {
+            router.push(firstAvailableRoute.path)
+          }, 500)
+        } else {
+          // Si no hay ninguna ruta disponible, redirigir al login
+          $q.notify({
+            type: 'negative',
+            message: 'Este rol no tiene permisos asignados',
+            position: 'top'
+          })
+          setTimeout(() => {
+            cerrarSesion()
+          }, 1500)
+        }
+      }
+    }
   }
 })
 
@@ -598,40 +717,66 @@ const refrescar = async (usu) => {
 }
 onMounted(() => {
   try {
+    // Verificar primero si existe el token
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+      router.replace('/login')
+      return
+    }
+
     const current = JSON.parse(sessionStorage.getItem('user'))
     console.log('usuario actual: ', current)
+
+    // Verificar que el usuario existe
+    if (!current) {
+      sessionStorage.clear()
+      router.replace('/login')
+      return
+    }
+
     userData.value = current
     refrescar(current.usuario)
-    const token = sessionStorage.getItem('token')
-    if (!token) router.replace('/login')
     currentUser.value = current.persona.nombres
-    rol.value = current.persona.tipo_persona
+    rol.value = current.persona.tipo_persona || ''
 
     // Cargar roles del usuario desde localStorage
     if (current.rols && current.rols.length > 0) {
       userRoles.value = current.rols
 
-      // Seleccionar el rol con mayor número de permisos
-      let rolConMasPermisos = current.rols[0]
-      let maxPermisos = 0
+      // Intentar recuperar el rol guardado en sessionStorage
+      const savedRoleId = sessionStorage.getItem('selectedRoleId')
+      let rolToSelect = null
 
-      current.rols.forEach(rolItem => {
-        if (rolItem.permisos) {
-          // Contar los permisos (separados por comas)
-          const numPermisos = rolItem.permisos.split(',').filter(p => p.trim()).length
-          if (numPermisos > maxPermisos) {
-            maxPermisos = numPermisos
-            rolConMasPermisos = rolItem
+      if (savedRoleId) {
+        // Buscar el rol guardado en la lista de roles del usuario
+        rolToSelect = current.rols.find(rolItem => rolItem.id.toString() === savedRoleId)
+      }
+
+      // Si no hay rol guardado o no se encontró, seleccionar el rol con más permisos
+      if (!rolToSelect) {
+        let rolConMasPermisos = current.rols[0]
+        let maxPermisos = 0
+
+        current.rols.forEach(rolItem => {
+          if (rolItem.permisos) {
+            // Contar los permisos (separados por comas)
+            const numPermisos = rolItem.permisos.split(',').filter(p => p.trim()).length
+            if (numPermisos > maxPermisos) {
+              maxPermisos = numPermisos
+              rolConMasPermisos = rolItem
+            }
           }
-        }
-      })
+        })
 
-      // Establecer el rol con más permisos como seleccionado
-      selectedRole.value = rolConMasPermisos
+        rolToSelect = rolConMasPermisos
+      }
+
+      // Establecer el rol seleccionado
+      selectedRole.value = rolToSelect
       // Actualizar el rol actual
-      rol.value = rolConMasPermisos.nombre
+      rol.value = rolToSelect.nombre
       // Inicializar permisos
-      actualizarPermisos(rolConMasPermisos)
+      actualizarPermisos(rolToSelect)
     }
   } catch (error) {
     console.log(error)
@@ -661,6 +806,33 @@ watch(selectedRole, (newRole) => {
 const toggleDarkMode = () => {
   $q.dark.toggle();
 };
+
+const showGastoDialog = () => {
+  dialogGasto.value = true
+}
+
+const onGastoSaved = () => {
+  dialogGasto.value = false
+  $q.notify({
+    type: 'positive',
+    message: 'Gasto registrado exitosamente',
+    position: 'top'
+  })
+}
+
+const showPagoDialog = () => {
+  dialogPago.value = true
+}
+
+const onPagoSaved = () => {
+  dialogPago.value = false
+  $q.notify({
+    type: 'positive',
+    message: 'Pago registrado exitosamente',
+    position: 'top'
+  })
+}
+
 const cerrarSesion = () => {
   sessionStorage.clear()
   router.replace('/login')
@@ -833,6 +1005,15 @@ $color-wood: #795548;
 
   &:hover {
     background: linear-gradient(135deg, #f57c00 0%, #ff8f00 100%);
+  }
+}
+
+.pago-btn {
+  background: linear-gradient(135deg, #2e3c7d 0%, #385d8e 100%);
+  color: white;
+
+  &:hover {
+    background: linear-gradient(135deg, #388e3c 0%, #43a047 100%);
   }
 }
 
@@ -1031,6 +1212,24 @@ $color-wood: #795548;
   }
 }
 
+.mobile-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-icon-btn {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
 .mobile-menu-btn {
   display: none;
   color: white;
@@ -1190,6 +1389,10 @@ $color-wood: #795548;
 @media (max-width: 1024px) {
   .desktop-actions {
     display: none;
+  }
+
+  .mobile-actions {
+    display: flex;
   }
 
   .mobile-menu-btn {

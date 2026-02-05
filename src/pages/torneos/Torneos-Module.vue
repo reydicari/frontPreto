@@ -7,9 +7,9 @@
           <div class="col-12 col-sm-auto">
             <div class="header-title">
               <q-icon name="emoji_events" size="42px" class="q-mr-sm" />
-              <h2 class="page-title q-ma-none">Gestión de Torneos</h2>
+              <h2 class="page-title q-ma-none">Torneos</h2>
             </div>
-            <p class="header-subtitle">Administra torneos y competiciones deportivas</p>
+            <!-- <p class="header-subtitle">Administra torneos y competiciones deportivas</p> -->
           </div>
           <div class="col-12 col-sm-auto">
             <q-btn class="btn-add-header" icon="add_circle" label="Agregar Torneo" @click="onAdd" unelevated no-caps />
@@ -17,7 +17,7 @@
         </div>
       </div>
 
-      <!-- Tarjetas de estadísticas -->
+      <!-- Tarjetas de estadísticas
       <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
@@ -68,7 +68,7 @@
             <div class="stat-label">Terminados</div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Barra de herramientas -->
@@ -421,15 +421,15 @@ const activeFiltersCount = computed(() => {
 })
 
 // Estadísticas calculadas
-const estadisticas = computed(() => {
-  const filtered = filteredTorneos.value
-  return {
-    suspendidos: filtered.filter(t => Number(t.estado) === 0).length,
-    sinComenzar: filtered.filter(t => Number(t.estado) === 1).length,
-    comenzados: filtered.filter(t => Number(t.estado) === 2).length,
-    finalizados: filtered.filter(t => Number(t.estado) === 3).length
-  }
-})
+// const estadisticas = computed(() => {
+//   const filtered = filteredTorneos.value
+//   return {
+//     suspendidos: filtered.filter(t => Number(t.estado) === 0).length,
+//     sinComenzar: filtered.filter(t => Number(t.estado) === 1).length,
+//     comenzados: filtered.filter(t => Number(t.estado) === 2).length,
+//     finalizados: filtered.filter(t => Number(t.estado) === 3).length
+//   }
+// })
 
 onMounted(async () => {
   loading.value = true

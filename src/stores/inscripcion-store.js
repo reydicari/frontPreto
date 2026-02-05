@@ -2,9 +2,9 @@ import { api } from "boot/axios.js";
 const URL_PART = "/api/inscripcion";
 import { Notify } from "quasar";
 
-export const listar = async () => {
+export const listar = async (params) => {
   try {
-    const response = await api.get(URL_PART + "/listar");
+    const response = await api.get(URL_PART + "/listar", { params });
     return response.data;
   } catch (error) {
     console.log("error en el store", error.response);

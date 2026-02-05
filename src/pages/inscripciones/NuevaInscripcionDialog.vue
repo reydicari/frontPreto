@@ -23,7 +23,8 @@
               <div class="col-12 col-sm-3">
                 <q-select ref="nivelSelect" data-driver="nivel-select" v-model="localInscripcion.id_nivel"
                   :options="nivelOptions" label="Nivel *" option-label="label" option-value="value" emit-value
-                  map-options outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']" />
+                  map-options outlined dense clearable :rules="[val => !!val || 'Seleccione un nivel']"
+                  :error="errorNivel" @update:model-value="errorNivel = false" />
               </div>
               <div class="col-12 col-sm-6">
                 <q-select ref="estudianteSelect" data-driver="estudiante-select" v-model="selectedEstudiante"
@@ -109,8 +110,8 @@
                         </q-card-section>
                         <q-separator />
                         <q-card-section class="q-pa-sm">
-                          <div v-if="pkg.horarios && pkg.horarios.length">
-                            <div v-for="(h, i) in pkg.horarios" :key="i" class="q-mb-xs">
+                          <div v-if="pkg.horarios && pkg.horarios.length" class="package-horarios">
+                            <div v-for="(h, i) in pkg.horarios" :key="i" class="package-horario-item">
                               <div class="text-subtitle2">{{ getDiaLabel(h.dia) }}</div>
                               <div class="text-caption">{{ h.hora_inicio }} - {{ h.hora_fin }}</div>
                             </div>
@@ -212,7 +213,7 @@ import { agregarIscripcionPersona } from 'src/stores/inscripcion-store';
 const $q = useQuasar()
 
 // drive tour helpers
-const { startInscripcionTour, attachToIconInscripcion } = useDrive()
+const { startInscripcionTour } = useDrive()
 
 async function onInscripcionHelpClick() {
   try {
@@ -254,6 +255,7 @@ const inscripcionIndefinida = ref(false)
 //para el despleagable del select de estudiantes
 const estudianteSelect = ref(null)
 const nivelSelect = ref(null)
+const errorNivel = ref(false)
 
 // Datos del formulario para una nueva inscripción
 const localInscripcion = reactive({
@@ -300,8 +302,18 @@ const stepPago = () => {
   const estudianteOk = selectedEstudiante.value && (selectedEstudiante.value.id || selectedEstudiante.value.id_persona)
   const fechaOk = !!localInscripcion.fecha_inicio
   const nivelOk = !!localInscripcion.id_nivel
+  const paqueteOk = !!localInscripcion.id_paquete
 
-  if (!estudianteOk || !fechaOk) {
+  if (!nivelOk || !estudianteOk || !fechaOk || !paqueteOk) {
+    if (!nivelOk) {
+      errorNivel.value = true
+      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de continuar.' })
+      try {
+        if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus()
+      } catch (err) {
+        console.warn('No se pudo enfocar select nivel', err)
+      }
+    }
     if (!estudianteOk) {
       $q.notify({ type: 'negative', message: 'Seleccione un estudiante antes de continuar.' })
       // Intentar enfocar el select para ayudar al usuario
@@ -316,12 +328,14 @@ const stepPago = () => {
     if (!fechaOk) {
       $q.notify({ type: 'negative', message: 'Ingrese la fecha de inicio de la inscripción.' })
     }
-    if (!nivelOk) {
-      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de continuar.' })
+    if (!paqueteOk) {
+      $q.notify({ type: 'negative', message: 'Seleccione un paquete antes de continuar.' })
       try {
-        if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus()
+        if (packagesContainer.value && typeof packagesContainer.value.scrollIntoView === 'function') {
+          packagesContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
       } catch (err) {
-        console.warn('No se pudo enfocar select nivel', err)
+        console.warn('No se pudo desplazar al contenedor de paquetes', err)
       }
     }
     return
@@ -533,12 +547,7 @@ async function loadPaquetes() {
   try {
     const res = await listarPaquetes()
     paquetesAvailable.value = Array.isArray(res) ? res : (res && res.data ? res.data : [])
-    // preseleccionar el primer paquete si no hay ninguno seleccionado
-    if (paquetesAvailable.value.length) {
-      if (!localInscripcion.id_paquete) {
-        localInscripcion.id_paquete = paquetesAvailable.value[0].id
-      }
-    }
+    // No seleccionar ningún paquete por defecto: el usuario debe elegir explícitamente
     console.log('paquetes cargados', paquetesAvailable.value)
     // Si ya tenemos edad del estudiante, desplazar al primer paquete recomendado
     nextTick(() => {
@@ -616,7 +625,10 @@ function hasHorarioOverlap(pkg) {
     const otherHorarios = ins.horarios || (ins.paquete && ins.paquete.horarios) || []
     for (const oh of otherHorarios) {
       for (const ph of pkg.horarios) {
-        if (horarioOverlap(ph, oh)) return true
+        if (horarioOverlap(ph, oh)) {
+          // Devolver el paquete/inscripción que provoca el solapamiento (truthy) o false si no hay
+          return ins.paquete || ins
+        }
       }
     }
   }
@@ -633,14 +645,41 @@ function isPackageSelectable(pkg) {
 
 function selectPackage(pkg) {
   if (!pkg) return
+  // Primero validar que se haya seleccionado un nivel
+  const nivelOk = !!localInscripcion.id_nivel
+  if (!nivelOk) {
+    errorNivel.value = true
+    $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de elegir un paquete.' })
+    try {
+      if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus()
+    } catch (err) {
+      console.warn('No se pudo enfocar select nivel', err)
+    }
+    return
+  }
+  // No permitir seleccionar paquetes antes de tener un estudiante (seleccionado o creado)
+  const estudianteOk = selectedEstudiante.value && (selectedEstudiante.value.id || selectedEstudiante.value.id_persona)
+  if (!estudianteOk) {
+    $q.notify({ type: 'negative', message: 'Seleccione o cree un estudiante antes de elegir un paquete.' })
+    try {
+      if (estudianteSelect.value && typeof estudianteSelect.value.focus === 'function') estudianteSelect.value.focus()
+    } catch (err) {
+      console.warn('No se pudo enfocar select estudiante', err)
+    }
+    return
+  }
   // impedir selección si no es selectable (ya inscrito o solapamiento)
   if (!isPackageSelectable(pkg)) {
     if (studentPackageIds.value && studentPackageIds.value.includes(pkg.id)) {
       $q.notify({ type: 'negative', message: 'El estudiante seleccionado ya está inscrito en este paquete.' })
-    } else if (hasHorarioOverlap(pkg)) {
-      $q.notify({ type: 'negative', message: 'Solapamiento de horario con otra inscripción.' })
     } else {
-      $q.notify({ type: 'negative', message: 'El paquete no es seleccionable.' })
+      const overlapping = hasHorarioOverlap(pkg)
+      if (overlapping) {
+        const name = overlapping.nombre || overlapping.nombre_paquete || overlapping.name || overlapping.titulo || overlapping.label || (`ID ${overlapping.id || ''}`)
+        $q.notify({ type: 'negative', message: `Solapamiento de horario con otra inscripción: ${name}` })
+      } else {
+        $q.notify({ type: 'negative', message: 'El paquete no es seleccionable.' })
+      }
     }
     return
   }
@@ -652,6 +691,17 @@ function selectPackage(pkg) {
     const el = container.querySelector(`[data-pkg-id="${pkg.id}"]`)
     if (el && el.scrollIntoView) {
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    }
+    // además, desplazar el contenedor del primer step hacia abajo para mostrar detalles si corresponde
+    try {
+      const dialogContent = container.closest('.dialog-content')
+      if (dialogContent && typeof dialogContent.scrollTo === 'function') {
+        dialogContent.scrollTo({ top: dialogContent.scrollHeight, behavior: 'smooth' })
+      }
+    } catch (err) {
+      console.log(err);
+
+      // no bloquear si falla
     }
   })
 }
@@ -717,20 +767,9 @@ function packageMatchesAge(pkg, age) {
 
 // Computed: paquetes visibles según selección de estudiante y nivel
 const visiblePaquetes = computed(() => {
-  const nivelId = localInscripcion.id_nivel
-  const age = studentAge.value
-
-  // Si NO hay estudiante ni nivel seleccionado -> mostrar solo paquetes sin id_nivel (genéricos)
-  if (!selectedEstudiante.value && !nivelId) {
-    return (paquetesAvailable.value || []).filter(p => p.id_nivel == null)
-  }
-
-  // En caso contrario, incluir paquetes que coincidan por edad o por nivel
-  return (paquetesAvailable.value || []).filter(p => {
-    const matchesAge = packageMatchesAge(p, age)
-    const matchesNivel = nivelId ? (p.id_nivel == null ? false : p.id_nivel === nivelId) : false
-    return matchesAge || matchesNivel
-  })
+  // Mostrar todos los paquetes disponibles en el sistema, excepto los inactivos (estado == false)
+  // La UI marcará si un paquete no es seleccionable (ya inscrito, solapamiento, sin cupo, etc.)
+  return (paquetesAvailable.value || []).filter(p => p.estado !== false)
 })
 
 // Al cambiar estudiante o nivel, seleccionar el primer paquete recomendado (por edad o por nivel).
@@ -739,7 +778,8 @@ watch([selectedEstudiante, () => localInscripcion.id_nivel], (/* newVals */) => 
     const list = (visiblePaquetes.value || []).filter(p => isPackageSelectable(p))
     if (!list.length) return
 
-    // buscar primero paquetes recomendados por edad o nivel
+    // buscar primer paquete recomendado por edad o nivel para desplazar la vista,
+    // pero NO seleccionarlo automáticamente (el usuario debe elegir)
     const firstRecommended = list.find(p => {
       const byAge = packageMatchesAge(p, studentAge.value) && (p.edad_minima != null || p.edad_maxima != null)
       const byNivel = localInscripcion.id_nivel && p.id_nivel === localInscripcion.id_nivel
@@ -748,8 +788,6 @@ watch([selectedEstudiante, () => localInscripcion.id_nivel], (/* newVals */) => 
 
     const pick = firstRecommended || list[0]
     if (pick) {
-      localInscripcion.id_paquete = pick.id
-      // desplazar al primer paquete seleccionado
       try {
         if (packagesContainer.value) {
           const el = packagesContainer.value.querySelector(`[data-pkg-id="${pick.id}"]`)
@@ -858,7 +896,13 @@ async function saveInscripcion() {
   const estudianteOk = selectedEstudiante.value
   const fechaOk = !!localInscripcion.fecha_inicio
   const nivelOk = !!localInscripcion.id_nivel
-  if (!estudianteOk || !fechaOk) {
+  const paqueteOk = !!localInscripcion.id_paquete
+  if (!nivelOk || !estudianteOk || !fechaOk || !paqueteOk) {
+    if (!nivelOk) {
+      errorNivel.value = true
+      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de guardar la inscripción.' })
+      try { if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus() } catch (err) { console.warn('No se pudo enfocar select nivel', err) }
+    }
     if (!estudianteOk) {
       $q.notify({ type: 'negative', message: 'Seleccione un estudiante antes de guardar la inscripción.' })
       try { if (estudianteSelect.value && typeof estudianteSelect.value.focus === 'function') estudianteSelect.value.focus() } catch (err) { console.warn('No se pudo enfocar select estudiante', err) }
@@ -867,9 +911,15 @@ async function saveInscripcion() {
       $q.notify({ type: 'negative', message: 'Ingrese la fecha de inicio antes de guardar la inscripción.' })
       try { if (fechaInicioInput.value && typeof fechaInicioInput.value.focus === 'function') fechaInicioInput.value.focus() } catch (err) { console.warn('No se pudo enfocar fecha inicio', err) }
     }
-    if (!nivelOk) {
-      $q.notify({ type: 'negative', message: 'Seleccione un nivel antes de guardar la inscripción.' })
-      try { if (nivelSelect.value && typeof nivelSelect.value.focus === 'function') nivelSelect.value.focus() } catch (err) { console.warn('No se pudo enfocar select nivel', err) }
+    if (!paqueteOk) {
+      $q.notify({ type: 'negative', message: 'Seleccione un paquete antes de guardar la inscripción.' })
+      try {
+        if (packagesContainer.value && typeof packagesContainer.value.scrollIntoView === 'function') {
+          packagesContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      } catch (err) {
+        console.warn('No se pudo desplazar al contenedor de paquetes', err)
+      }
     }
     return
   }
@@ -1436,19 +1486,52 @@ function calculateMonthsDuration(startDate, endDate) {
 /* Paquetes que el estudiante ya tiene: apariencia plomeada */
 .package-item.taken .q-card {
   opacity: 0.55;
-  filter: grayscale(0.7);
-  pointer-events: none;
+  filter: grayscale(0.85) contrast(0.9);
+  /* permitir click para que el usuario reciba el notify explicando por qué no puede seleccionar */
+  pointer-events: auto;
 }
 
 .package-item.taken {
-  pointer-events: auto;
-  /* permitir scroll en el contenedor, pero la card no responde al click */
+  /* permitir scroll en el contenedor; la card mostrará visualmente que está tomada */
 }
 
 /* Estilo para paquetes con solapamiento: borde naranja para indicar conflicto */
 .package-item.overlap .q-card {
   border-color: #ef6c00 !important;
-  box-shadow: 0 0 0 2px rgba(239, 108, 0, 0.15), 0 4px 12px rgba(239, 108, 0, 0.2);
+  box-shadow: 0 0 0 4px rgba(239, 108, 0, 0.18), 0 6px 18px rgba(239, 108, 0, 0.25);
+  background: linear-gradient(180deg, #fff7ed, #fff3e0);
+}
+
+/* Horarios en 2 columnas dentro del card */
+.package-horarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.package-horario-item .text-subtitle2 {
+  font-size: 0.95rem;
+  font-weight: 600
+}
+
+.package-horario-item .text-caption {
+  font-size: 0.85rem
+}
+
+/* Fullscreen dialog en pantallas pequeñas */
+@media (max-width: 599px) {
+  .dialog-card {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  .dialog-content {
+    max-height: calc(100vh - 160px) !important;
+  }
 }
 
 /* Responsive: Pantallas pequeñas */

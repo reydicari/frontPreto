@@ -107,3 +107,48 @@ export const todasPersonas = async () => {
     return error.response.data;
   }
 };
+
+export const datosEstudiantes = async () => {
+  try {
+    const response = await api.get(URL_PART + "/datosEstudiantes");
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error.response);
+    Notify.create({
+      type: "negative",
+      message: "Error al obtener datos de estudiantes",
+      position: "bottom",
+    });
+    return (
+      error.response?.data || {
+        total: 0,
+        activos: 0,
+        inactivos: 0,
+        cumpleanosEsteMes: 0,
+      }
+    );
+  }
+};
+
+export const datosEntrenadoresAdministradores = async () => {
+  try {
+    const response = await api.get(
+      URL_PART + "/datosEntrenadoresAdministradores",
+    );
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error.response);
+    Notify.create({
+      type: "negative",
+      message: "Error al obtener datos de entrenadores",
+      position: "bottom",
+    });
+    return (
+      error.response?.data || {
+        totalEntrenadores: 0,
+        totalAdministradores: 0,
+        cumpleanosEsteMes: 0,
+      }
+    );
+  }
+};

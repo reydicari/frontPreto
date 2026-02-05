@@ -201,14 +201,14 @@
                     </div>
                   </div>
                   <!-- Mostrar Total Pagado o Saldo Pendiente según saldo real -->
-                  <div v-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" class="payment-saldo">
+                  <div v-if="pago.saldo > 0" class="payment-saldo">
                     <div class="saldo-label">Saldo Pendiente</div>
-                    <div class="saldo-value">Bs {{ calcularSaldoReal(pago).toFixed(2) }}</div>
+                    <div class="saldo-value">Bs {{ pago.saldo }}</div>
                   </div>
                   <div v-else class="payment-total">
-                    <div class="total-label">{{ pago.estado === 2 && calcularSaldoReal(pago) === 0 ? 'Monto Pagado' :
+                    <div class="total-label">{{ pago.estado === 2 && pago.saldo === 0 ? 'Monto Pagado' :
                       'Total Pagado' }}</div>
-                    <div class="total-value">Bs {{ (pago.monto - pago.descuento).toFixed(2) }}</div>
+                    <div class="total-value">Bs {{ (pago.monto - pago.descuento) }}</div>
                   </div>
                 </template>
 
@@ -220,12 +220,12 @@
                     <div class="total-value">Bs {{ pago.monto }}</div>
                   </div>
                   <!-- Si estado es 2 (Parcial), verificar saldo real -->
-                  <div v-else-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" class="payment-saldo">
+                  <div v-else-if="pago.estado === 2 && pago.saldo > 0" class="payment-saldo">
                     <div class="saldo-label">Saldo Pendiente</div>
-                    <div class="saldo-value">Bs {{ calcularSaldoReal(pago).toFixed(2) }}</div>
+                    <div class="saldo-value">Bs {{ pago.saldo }}</div>
                   </div>
                   <!-- Si estado es 2 pero saldo real es 0, mostrar como pagado -->
-                  <div v-else-if="pago.estado === 2 && calcularSaldoReal(pago) === 0" class="payment-total">
+                  <div v-else-if="pago.estado === 2 && pago.saldo === 0" class="payment-total">
                     <div class="total-label">Monto Pagado</div>
                     <div class="total-value">Bs {{ pago.monto }}</div>
                   </div>
@@ -238,12 +238,12 @@
               </div>
 
               <div class="payment-footer">
-                <q-btn v-if="pago.estado === 2 && calcularSaldoReal(pago) > 0" flat dense icon="payment" color="primary"
+                <q-btn v-if="pago.estado === 2 && pago.saldo > 0" flat dense icon="payment" color="primary"
                   @click.stop="pagarDeuda(pago)">
                   <q-tooltip>Pagar deuda</q-tooltip>
                 </q-btn>
                 <q-btn v-if="pago.estado != 0" flat dense icon="money_off" color="negative"
-                  @click.stop="anularPago(pago)">
+                  @click.stop="abrirAnularPago(pago)">
                   <q-tooltip>Anular pago</q-tooltip>
                 </q-btn>
                 <q-btn v-if="pago.comprobante" flat dense icon="image" color="primary"
@@ -327,7 +327,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -348,7 +348,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -368,7 +368,7 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label caption>Usuario cobrador</q-item-label>
-                    <q-item-label>{{ selectedPago?.usuario.usuario || '-' }}</q-item-label>
+                    <q-item-label>{{ selectedPago?.usuario?.usuario || '-' }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -436,13 +436,13 @@
               <!-- Resumen de saldo -->
               <q-separator class="q-my-sm" />
               <div class="saldo-resumen">
-                <div v-if="estaDeudaCubierta(selectedPago)" class="saldo-cubierto">
+                <div v-if="selectedPago.saldo <= 0" class="saldo-cubierto">
                   <q-icon name="check_circle" size="24px" color="positive" />
                   <span class="text-weight-bold text-positive">Deuda Totalmente Pagada</span>
                 </div>
                 <div v-else class="saldo-pendiente-resumen">
                   <span class="saldo-label-resumen">Saldo Pendiente:</span>
-                  <span class="saldo-value-resumen">Bs {{ calcularSaldoReal(selectedPago).toFixed(2) }}</span>
+                  <span class="saldo-value-resumen">Bs {{ selectedPago.saldo }}</span>
                 </div>
               </div>
             </div>
@@ -498,14 +498,18 @@
 
     <!-- Dialog externo para Nuevo/Editar Pago -->
     <NuevoPagoDialog v-model="dialogVisible" :pago-deuda="pagoDeuda" @saved="onPagoSaved" />
+
+    <!-- Dialog para Anular Pago -->
+    <AnularPagoDialog v-model="anularDialog" :pago="pagoToAnular" @anulado="onPagoAnulado" />
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
-import { listarPagos, anularPago as anularPagoStore } from 'src/stores/pago_store.js'
+import { listarPagos, anularPago } from 'src/stores/pago_store.js'
 import NuevoPagoDialog from 'src/pages/pagos/NuevoPagoDialog.vue'
+import AnularPagoDialog from 'src/pages/pagos/AnularPagoDialog.vue'
 
 const $q = useQuasar()
 
@@ -527,9 +531,11 @@ const dialogVisible = ref(false)
 const detalleDialog = ref(false)
 const comprobanteDialog = ref(false)
 const comprobanteSubPagoDialog = ref(false)
+const anularDialog = ref(false)
 const selectedPago = ref(null)
 const selectedSubPago = ref(null)
 const pagoDeuda = ref(null)
+const pagoToAnular = ref(null)
 
 // Opciones
 const personOptions = ref([])
@@ -582,24 +588,6 @@ const activeFiltersCount = computed(() => {
   if (filterEstado.value !== null && filterEstado.value !== undefined) count++
   return count
 })
-
-// Computed para calcular saldo real considerando pagosDerivados
-const calcularSaldoReal = (pago) => {
-  if (!pago) return 0
-  const totalPago = (pago.monto || 0) - (pago.descuento || 0)
-  const pagosDerivados = pago.pagosDerivados || []
-  const totalSubPagos = pagosDerivados
-    .filter(sp => sp.estado !== 0) // Excluir anulados
-    .reduce((sum, sp) => sum + (sp.monto || 0), 0)
-  console.log('pagos prueba' + totalSubPagos + ' XD ' + pagosDerivados);
-
-  return totalPago - totalSubPagos
-}
-
-const estaDeudaCubierta = (pago) => {
-  const saldoReal = calcularSaldoReal(pago)
-  return saldoReal <= 0
-}
 
 // Utilidades
 function estadoColor(estado) {
@@ -725,22 +713,15 @@ function verComprobanteSubPago(subPago) {
   comprobanteSubPagoDialog.value = true
 }
 
-function anularPago(pago) {
-  $q.dialog({
-    title: 'Anular pago',
-    message: `¿Desea anular el pago de ${personaLabel(pago)} por Bs ${pago.monto}?`,
-    cancel: true,
-    persistent: true
-  }).onOk(async () => {
-    try {
-      await anularPagoStore(pago.id)
-      $q.notify({ type: 'positive', message: 'Pago anulado correctamente' })
-      await loadPagos()
-    } catch (e) {
-      console.error('Error anulando pago', e)
-      $q.notify({ type: 'negative', message: 'Error al anular el pago' })
-    }
-  })
+function abrirAnularPago(pago) {
+  pagoToAnular.value = pago
+  anularDialog.value = true
+}
+
+function onPagoAnulado() {
+  anularDialog.value = false
+  detalleDialog.value = false
+  loadPagos()
 }
 </script>
 

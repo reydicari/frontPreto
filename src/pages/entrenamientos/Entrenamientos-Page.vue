@@ -7,9 +7,9 @@
           <div class="col-12 col-sm-auto">
             <div class="header-title">
               <q-icon name="fitness_center" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Gestión de Entrenamientos</h2>
+              <h2 class="page-title">Entrenamientos</h2>
             </div>
-            <p class="header-subtitle">Administra programas y sesiones de entrenamiento</p>
+            <!-- <p class="header-subtitle">Administra programas y sesiones de entrenamiento</p> -->
           </div>
           <div class="col-12 col-sm-auto">
             <q-btn class="btn-add-header" icon="add_circle" label="Nuevo Entrenamiento" @click="showTrainingDialog"
@@ -19,7 +19,7 @@
       </div>
 
       <!-- Tarjetas de estadísticas -->
-      <div class="stats-container row q-gutter-md q-mt-md">
+      <!-- <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="fitness_center" size="36px" />
@@ -69,7 +69,7 @@
             <div class="stat-label">Terminados</div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Barra de herramientas -->
@@ -77,7 +77,7 @@
       <q-card-section>
         <div class="row items-center q-col-gutter-sm">
           <!-- Buscador -->
-          <q-input v-model="searchTerm" clearable outlined dense placeholder="Buscar por nombre, paquete, ubicación..."
+          <q-input v-model="searchTerm" clearable outlined dense placeholder="Buscar por nombre de entrenamiento"
             class="col-12 search-input">
             <template v-slot:prepend>
               <q-icon name="search" class="text-brown-7" />
@@ -173,8 +173,7 @@
           </div>
 
           <div class="training-status">
-            <q-badge :color="getStatusColor(training.estado)" :label="getStatusLabel(training.estado)"
-              class="status-badge" />
+            <q-badge :color="getStatusColor(training)" :label="getStatusLabel(training)" class="status-badge" />
           </div>
         </q-card-section>
 
@@ -209,11 +208,11 @@
             <span class="info-value">{{ training.entrenadores.length }}</span>
           </div>
 
-          <div v-if="training.observacion" class="info-row info-observation">
+          <!-- <div v-if="training.observacion" class="info-row info-observation">
             <q-icon name="note" size="18px" class="info-icon text-grey-7" />
             <span class="info-label">Nota:</span>
             <span class="info-value observation-text">{{ training.observacion }}</span>
-          </div>
+          </div> -->
         </q-card-section>
 
         <q-separator />
@@ -234,9 +233,19 @@
             <q-tooltip>Reanudar</q-tooltip>
           </q-btn>
 
-          <q-btn class="btn-action btn-view" round icon="visibility" @click.stop="viewTrainingDetails(training)">
-            <q-tooltip>Ver detalles</q-tooltip>
+          <q-btn class="btn-action btn-assign-coaches" round icon="person_add" @click.stop="assignCoaches(training)"
+            :disable="training.estado === -1">
+            <q-tooltip>Asignar Entrenadores</q-tooltip>
           </q-btn>
+
+          <!-- <q-btn class="btn-action btn-coaches" round icon="groups" @click.stop="viewCoaches(training)"
+            v-if="training.entrenadores && training.entrenadores.length > 0">
+            <q-tooltip>Ver Entrenadores</q-tooltip>
+          </q-btn> -->
+
+          <!-- <q-btn class="btn-action btn-view" round icon="info" @click.stop="viewTrainingDetails(training)">
+            <q-tooltip>Ver Detalles</q-tooltip>
+          </q-btn> -->
         </q-card-actions>
       </q-card>
 
@@ -255,26 +264,99 @@
     <q-dialog v-model="detailsDialog" :maximized="$q.screen.lt.md">
       <DetalleEntrenamiento :training="selectedTraining" />
     </q-dialog>
+
+    <!-- Diálogo para asignar entrenadores -->
+    <AsignarEntrenadoresDialog v-model="assignCoachesDialog" :entrenamiento="selectedTrainingForAssign"
+      :entrenamientoId="selectedTrainingForAssign?.id" @assigned="handleCoachesAssigned" />
+
+    <!-- Diálogo de entrenadores -->
+    <q-dialog v-model="coachesDialog" :maximized="$q.screen.lt.sm">
+      <q-card class="coaches-dialog-card">
+        <q-card-section class="coaches-dialog-header">
+          <div class="dialog-header-content">
+            <q-icon name="groups" size="1.5em" class="dialog-icon" />
+            <div>
+              <div class="dialog-title">Entrenadores Asignados</div>
+              <div class="dialog-subtitle">{{ selectedTrainingCoaches?.nombre }}</div>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" color="grey-7" @click="coachesDialog = false" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="coaches-dialog-body">
+          <div v-if="selectedTrainingCoaches?.entrenadores && selectedTrainingCoaches.entrenadores.length > 0"
+            class="coaches-grid">
+            <q-card v-for="coach in selectedTrainingCoaches.entrenadores" :key="coach.id" class="coach-card">
+              <q-card-section class="coach-card-header">
+                <q-avatar size="64px" class="coach-avatar">
+                  <img v-if="coach.foto" :src="getCoachPhoto(coach.foto)" />
+                  <div v-else class="coach-avatar-placeholder">
+                    {{ getInitials(coach) }}
+                  </div>
+                </q-avatar>
+              </q-card-section>
+
+              <q-card-section class="coach-card-body">
+                <div class="coach-name">
+                  {{ coach.nombres || coach.nombre || '' }} {{ coach.apellido_paterno || '' }}
+                </div>
+
+                <div class="coach-info-row" v-if="coach.telefono">
+                  <q-icon name="phone" size="18px" class="coach-info-icon" />
+                  <span class="coach-info-text">{{ coach.telefono }}</span>
+                </div>
+
+                <div class="coach-info-row" v-if="coach.email">
+                  <q-icon name="email" size="18px" class="coach-info-icon" />
+                  <span class="coach-info-text">{{ coach.email }}</span>
+                </div>
+
+                <div class="coach-info-row" v-if="coach.especialidad">
+                  <q-icon name="workspace_premium" size="18px" class="coach-info-icon" />
+                  <span class="coach-info-text">{{ coach.especialidad }}</span>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div v-else class="no-coaches">
+            <q-icon name="groups_off" size="64px" color="grey-5" />
+            <p class="text-grey-7">No hay entrenadores asignados</p>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions class="coaches-dialog-actions">
+          <q-btn flat label="Cerrar" color="green-8" @click="coachesDialog = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
+import AsignarEntrenadoresDialog from './AsignarEntrenadoresDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
 import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento } from "stores/entrenamientos-store.js";
 import { listar, listarTodosEstudiantes } from 'stores/persona-store.js'
 import { listarPaquetes } from "stores/paquete-store.js";
 import { listarUbicaciones } from "stores/ubicacion-store.js";
+import { guardarAsistencias } from "stores/asistencia-store.js";
 
 // Mock data para coaches (se carga dinámicamente)
 const mockCoaches = ref([])
 const coachesList = ref([])
 const $q = useQuasar()
 const router = useRouter()
+const host = 'http://localhost:3001/uploads/'
 
 // Función para navegar a ubicaciones con focus
 const goToUbicacion = (id) => {
@@ -297,17 +379,21 @@ const filterDateFrom = ref(null)
 const filterDateTo = ref(null)
 const trainingDialog = ref(false)
 const detailsDialog = ref(false)
+const coachesDialog = ref(false)
+const assignCoachesDialog = ref(false)
 const editMode = ref(false)
 // helper for coach search removed (handled inside dialog)
 const selectedTraining = ref(null)
+const selectedTrainingCoaches = ref(null)
+const selectedTrainingForAssign = ref(null)
 
 // Estadísticas computadas
-const estadisticas = computed(() => ({
-  enMarcha: trainings.value.filter(t => t.estado === 1).length,
-  sinComenzar: trainings.value.filter(t => t.estado === 2).length,
-  suspendidos: trainings.value.filter(t => t.estado === -1).length,
-  terminados: trainings.value.filter(t => t.estado === 0).length
-}))
+// const estadisticas = computed(() => ({
+//   enMarcha: trainings.value.filter(t => calcularEstadoReal(t).estado === 'en-marcha').length,
+//   sinComenzar: trainings.value.filter(t => calcularEstadoReal(t).estado === 'sin-comenzar').length,
+//   suspendidos: trainings.value.filter(t => calcularEstadoReal(t).estado === 'suspendido').length,
+//   terminados: trainings.value.filter(t => calcularEstadoReal(t).estado === 'terminado').length
+// }))
 
 // Contador de filtros activos
 const activeFiltersCount = computed(() => {
@@ -357,7 +443,16 @@ const filterUbicacion = ref(null)
 const fetchTrainings = async () => {
   loading.value = true
   try {
-    const response = await listarEntrenamientos()
+    const params = {
+      search: searchTerm.value,
+      id_disciplina: filterDiscipline.value,
+      id_paquete: filterPaquete.value,
+      id_ubicacion: filterUbicacion.value,
+      estado: filterStatus.value,
+      desde: filterDateFrom.value,
+      hasta: filterDateTo.value
+    }
+    const response = await listarEntrenamientos(params)
     trainings.value = Array.isArray(response) ? response : (response?.data || [])
     console.log("Entrenamientos ", trainings.value);
 
@@ -420,64 +515,9 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('es-ES', options)
 }
 
-// Filtrar entrenamientos
+// Filtrar entrenamientos (ahora el filtrado se hace en backend)
 const filteredTrainings = computed(() => {
-  let result = trainings.value || []
-
-  // Filtro de búsqueda general: nombre, paquete, disciplina, ubicacion, observación
-  if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
-    result = result.filter(training => {
-      const nombre = String(training.nombre || '').toLowerCase()
-      const observ = String(training.observacion || '').toLowerCase()
-      const paqueteNombre = String(training.paquete?.nombre || '').toLowerCase()
-      const disciplinaNombre = String(training.paquete?.disciplina?.nombre || '').toLowerCase()
-      const ubicacionNombre = String(training.ubicacion?.nombre || '').toLowerCase()
-
-      return (
-        nombre.includes(term) ||
-        observ.includes(term) ||
-        paqueteNombre.includes(term) ||
-        disciplinaNombre.includes(term) ||
-        ubicacionNombre.includes(term)
-      )
-    })
-  }
-
-  // Filtro por disciplina (por id de disciplina)
-  if (filterDiscipline.value) {
-    result = result.filter(t => t.paquete?.disciplina?.id === filterDiscipline.value)
-  }
-
-  // Filtro por paquete
-  if (filterPaquete.value) {
-    result = result.filter(t => t.paquete?.id === filterPaquete.value)
-  }
-
-  // Filtro por ubicación
-  if (filterUbicacion.value) {
-    result = result.filter(t => t.ubicacion?.id === filterUbicacion.value)
-  }
-
-  // Filtro por estado
-  if (filterStatus.value !== null && filterStatus.value !== undefined) {
-    result = result.filter(training => training.estado === filterStatus.value)
-  }
-
-  // Filtro por fecha de inicio
-  if (filterDateFrom.value) {
-    result = result.filter(
-      training => training.fecha_inicio && new Date(training.fecha_inicio) >= new Date(filterDateFrom.value)
-    )
-  }
-
-  if (filterDateTo.value) {
-    result = result.filter(
-      training => training.fecha_inicio && new Date(training.fecha_inicio) <= new Date(filterDateTo.value)
-    )
-  }
-
-  return result
+  return trainings.value || []
 })
 // entrenadores handled inside dialog/component
 
@@ -595,6 +635,56 @@ const viewTrainingDetails = (training) => {
   detailsDialog.value = true
 }
 
+// Ver entrenadores asignados
+// const viewCoaches = (training) => {
+//   console.log('Ver entrenadores de: ', training)
+//   selectedTrainingCoaches.value = training
+//   coachesDialog.value = true
+// }
+
+// Asignar entrenadores al entrenamiento
+const assignCoaches = (training) => {
+  console.log('Asignar entrenadores a: ', training)
+  selectedTrainingForAssign.value = training
+  assignCoachesDialog.value = true
+}
+
+// Guardar asistencias de entrenadores
+const handleCoachesAssigned = async (asistencias) => {
+  try {
+    console.log('Guardando asistencias de entrenadores:', asistencias)
+    await guardarAsistencias(asistencias)
+    $q.notify({
+      type: 'positive',
+      message: 'Entrenadores asignados exitosamente',
+      icon: 'check_circle'
+    })
+    assignCoachesDialog.value = false
+    // Recargar entrenamientos para reflejar los cambios
+    await fetchTrainings()
+  } catch (error) {
+    console.error('Error al asignar entrenadores:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Error al asignar entrenadores',
+      icon: 'error'
+    })
+  }
+}
+
+// Obtener foto del entrenador
+const getCoachPhoto = (foto) => {
+  return `${host}${foto}`
+}
+
+// Obtener iniciales del entrenador
+const getInitials = (coach) => {
+  if (!coach) return '?'
+  const nombres = coach.nombres || coach.nombre || ''
+  const apellido = coach.apellido_paterno || ''
+  return (nombres.charAt(0) + apellido.charAt(0)).toUpperCase() || '?'
+}
+
 // Limpiar filtros
 const clearFilters = () => {
   searchTerm.value = ''
@@ -608,27 +698,71 @@ const clearFilters = () => {
 
 // formatDate is not used in this page; details component handles formatting
 
-// Obtener color para el estado (-1: suspendido, 0: terminado, 1: en marcha, 2: sin comenzar)
-const getStatusColor = (status) => {
-  const colors = {
-    '-1': 'orange',   // Suspendido
-    0: 'grey',        // Terminado
-    1: 'positive',    // En marcha
-    2: 'warning'      // Sin comenzar
+// Obtener fecha en zona horaria de Bolivia (UTC-4)
+const obtenerFechaBolivia = (fechaString) => {
+  if (!fechaString) return null
+  const fecha = new Date(fechaString + 'T00:00:00-04:00')
+  return fecha
+}
+
+// Obtener fecha actual en Bolivia
+const obtenerHoyBolivia = () => {
+  const ahora = new Date()
+  const utc = ahora.getTime() + (ahora.getTimezoneOffset() * 60000)
+  const boliviaTime = new Date(utc + (3600000 * -4)) // UTC-4
+  boliviaTime.setHours(0, 0, 0, 0)
+  return boliviaTime
+}
+
+// Calcular estado real basado en fechas
+const calcularEstadoReal = (entrenamiento) => {
+  // Si estado es 0, está suspendido
+  if (entrenamiento.estado === 0) {
+    return { estado: 'suspendido', color: 'negative', label: 'Suspendido' }
   }
-  return colors[status] || 'grey'
+
+  // Si estado es 1, revisar fechas
+  if (entrenamiento.estado === 1) {
+    const hoy = obtenerHoyBolivia()
+    const fechaInicio = obtenerFechaBolivia(entrenamiento.fecha_inicio)
+    const fechaFin = obtenerFechaBolivia(entrenamiento.fecha_fin)
+
+    if (!fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar' }
+    }
+
+    // Sin comenzar: hoy < fecha_inicio
+    if (hoy < fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar' }
+    }
+
+    // Terminado: hoy > fecha_fin
+    if (fechaFin && hoy > fechaFin) {
+      return { estado: 'terminado', color: 'grey', label: 'Terminado' }
+    }
+
+    // En marcha: hoy >= fecha_inicio && hoy <= fecha_fin
+    return { estado: 'en-marcha', color: 'positive', label: 'En marcha' }
+  }
+
+  // Otros estados (por compatibilidad)
+  return { estado: 'desconocido', color: 'grey', label: 'Desconocido' }
+}
+
+// Obtener color para el estado
+const getStatusColor = (entrenamiento) => {
+  return calcularEstadoReal(entrenamiento).color
 }
 
 // Obtener texto para el estado
-const getStatusLabel = (status) => {
-  const labels = {
-    '-1': 'Suspendido',
-    0: 'Terminado',
-    1: 'En marcha',
-    2: 'Sin comenzar'
-  }
-  return labels[status] || 'Desconocido'
+const getStatusLabel = (entrenamiento) => {
+  return calcularEstadoReal(entrenamiento).label
 }
+
+// Watch filtros para recargar datos
+watch([searchTerm, filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterDateFrom, filterDateTo], () => {
+  fetchTrainings()
+})
 
 // Cargar datos iniciales
 onMounted(async () => {
@@ -657,6 +791,8 @@ onMounted(async () => {
   try {
     const entrenadoresResp = await listar({ tipo_persona: 'entrenador' })
     coachesList.value = Array.isArray(entrenadoresResp) ? entrenadoresResp : (entrenadoresResp?.data || [])
+    console.log('entrensdores----------------------------', coachesList.value);
+
   } catch (e) {
     console.warn('No se pudieron cargar entrenadores:', e)
   }
@@ -896,9 +1032,21 @@ $pastel-clay: #d7ccc8; // Arcilla pastel
 /* Grid de entrenamientos */
 .trainings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   animation: fadeIn 0.6s ease-in;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 1023px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Cards de entrenamientos */
@@ -1093,12 +1241,203 @@ $pastel-clay: #d7ccc8; // Arcilla pastel
   }
 }
 
+.btn-assign-coaches {
+  background: linear-gradient(135deg, $color-sage 0%, $color-lime 100%);
+  color: white;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(139, 195, 74, 0.3);
+  }
+}
+
+.btn-coaches {
+  background: linear-gradient(135deg, $color-lime 0%, $color-sage 100%);
+  color: white;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(156, 204, 101, 0.3);
+  }
+}
+
 .btn-view {
   background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
   color: white;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+  }
+}
+
+/* Diálogo de Entrenadores */
+.coaches-dialog-card {
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  max-width: 900px;
+  min-width: 600px;
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+    border-radius: 0;
+  }
+}
+
+.coaches-dialog-header {
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.dialog-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+
+  .dialog-icon {
+    color: $color-lime;
+  }
+}
+
+.dialog-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.dialog-subtitle {
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 4px 0 0 0;
+}
+
+.coaches-dialog-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-lime 100%);
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+}
+
+.coaches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coach-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  background: white;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    border-color: $color-leaf;
+  }
+}
+
+.coach-card-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, $pastel-mint 0%, $pastel-lime 100%);
+}
+
+.coach-avatar {
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.coach-avatar-placeholder {
+  background: linear-gradient(135deg, $color-moss 0%, $color-leaf 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.coach-card-body {
+  padding: 20px;
+  background: white;
+}
+
+.coach-name {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: $color-forest;
+  margin-bottom: 12px;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.coach-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid $pastel-lime;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.coach-info-icon {
+  color: $color-moss;
+  flex-shrink: 0;
+}
+
+.coach-info-text {
+  font-size: 0.9em;
+  color: #374151;
+  flex: 1;
+  word-wrap: break-word;
+}
+
+.no-coaches {
+  text-align: center;
+  padding: 48px 24px;
+
+  p {
+    margin-top: 16px;
+    font-size: 1.1em;
+  }
+}
+
+.coaches-dialog-actions {
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #f9f9f9 0%, $pastel-sage 100%);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid $pastel-lime;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
   }
 }
 

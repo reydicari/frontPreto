@@ -98,9 +98,6 @@
                     <q-input v-model.number="localPersona.salario" label="Salario" type="number" outlined dense
                       class="col-md-6 col-6" />
 
-                    <q-input v-model.number="localPersona.grupos_maximo" label="Máximo de grupos" type="number" outlined
-                      dense class="col-md-6 col-6" />
-                    <!-- Nivel removed: backend no longer provides nivel for entrenadores -->
                   </div>
                 </div>
                 <!-- Columna derecha - Foto de perfil -->
@@ -207,10 +204,10 @@
                     </q-card-section>
                     <q-separator />
                     <q-card-section>
-                      <div class="row q-col-gutter-y-sm">
+                      <!-- <div class="row q-col-gutter-y-sm">
                         <div class="col-6 text-weight-bold">Años de experiencia:</div>
                         <div class="col-6">{{ localPersona.experiencia }}</div>
-                      </div>
+                      </div> -->
                       <div class="row q-col-gutter-y-sm">
                         <div class="col-6 text-weight-bold">Foto de perfil:</div>
                         <div class="col-6">

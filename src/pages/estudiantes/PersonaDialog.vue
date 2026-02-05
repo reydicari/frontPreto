@@ -194,10 +194,10 @@
                     </q-card-section>
                     <q-separator />
                     <q-card-section>
-                      <div class="row q-col-gutter-y-sm">
+                      <!-- <div class="row q-col-gutter-y-sm">
                         <div class="col-6 text-weight-bold">Años de experiencia:</div>
                         <div class="col-6">{{ localPersona.experiencia }}</div>
-                      </div>
+                      </div> -->
                       <div class="row q-col-gutter-y-sm">
                         <div class="col-6 text-weight-bold">Foto de perfil:</div>
                         <div class="col-6">

@@ -7,19 +7,18 @@
           <div class="col-12 col-sm-auto">
             <div class="header-title">
               <q-icon name="admin_panel_settings" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Gestión de Usuarios</h2>
+              <h2 class="page-title">Usuarios</h2>
             </div>
-            <p class="header-subtitle">Administra cuentas de usuario y permisos del sistema</p>
           </div>
-          <div class="col-12 col-sm-auto">
+          <!-- <div class="col-12 col-sm-auto">
             <q-btn class="btn-add-header" icon="person_add" label="Nuevo Usuario" @click="showUserDialog(null)"
               unelevated no-caps />
-          </div>
+          </div> -->
         </div>
       </div>
 
       <!-- Tarjetas de estadísticas -->
-      <div class="stats-container row q-gutter-md q-mt-md">
+      <!-- <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="groups" size="36px" />
@@ -69,7 +68,7 @@
             <div class="stat-label">Activos esta Semana</div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Barra de herramientas -->
@@ -119,144 +118,121 @@
                 </template>
               </q-select>
 
-              <q-input v-model="dateRangeLabel" label="Rango de fechas (último ingreso)" outlined dense
-                class="col-12 col-sm-6 col-md-4 filter-input" readonly>
-                <template v-slot:prepend>
-                  <q-icon name="event" class="text-green-7" />
-                </template>
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer text-brown-7">
-                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                      <q-date v-model="dateRange" range>
-                        <div class="row items-center justify-end q-gutter-sm">
-                          <q-btn label="Limpiar" flat @click="dateRange = { from: null, to: null }" />
-                          <q-btn label="Aceptar" color="primary" flat v-close-popup @click="applyFilters" />
-                        </div>
-                      </q-date>
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
 
-              <q-select v-model="filterOrden" :options="ordenOptions" label="Ordenar por" outlined dense clearable
-                emit-value map-options @update:model-value="applyFilters" class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="sort" class="text-light-green-8" />
-                </template>
-              </q-select>
-
-              <q-input v-model="filterTelefono" label="Teléfono" outlined dense clearable
-                class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="phone" class="text-green-6" />
-                </template>
-              </q-input>
             </div>
 
-            <div class="row justify-end q-mt-md q-gutter-sm">
+            <!-- <div class="row justify-end q-mt-md q-gutter-sm">
               <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
               <q-btn label="Aplicar filtros" class="btn-apply-filters" icon="check" @click="applyFilters" unelevated />
-            </div>
+            </div> -->
           </div>
         </q-expansion-item>
       </q-card-section>
     </q-card>
 
     <!-- Lista de usuarios en tarjetas -->
-    <div class="row q-col-gutter-md">
-      <div v-for="(user, index) in filteredUsers" :key="user.id" class="col-xs-12 col-sm-6 col-md-4 col-lg-3"
-        :style="{ animationDelay: (index * 30) + 'ms' }">
-        <q-card class="user-card">
-          <div class="card-number">{{ index + 1 }}</div>
+    <q-infinite-scroll ref="infiniteScrollRef" @load="loadMore" :offset="250">
+      <div class="row q-col-gutter-md">
+        <div v-for="(user, index) in users" :key="user.id" class="col-xs-12 col-sm-6 col-md-4 col-lg-3"
+          :style="{ animationDelay: (index * 30) + 'ms' }">
+          <q-card class="user-card">
+            <div class="card-number">{{ index + 1 }}</div>
 
-          <div class="card-ribbon" :class="user.estado ? 'ribbon-active' : 'ribbon-inactive'">
-            {{ user.estado ? 'ACTIVO' : 'INACTIVO' }}
-          </div>
+            <div class="card-ribbon" :class="user.estado ? 'ribbon-active' : 'ribbon-inactive'">
+              {{ user.estado ? 'ACTIVO' : 'INACTIVO' }}
+            </div>
 
-          <q-card-section class="card-header">
-            <div class="avatar-container">
-              <q-avatar size="80px" class="avatar-user">
-                <q-img v-if="user.persona?.fotografia" :src="host + user.persona.fotografia" />
-                <div v-else class="avatar-placeholder">
-                  <q-icon name="person" size="48px" />
+            <q-card-section class="card-header">
+              <div class="avatar-container">
+                <q-avatar size="80px" class="avatar-user">
+                  <q-img v-if="user.persona?.fotografia" :src="host + user.persona.fotografia" />
+                  <div v-else class="avatar-placeholder">
+                    <q-icon name="person" size="48px" />
+                  </div>
+                </q-avatar>
+              </div>
+
+              <div class="user-username">
+                <q-icon name="account_circle" size="20px" class="q-mr-xs" />
+                {{ user.usuario }}
+              </div>
+              <div class="user-fullname" v-if="user.persona">
+                {{ user.persona.nombres }} {{ user.persona.apellido_paterno }}
+              </div>
+              <div class="user-fullname" v-else>
+                Sin persona asignada
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <q-card-section class="card-body">
+              <div class="info-row" v-if="user.persona?.telefono">
+                <q-icon name="phone" size="18px" class="info-icon text-green-7" />
+                <span class="info-label">Teléfono:</span>
+                <span class="info-value">{{ user.persona.telefono }}</span>
+              </div>
+
+              <div class="info-row" v-if="user.persona?.ci">
+                <q-icon name="badge" size="18px" class="info-icon text-brown-7" />
+                <span class="info-label">CI:</span>
+                <span class="info-value">{{ user.persona.ci }} {{ user.persona.complemento || '' }}</span>
+              </div>
+
+              <div class="info-row">
+                <q-icon name="schedule" size="18px" class="info-icon text-light-green-8" />
+                <span class="info-label">Último ingreso:</span>
+                <span class="info-value">{{ formatDate(user.ultimo_ingreso) }}</span>
+              </div>
+
+              <div class="roles-section q-mt-md">
+                <div class="roles-label">
+                  <q-icon name="badge" size="16px" class="q-mr-xs" />
+                  Roles
                 </div>
-              </q-avatar>
-            </div>
-
-            <div class="user-username">
-              <q-icon name="account_circle" size="20px" class="q-mr-xs" />
-              {{ user.usuario }}
-            </div>
-            <div class="user-fullname" v-if="user.persona">
-              {{ user.persona.nombres }} {{ user.persona.apellido_paterno }}
-            </div>
-            <div class="user-fullname" v-else>
-              Sin persona asignada
-            </div>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="card-body">
-            <div class="info-row" v-if="user.persona?.telefono">
-              <q-icon name="phone" size="18px" class="info-icon text-green-7" />
-              <span class="info-label">Teléfono:</span>
-              <span class="info-value">{{ user.persona.telefono }}</span>
-            </div>
-
-            <div class="info-row" v-if="user.persona?.ci">
-              <q-icon name="badge" size="18px" class="info-icon text-brown-7" />
-              <span class="info-label">CI:</span>
-              <span class="info-value">{{ user.persona.ci }} {{ user.persona.complemento || '' }}</span>
-            </div>
-
-            <div class="info-row">
-              <q-icon name="schedule" size="18px" class="info-icon text-light-green-8" />
-              <span class="info-label">Último ingreso:</span>
-              <span class="info-value">{{ formatDate(user.ultimo_ingreso) }}</span>
-            </div>
-
-            <div class="roles-section q-mt-md">
-              <div class="roles-label">
-                <q-icon name="badge" size="16px" class="q-mr-xs" />
-                Roles
+                <div class="roles-chips">
+                  <q-chip v-for="role in user.rols || []" :key="role.id" size="sm" class="role-chip" dense>
+                    {{ role.nombre }}
+                  </q-chip>
+                  <q-chip v-if="!user.rols || user.rols.length === 0" size="sm" color="grey-5" text-color="grey-8"
+                    dense>
+                    Sin roles
+                  </q-chip>
+                </div>
               </div>
-              <div class="roles-chips">
-                <q-chip v-for="role in user.rols || []" :key="role.id" size="sm" class="role-chip" dense>
-                  {{ role.nombre }}
-                </q-chip>
-                <q-chip v-if="!user.rols || user.rols.length === 0" size="sm" color="grey-5" text-color="grey-8" dense>
-                  Sin roles
-                </q-chip>
-              </div>
-            </div>
-          </q-card-section>
+            </q-card-section>
 
-          <q-separator />
+            <q-separator />
 
-          <q-card-actions class="card-actions">
-            <q-btn class="btn-action btn-edit" round icon="edit" @click="showUserDialog(user)">
-              <q-tooltip>Editar usuario</q-tooltip>
-            </q-btn>
-            <q-btn class="btn-action btn-toggle" round :icon="user.estado ? 'toggle_on' : 'toggle_off'"
-              @click="confirmChangeEstado(user, !user.estado)">
-              <q-tooltip>
-                {{ user.estado ? 'Desactivar' : 'Activar' }}
-              </q-tooltip>
-            </q-btn>
-            <q-btn class="btn-action btn-info" round icon="info" @click="showUserInfo(user)">
-              <q-tooltip>Ver detalles</q-tooltip>
-            </q-btn>
-          </q-card-actions>
-        </q-card>
+            <q-card-actions class="card-actions">
+              <q-btn class="btn-action btn-edit" round icon="edit" @click="showUserDialog(user)">
+                <q-tooltip>Editar usuario</q-tooltip>
+              </q-btn>
+              <q-toggle :model-value="user.estado" @update:model-value="confirmChangeEstado(user, !user.estado)"
+                :color="user.estado ? 'green-7' : 'red-6'" checked-icon="check" unchecked-icon="close" size="lg">
+                <q-tooltip>
+                  {{ user.estado ? 'Activo - Click para desactivar' : 'Inactivo - Click para activar' }}
+                </q-tooltip>
+              </q-toggle>
+              <q-btn class="btn-action btn-info" round icon="info" @click="showUserInfo(user)">
+                <q-tooltip>Ver detalles</q-tooltip>
+              </q-btn>
+            </q-card-actions>
+          </q-card>
+        </div>
+
+        <div v-if="users.length === 0 && !loading" class="col-12 text-center q-pa-xl">
+          <q-icon name="search_off" size="64px" class="text-grey-5" />
+          <div class="text-h6 text-grey-6 q-mt-md">No se encontraron usuarios</div>
+          <div class="text-caption text-grey-5">Intenta ajustar los filtros de búsqueda</div>
+        </div>
       </div>
-
-      <div v-if="filteredUsers.length === 0" class="col-12 text-center q-pa-xl">
-        <q-icon name="search_off" size="64px" class="text-grey-5" />
-        <div class="text-h6 text-grey-6 q-mt-md">No se encontraron usuarios</div>
-        <div class="text-caption text-grey-5">Intenta ajustar los filtros de búsqueda</div>
-      </div>
-    </div>
+      <template v-slot:loading>
+        <div class="row justify-center q-my-md">
+          <q-spinner-dots color="green-7" size="40px" />
+        </div>
+      </template>
+    </q-infinite-scroll>
 
     <!-- Diálogo para editar/crear usuario -->
     <q-dialog v-model="userDialog" persistent>
@@ -355,7 +331,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 // Helper para parsear distintos formatos de fecha/hora que pueden venir del backend
 // Acepta: Date, timestamp (number), ISO con 'T' o con espacio 'YYYY-MM-DD HH:mm:ss', o ISO con Z
@@ -412,12 +388,14 @@ const userForm = ref(null)
 
 // Estado del componente
 const dateRange = ref({ from: null, to: null })
-const dateRangeLabel = computed(() => (dateRange.value.from && dateRange.value.to) ? `${dateRange.value.from} al ${dateRange.value.to}` : '')
 
 const users = ref([])
-const usersAux = ref([])
 const roles = ref([])
 const loading = ref(false)
+const loadingMore = ref(false)
+const hasMoreData = ref(true)
+const currentPage = ref(1)
+const itemsPerPage = 10
 const searchInput = ref('')
 const searchTerm = ref('')
 const filtersExpanded = ref(false)
@@ -427,6 +405,7 @@ const filterOrden = ref(null)
 const userDialog = ref(false)
 const editMode = ref(false)
 const usuarioTemporal = ref('')
+const infiniteScrollRef = ref(null)
 
 const currentUser = ref({ id: null, usuario: '', clave: '', id_persona: null, estado: true, roles: [] })
 
@@ -434,13 +413,6 @@ const currentUser = ref({ id: null, usuario: '', clave: '', id_persona: null, es
 const filtroRol = ref([])
 const statusOptions = [{ label: 'Activo', value: true }, { label: 'Inactivo', value: false }]
 
-const ordenOptions = [
-  { label: 'Usuario (A-Z)', value: 'usuario_asc' },
-  { label: 'Usuario (Z-A)', value: 'usuario_desc' },
-  { label: 'Último ingreso (reciente)', value: 'ingreso_desc' },
-  { label: 'Último ingreso (antiguo)', value: 'ingreso_asc' },
-  { label: 'Estado (activo primero)', value: 'estado_desc' }
-]
 
 let searchTimeout = null
 
@@ -456,36 +428,6 @@ const activeFiltersCount = computed(() => {
 })
 
 // Computed para estadísticas
-const estadisticas = computed(() => {
-  const total = users.value.length
-  const activos = users.value.filter(u => u.estado).length
-  const inactivos = total - activos
-
-  // Roles únicos
-  const rolesSet = new Set()
-  users.value.forEach(u => {
-    if (u.rols && Array.isArray(u.rols)) {
-      u.rols.forEach(r => rolesSet.add(r.nombre))
-    }
-  })
-  const rolesUnicos = rolesSet.size
-
-  // Usuarios activos en la última semana
-  const haceUnaSemana = new Date()
-  haceUnaSemana.setDate(haceUnaSemana.getDate() - 7)
-  const ultimaSemana = users.value.filter(u => {
-    const d = parseDateValue(u.ultimo_ingreso)
-    return d && d >= haceUnaSemana
-  }).length
-
-  return {
-    total,
-    activos,
-    inactivos,
-    rolesUnicos,
-    ultimaSemana
-  }
-})
 
 // Función para manejar la búsqueda con debounce
 const handleSearchInput = (value) => {
@@ -530,144 +472,95 @@ const verificarUsuario = () => {
 //   return `${opt.nombres || ''} ${opt.apellido_paterno || ''} ${opt.apellido_materno || ''}`.trim()
 // }
 
+// Watches para filtros que recargan inmediatamente
+watch([filterStatus, filtroRol, filterOrden, dateRange, searchTerm], () => {
+  currentPage.value = 1
+  if (infiniteScrollRef.value) {
+    infiniteScrollRef.value.reset()
+  }
+  loadUsers(1, false)
+}, { deep: true })
+
 onMounted(async () => {
-  fetchUsers()//pequeña espera visual
-  usersAux.value = users.value
   roles.value = await listarRoles()
+  loadUsers()
 })
 
-// Obtener usuarios (simulando llamada API)
-const fetchUsers = async () => {
-  loading.value = true
-  setTimeout(async () => {
-    loading.value = false
-    users.value = await listarUsuarios()
-    console.log('Usuarios: ', users.value);
+// Obtener usuarios con paginación y filtros
+const loadUsers = async (page = 1, append = false) => {
+  try {
+    if (append) loadingMore.value = true
+    else {
+      loading.value = true
+      users.value = []
+      currentPage.value = page
+      hasMoreData.value = true
+    }
 
-  }, 500)
+    // Preparar parámetros de filtros
+    const params = {
+      estado: filterStatus.value,
+      search: searchTerm.value,
+      telefono: filterTelefono.value,
+      orden: filterOrden.value,
+      page,
+      limit: itemsPerPage
+    }
+
+    // Agregar filtro de roles si hay selección
+    if (Array.isArray(filtroRol.value) && filtroRol.value.length > 0) {
+      params.id_rol = filtroRol.value.map(r => r.id).join(',')
+    }
+
+    // Agregar filtro de fecha si existe
+    if (dateRange.value && dateRange.value.from) {
+      params.fecha_desde = dateRange.value.from
+    }
+    if (dateRange.value && dateRange.value.to) {
+      params.fecha_hasta = dateRange.value.to
+    }
+
+    console.log('Parámetros de usuarios:', params)
+
+    const response = await listarUsuarios(params)
+    console.log(response);
+
+    if (response && Array.isArray(response)) {
+      if (append && page > 1) {
+        users.value.push(...response)
+      } else {
+        users.value = response
+      }
+      hasMoreData.value = response.length === itemsPerPage
+      currentPage.value++
+    } else {
+      hasMoreData.value = false
+    }
+    console.log('Usuarios cargados:', users.value)
+  } catch (error) {
+    console.error('Error al cargar usuarios:', error)
+    hasMoreData.value = false
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+  }
 }
 
-// Filtrar usuarios
-const filteredUsers = computed(() => {
-  let result = users.value
-
-  // Filtro de búsqueda general
-  if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
-    result = result.filter(user => {
-      const nombrePersona = `${user.persona?.nombres || ''} ${user.persona?.apellido_paterno || ''} ${user.persona?.apellido_materno || ''}`.toLowerCase()
-      const telefono = user.persona?.telefono || ''
-      return (user.usuario || '').toLowerCase().includes(term) || nombrePersona.includes(term) || telefono.includes(term)
-    })
+const loadMore = async (index, done) => {
+  if (!hasMoreData.value || loadingMore.value) {
+    done()
+    return
   }
+  setTimeout(async () => {
+    // `index` viene desde q-infinite-scroll y representa la página a cargar.
+    // Usarlo evita desincronizar `currentPage` y provoca saltos (1 → 3).
+    const pageToLoad = (typeof index === 'number' && index > 0) ? index : currentPage.value
+    await loadUsers(pageToLoad, true)
+    done()
+  }, 100)
+}
 
-  // Filtro por teléfono
-  if (filterTelefono.value) {
-    const tel = filterTelefono.value.toLowerCase()
-    result = result.filter(user => {
-      const telefono = user.persona?.telefono || ''
-      return telefono.toLowerCase().includes(tel)
-    })
-  }
-
-  // Filtro por estado
-  if (filterStatus.value !== null) {
-    result = result.filter(user => user.estado === filterStatus.value)
-  }
-
-  // Filtro por fecha (usa dateRange.from / dateRange.to) sobre user.ultimo_ingreso
-  // Manejar tres casos: solo from, solo to, o ambos (inclusive en 'to' hasta 23:59:59.999)
-  if (dateRange.value && (dateRange.value.from || dateRange.value.to)) {
-    // Normalizar localmente: usar las cadenas originales pero parsearlas
-    let fromStr = dateRange.value.from
-    let toStr = dateRange.value.to
-
-    const parsedFrom = fromStr ? parseDateValue(fromStr) : null
-    const parsedTo = toStr ? parseDateValue(toStr) : null
-
-    // Si ambas existen y están invertidas, intercambiarlas para que from <= to
-    if (parsedFrom && parsedTo && parsedFrom > parsedTo) {
-      const tmp = fromStr
-      fromStr = toStr
-      toStr = tmp
-      // Actualizar la UI de forma segura en el siguiente tick para reflejar el orden correcto
-      nextTick(() => { dateRange.value = { from: fromStr, to: toStr } })
-    }
-
-    const from = fromStr ? new Date(fromStr) : null
-    const to = toStr ? new Date(toStr) : null
-    const toInclusive = to ? new Date(to) : null
-    if (toInclusive) toInclusive.setHours(23, 59, 59, 999)
-
-    if (from && toInclusive) {
-      // Ambos límites: filtrar por rango inclusivo en una sola pasada
-      result = result.filter(user => {
-        const d = parseDateValue(user.ultimo_ingreso)
-        if (!d) return false
-        return d >= from && d <= toInclusive
-      })
-    } else if (from) {
-      // Solo desde
-      result = result.filter(user => {
-        const d = parseDateValue(user.ultimo_ingreso)
-        return d && d >= from
-      })
-    } else if (toInclusive) {
-      // Solo hasta (inclusivo)
-      result = result.filter(user => {
-        const d = parseDateValue(user.ultimo_ingreso)
-        return d && d <= toInclusive
-      })
-    }
-  }
-
-  // Filtro por rol (si aplica)
-  if (Array.isArray(filtroRol.value) && filtroRol.value.length > 0) {
-    // Obtener set de ids seleccionados (puede contener objetos de rol)
-    const selectedRoleIds = new Set(filtroRol.value.map(r => String(r.id ?? r)))
-    // Incluir usuarios que tengan al menos uno de los roles seleccionados
-    result = result.filter(u => (u.rols || []).some(r => selectedRoleIds.has(String(r.id))))
-  }
-
-  // Ordenamiento
-  if (filterOrden.value) {
-    const sortedResult = [...result]
-    switch (filterOrden.value) {
-      case 'usuario_asc':
-        sortedResult.sort((a, b) => (a.usuario || '').localeCompare(b.usuario || ''))
-        break
-      case 'usuario_desc':
-        sortedResult.sort((a, b) => (b.usuario || '').localeCompare(a.usuario || ''))
-        break
-      case 'ingreso_desc':
-        sortedResult.sort((a, b) => {
-          const dateA = parseDateValue(a.ultimo_ingreso)
-          const dateB = parseDateValue(b.ultimo_ingreso)
-          if (!dateA && !dateB) return 0
-          if (!dateA) return 1
-          if (!dateB) return -1
-          return dateB - dateA
-        })
-        break
-      case 'ingreso_asc':
-        sortedResult.sort((a, b) => {
-          const dateA = parseDateValue(a.ultimo_ingreso)
-          const dateB = parseDateValue(b.ultimo_ingreso)
-          if (!dateA && !dateB) return 0
-          if (!dateA) return 1
-          if (!dateB) return -1
-          return dateA - dateB
-        })
-        break
-      case 'estado_desc':
-        sortedResult.sort((a, b) => (b.estado ? 1 : 0) - (a.estado ? 1 : 0))
-        break
-    }
-    return sortedResult
-  }
-
-  return result
-})
+// Los filtros ahora se manejan en el backend mediante loadUsers con params
 
 // Mostrar info de usuario
 const showUserInfo = (user) => {
@@ -699,8 +592,11 @@ const showUserInfo = (user) => {
 
 // Aplicar filtros
 const applyFilters = () => {
-  // Los filtros se aplican automáticamente mediante computed
-  // Esta función es solo para forzar una actualización si es necesario
+  currentPage.value = 1
+  if (infiniteScrollRef.value) {
+    infiniteScrollRef.value.reset()
+  }
+  loadUsers(1, false)
 }
 
 // Mostrar diálogo para editar/crear usuario
@@ -794,26 +690,16 @@ const saveUser = async () => {
     userDialog.value = false
 
   }
-  await fetchUsers()
-}
-
-// (Nota) eliminación no implementada en UI actual. Si se necesita, reactivar la función.
-
-// Limpiar filtros
-const clearFilters = () => {
-  searchInput.value = ''
-  searchTerm.value = ''
-  filtroRol.value = []
-  filterStatus.value = null
-  filterTelefono.value = null
-  filterOrden.value = null
-  // resetear el q-date range
-  dateRange.value = { from: null, to: null }
+  currentPage.value = 1
+  if (infiniteScrollRef.value) {
+    infiniteScrollRef.value.reset()
+  }
+  await loadUsers(1, false)
 }
 
 // Confirm change of estado with a small dialog
 const confirmChangeEstado = (user, nextVal) => {
-  $q.dialog({ title: 'Confirmar cambio de estado', message: `¿Desea cambiar el estado de ${user.persona?.nombres || user.usuario} a ${nextVal ? 'Activo' : 'Inactivo'}?`, cancel: true, persistent: true }).onOk(async () => {
+  $q.dialog({ title: 'Confirmar cambio de estado', message: `El usuario ${user.persona?.nombres || user.usuario} ${nextVal ? 'podra acceder al sistema' : 'no tendra acceso al sistema'}`, cancel: true, persistent: true }).onOk(async () => {
     const idx = users.value.findIndex(u => u.usuario === user.usuario)
     try {
       await cambiarEstadoUsuario({ usuario: user.usuario, estado: nextVal })
