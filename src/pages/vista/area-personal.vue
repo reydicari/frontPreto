@@ -219,6 +219,9 @@
         <q-chip size="sm" color="green-8" text-color="white">
           {{ pagos.length }} pago(s)
         </q-chip>
+        <div style="margin-left: 12px">
+          <q-btn dense flat color="white" icon="picture_as_pdf" label="Generar reporte" @click="generarReportePagos" />
+        </div>
       </div>
 
       <!-- Filtros de pagos -->
@@ -236,40 +239,23 @@
           <div v-show="showPaymentFilters" class="filters-content q-mt-md">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6 col-md-4">
-                <q-input dense outlined label="Desde" v-model="filterDesde" readonly class="filter-input">
-                  <template v-slot:prepend>
-                    <q-icon name="event" color="green-7" />
-                  </template>
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filterDesde" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="green-7" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-input>
+                <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
               </div>
 
               <div class="col-12 col-sm-6 col-md-4">
-                <q-input dense outlined label="Hasta" v-model="filterHasta" readonly class="filter-input">
-                  <template v-slot:prepend>
-                    <q-icon name="event" color="green-7" />
-                  </template>
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filterHasta" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="green-7" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-input>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-4">
-                <q-select dense outlined v-model="filterEstado" :options="estadoOptions" label="Estado" clearable
-                  class="filter-input">
+                <q-select map-options emit-value option-value="value" dense outlined v-model="filterEstado"
+                  :options="estadoOptions" label="Estado" clearable class="filter-input">
                   <template v-slot:prepend>
                     <q-icon name="toggle_on" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select map-options emit-value option-value="value" dense outlined v-model="filterCategoria"
+                  :options="categoriaOptions" label="Categoría de Pago" clearable class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="category" color="green-7" />
                   </template>
                 </q-select>
               </div>
@@ -289,11 +275,24 @@
         <div v-else>
           <!-- Resumen financiero -->
           <div class="payment-summary q-mb-md">
-            <div class="summary-item">
-              <q-icon name="account_balance_wallet" size="24px" color="green-8" />
-              <div class="summary-content">
-                <div class="summary-label">Total Pagado</div>
-                <div class="summary-value">Bs {{ totalPagado }}</div>
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6">
+                <div class="summary-item">
+                  <q-icon name="account_balance_wallet" size="24px" color="green-8" />
+                  <div class="summary-content">
+                    <div class="summary-label">Total Pagos</div>
+                    <div class="summary-value">Bs {{ totalPagos.toFixed(2) }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6">
+                <div class="summary-item">
+                  <q-icon name="warning" size="24px" color="orange-7" />
+                  <div class="summary-content">
+                    <div class="summary-label">Total Deudas</div>
+                    <div class="summary-value">Bs {{ totalDeudas.toFixed(2) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -435,7 +434,10 @@ import { useQuasar } from 'quasar'
 import { listarEvaluaciones } from 'src/stores/evaluacion-store'
 import { listarProgreso } from 'src/stores/progreso-store'
 import { listarPagos } from 'src/stores/pago_store.js'
+import { reportePagosParams } from 'src/stores/reportes.js'
 import { listar as listarInscripciones } from 'src/stores/inscripcion-store'
+import { listarCategorias } from 'src/stores/categoria-store.js'
+import FiltroFechas from 'src/components/FiltroFechas.vue'
 import * as echarts from 'echarts'
 
 const $q = useQuasar()
@@ -445,6 +447,8 @@ const userData = ref(null)
 const evaluaciones = ref([])
 const progresos = ref([])
 const pagos = ref([])
+const totalPagos = ref(0)
+const totalDeudas = ref(0)
 const inscripciones = ref([])
 const loadingEvaluaciones = ref(false)
 const loadingProgresos = ref(false)
@@ -460,18 +464,32 @@ const searchProgressId = ref(null)
 const filterDesde = ref(null)
 const filterHasta = ref(null)
 const filterEstado = ref(null)
+const filterCategoria = ref(null)
+const categoriaOptions = ref([])
 const showPaymentFilters = ref(false)
 
 const estadoOptions = [
+  { label: 'Todos', value: null },
   { label: 'Anulado', value: 0 },
-  { label: 'Pagado', value: 1 },
-  { label: 'Parcial', value: 2 }
+  { label: 'Valido', value: 1 },
+  { label: 'Deuda', value: 2 }
 ]
 
 // Computed para verificar si es administrador
 const isAdmin = computed(() => {
   return userData.value?.rols?.some(rol => rol.id === 4 && rol.nombre === 'Administrador')
 })
+
+// Cargar categorías
+const loadCategorias = async () => {
+  try {
+    const res = await listarCategorias()
+    categoriaOptions.value = (Array.isArray(res) ? res : [])
+      .map(c => ({ label: c.nombre, value: c.id }))
+  } catch (e) {
+    console.error('Error cargando categorías:', e)
+  }
+}
 
 // Cargar datos del usuario
 onMounted(async () => {
@@ -480,6 +498,7 @@ onMounted(async () => {
   userData.value = current
 
   if (current?.persona?.id) {
+    await loadCategorias()
     await cargarEvaluaciones(current.persona.id)
     await cargarProgresos({ id_persona: current.persona.id })
     await cargarPagos()
@@ -553,9 +572,15 @@ const cargarPagos = async () => {
       hasta: filterHasta.value,
       id_persona: current?.persona?.id,
       estado: filterEstado.value,
+      id_categoria: filterCategoria.value,
+      page: 1,
+      limit: 500
     }
     const res = await listarPagos(params)
-    pagos.value = Array.isArray(res) ? res : (res?.data || [])
+    // Extraer totalPagos, totalDeudas y lista del backend
+    totalPagos.value = res?.totalPagos || 0
+    totalDeudas.value = res?.totalDeudas || 0
+    pagos.value = res?.lista || []
   } catch (error) {
     console.error('Error cargando pagos:', error)
     $q.notify({ type: 'negative', message: 'Error al cargar pagos' })
@@ -564,8 +589,26 @@ const cargarPagos = async () => {
   }
 }
 
+// Generar reporte PDF con los parámetros actuales
+const generarReportePagos = async () => {
+  try {
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    const params = {
+      desde: filterDesde.value,
+      hasta: filterHasta.value,
+      id_persona: current?.persona?.id,
+      estado: filterEstado.value,
+    }
+    $q.notify({ type: 'info', message: 'Generando reporte...' })
+    await reportePagosParams(params)
+  } catch (error) {
+    console.error('Error generando reporte de pagos:', error)
+    $q.notify({ type: 'negative', message: 'Error al generar el reporte' })
+  }
+}
+
 // Watch para filtros de pagos
-watch([filterDesde, filterHasta, filterEstado], () => {
+watch([filterDesde, filterHasta, filterEstado, filterCategoria], () => {
   if (userData.value?.persona?.id) {
     cargarPagos()
   }
@@ -595,14 +638,8 @@ const activeFiltersCount = computed(() => {
   if (filterDesde.value) count++
   if (filterHasta.value) count++
   if (filterEstado.value !== null && filterEstado.value !== undefined) count++
+  if (filterCategoria.value) count++
   return count
-})
-
-const totalPagado = computed(() => {
-  return pagos.value
-    .filter(p => p.estado !== 0)
-    .reduce((sum, p) => sum + (p.monto || 0) - (p.descuento || 0), 0)
-    .toFixed(2)
 })
 
 // Cargar inscripciones
@@ -780,37 +817,45 @@ const renderRadarChart = () => {
   })
 }
 
-// Formatear fecha completa
+// Normalizar string de fecha a forma ISO entendible por Date: 'YYYY-MM-DDTHH:mm:ss'
+const normalizeToISO = (dateStr) => {
+  if (!dateStr) return null
+  let s = String(dateStr).trim()
+  // Si ya viene con 'T' lo dejamos, si viene con espacio lo convertimos
+  if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T')
+  // Si solo es fecha 'YYYY-MM-DD', añadimos hora 00:00:00
+  if (!s.includes('T')) s = `${s}T00:00:00`
+  return s
+}
+
+// Formatear fecha completa (mantiene comportamiento actual mostrando solo la fecha legible)
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
+  const iso = normalizeToISO(dateStr)
+  const date = iso ? new Date(iso) : new Date(dateStr)
+  if (isNaN(date)) return String(dateStr)
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
-// Formatear fecha corta
-const formatDateShort = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-}
+// Formatear fecha corta (misma que formatDate)
+const formatDateShort = (dateStr) => formatDate(dateStr)
 
-// Formatear hora
+// Formatear hora: extrae parte horaria si existe
 const formatTime = (dateStr) => {
   if (!dateStr) return ''
-  const parts = dateStr.split(' ')
-  return parts.length > 1 ? parts[1] : ''
+  const s = String(dateStr).trim()
+  if (s.includes(' ')) return s.split(' ')[1] || ''
+  if (s.includes('T')) return s.split('T')[1] || ''
+  return ''
 }
 
-// Formatear fecha y hora
+// Formatear fecha y hora: combina la representación de fecha legible y la hora extraída
 const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  const dateFormatted = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-  const timeFormatted = dateStr.split(' ')[1] || ''
-  return `${dateFormatted} ${timeFormatted}`
+  const datePart = formatDate(dateStr)
+  const timePart = formatTime(dateStr)
+  return timePart ? `${datePart} ${timePart}` : datePart
 }
 </script>
 

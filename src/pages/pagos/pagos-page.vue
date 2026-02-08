@@ -20,51 +20,31 @@
 
     <!-- Estadísticas -->
     <div class="statistics-section">
-      <div class="row q-col-gutter-md">
-        <div class="col-12 col-sm-6 col-md-3">
+      <div class="row q-col-gutter-md justify-center">
+        <div class="col-12 col-sm-6 col-md-5">
           <div class="stat-card stat-card-total">
             <div class="stat-content">
-              <div class="stat-label">Total Cobrado</div>
-              <div class="stat-value">Bs {{ totalCobrado }}</div>
+              <div class="stat-label">Total Pagos</div>
+              <div class="stat-value">Bs {{ totalPagos.toFixed(2) }}</div>
             </div>
             <q-icon name="account_balance_wallet" class="stat-icon" />
           </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-month">
-            <div class="stat-content">
-              <div class="stat-label">Este Mes</div>
-              <div class="stat-value">Bs {{ totalMesActual }}</div>
-            </div>
-            <q-icon name="calendar_today" class="stat-icon" />
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
+        <div class="col-12 col-sm-6 col-md-5">
           <div class="stat-card stat-card-count">
             <div class="stat-content">
-              <div class="stat-label">Nº Transacciones</div>
-              <div class="stat-value">{{ cantidadPagos }}</div>
+              <div class="stat-label">Total Deudas</div>
+              <div class="stat-value">Bs {{ totalDeudas.toFixed(2) }}</div>
             </div>
-            <q-icon name="receipt_long" class="stat-icon" />
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-average">
-            <div class="stat-content">
-              <div class="stat-label">Promedio</div>
-              <div class="stat-value">Bs {{ promedioMonto }}</div>
-            </div>
-            <q-icon name="trending_up" class="stat-icon" />
+            <q-icon name="warning" class="stat-icon" />
           </div>
         </div>
       </div>
     </div>
 
     <!-- Barra de búsqueda -->
-    <div class="toolbar-section">
+    <!-- <div class="toolbar-section">
       <div class="row q-col-gutter-md items-center">
         <div class="col-12">
           <q-input v-model="searchTerm" outlined dense placeholder="Buscar por detalle, comprobante o persona..."
@@ -72,10 +52,10 @@
             <template v-slot:prepend>
               <q-icon name="search" />
             </template>
-          </q-input>
-        </div>
-      </div>
-    </div>
+</q-input>
+</div>
+</div>
+</div> -->
 
     <!-- Filtros avanzados -->
     <div class="filters-section">
@@ -92,55 +72,64 @@
         <div v-show="showFilters" class="filters-content">
           <div class="row q-col-gutter-md">
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input dense outlined label="Desde" v-model="filterDesde" readonly class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
-                </template>
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="filterDesde" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-input>
+              <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input dense outlined label="Hasta" v-model="filterHasta" readonly class="filter-input">
+              <q-select map-options emit-value option-value="value" dense outlined v-model="filterEstado"
+                :options="estadoOptions" label="Estado" clearable class="filter-input">
                 <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
+                  <q-icon name="toggle_on" color="green-7" />
                 </template>
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="filterHasta" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-input>
+              </q-select>
             </div>
+
+            <!-- <div class="col-12 col-sm-6 col-md-3">
+              <q-select dense outlined v-model="filterRol" :options="rolOptions" label="Tipo de Persona" clearable
+                class="filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="badge" color="green-7" />
+                </template>
+              </q-select>
+            </div> -->
 
             <div class="col-12 col-sm-6 col-md-3">
               <q-select dense outlined v-model="filterPersona" :options="personOptions" option-label="displayName"
-                option-value="id" use-input input-debounce="200" emit-value map-options label="Persona" clearable
-                @filter="filterPerson" class="filter-input">
+                option-value="id" use-input input-debounce="300" emit-value map-options label="Persona" clearable
+                @filter="onFilterPerson" class="filter-input">
                 <template v-slot:prepend>
-                  <q-icon name="person" color="green-7" />
+                  <q-icon name="person_search" color="green-7" />
                 </template>
                 <template v-slot:no-option>
                   <q-item>
-                    <q-item-section class="text-grey">No se encontró</q-item-section>
+                    <q-item-section class="text-grey">{{ searchPersonaFiltro.length < 3
+                      ? 'Escribe al menos 3 caracteres' : 'No se encontró' }}</q-item-section>
                   </q-item>
                 </template>
               </q-select>
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
-              <q-select dense outlined v-model="filterEstado" :options="estadoOptions" label="Estado" clearable
-                class="filter-input">
+              <q-select dense outlined v-model="filterUsuario" :options="usuarioOptions" option-label="displayName"
+                option-value="id" use-input input-debounce="300" emit-value map-options label="Usuario que registró"
+                clearable @filter="onFilterUsuario" class="filter-input">
                 <template v-slot:prepend>
-                  <q-icon name="toggle_on" color="green-7" />
+                  <q-icon name="account_circle" color="green-7" />
+                </template>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">{{ searchUsuario.length < 3 ? 'Escribe al menos 3 caracteres'
+                      : 'No se encontró' }}</q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select map-options emit-value option-value="value" dense outlined v-model="filterCategoria"
+                :options="categoriaOptions" label="Categoría de Pago" clearable class="filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="category" color="green-7" />
                 </template>
               </q-select>
             </div>
@@ -158,7 +147,8 @@
               <div class="payment-header">
                 <div class="payment-date">
                   <q-icon name="event" size="18px" />
-                  {{ formatDate(pago.fecha) }}
+                  <span>{{ formatDate(pago.fecha) }}</span>
+                  <span v-if="extractTime(pago.fecha)">, {{ extractTime(pago.fecha) }}</span>
                 </div>
                 <q-badge :color="estadoColor(pago.estado)" :label="estadoLabel(pago.estado)" />
               </div>
@@ -327,7 +317,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -348,7 +338,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -425,7 +415,7 @@
                     <div class="subpago-amount">
                       <div class="subpago-monto">Bs {{ subPago.monto }}</div>
                       <q-btn v-if="subPago.estado != 0" flat dense round icon="money_off" color="negative" size="sm"
-                        @click.stop="anularPago(subPago)">
+                        @click.stop="abrirAnularPago(subPago)">
                         <q-tooltip>Anular pago</q-tooltip>
                       </q-btn>
                     </div>
@@ -507,17 +497,28 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
-import { listarPagos, anularPago } from 'src/stores/pago_store.js'
+import { listarPagos } from 'src/stores/pago_store.js'
+import { todasPersonas } from 'src/stores/persona-store.js'
+import { listarRoles } from 'src/stores/rol-store.js'
+import { listarUsuarios } from 'src/stores/usuario-store.js'
+import { listarCategorias } from 'src/stores/categoria-store.js'
 import NuevoPagoDialog from 'src/pages/pagos/NuevoPagoDialog.vue'
 import AnularPagoDialog from 'src/pages/pagos/AnularPagoDialog.vue'
+import FiltroFechas from 'src/components/FiltroFechas.vue'
 
 const $q = useQuasar()
 
 // Estado
-const pagos = ref([])
 const loading = ref(false)
 const displayedPagos = ref([])
+const totalPagos = ref(0)
+const totalDeudas = ref(0)
 const showFilters = ref(false)
+
+// Paginación
+const page = ref(0)
+const limit = ref(12)
+const hasMoreData = ref(true)
 
 // Filtros
 const searchTerm = ref('')
@@ -525,6 +526,11 @@ const filterDesde = ref(null)
 const filterHasta = ref(null)
 const filterPersona = ref(null)
 const filterEstado = ref(null)
+const filterRol = ref(null)
+const filterUsuario = ref(null)
+const filterCategoria = ref(null)
+const searchPersonaFiltro = ref('')
+const searchUsuario = ref('')
 
 // Dialogos
 const dialogVisible = ref(false)
@@ -539,46 +545,15 @@ const pagoToAnular = ref(null)
 
 // Opciones
 const personOptions = ref([])
-const allPersonOptions = ref([])
+const rolOptions = ref([])
+const usuarioOptions = ref([])
+const categoriaOptions = ref([])
 const estadoOptions = [
+  { label: 'Todos', value: null },
   { label: 'Anulado', value: 0 },
-  { label: 'Pagado', value: 1 },
-  { label: 'Parcial', value: 2 }
+  { label: 'Valido', value: 1 },
+  { label: 'Deuda', value: 2 },
 ]
-
-// Estadísticas computadas
-const totalCobrado = computed(() => {
-  return pagos.value
-    .filter(p => p.estado !== 0)
-    .reduce((sum, p) => sum + (p.monto || 0) - (p.descuento || 0), 0)
-    .toFixed(2)
-})
-
-const totalMesActual = computed(() => {
-  const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
-
-  return pagos.value
-    .filter(p => {
-      if (p.estado === 0) return false
-      const fecha = new Date(p.fecha)
-      return fecha.getMonth() === currentMonth && fecha.getFullYear() === currentYear
-    })
-    .reduce((sum, p) => sum + (p.monto || 0) - (p.descuento || 0), 0)
-    .toFixed(2)
-})
-
-const cantidadPagos = computed(() => {
-  return pagos.value.filter(p => p.estado !== 0).length
-})
-
-const promedioMonto = computed(() => {
-  const activos = pagos.value.filter(p => p.estado !== 0)
-  if (activos.length === 0) return '0.00'
-  const total = activos.reduce((sum, p) => sum + (p.monto || 0) - (p.descuento || 0), 0)
-  return (total / activos.length).toFixed(2)
-})
 
 const activeFiltersCount = computed(() => {
   let count = 0
@@ -586,6 +561,9 @@ const activeFiltersCount = computed(() => {
   if (filterHasta.value) count++
   if (filterPersona.value) count++
   if (filterEstado.value !== null && filterEstado.value !== undefined) count++
+  if (filterRol.value) count++
+  if (filterUsuario.value) count++
+  if (filterCategoria.value) count++
   return count
 })
 
@@ -615,23 +593,71 @@ function personaLabel(row) {
 
 function formatDate(dateString) {
   if (!dateString) return '-'
-  const date = new Date(dateString)
+  let s = String(dateString).trim()
+  // Aceptar formatos: 'YYYY-MM-DD', 'YYYY-MM-DD HH:mm:ss', o ISO con 'T'
+  if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T')
+  if (!s.includes('T')) s = `${s}T00:00:00`
+  const date = new Date(s)
+  if (isNaN(date)) return String(dateString)
   return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function filterPerson(val, update) {
-  update(() => {
-    if (!val) {
-      personOptions.value = [...allPersonOptions.value]
-      return
+function extractTime(dateString) {
+  if (!dateString) return ''
+  const s = String(dateString).trim()
+  if (s.includes(' ')) {
+    const parts = s.split(' ')
+    return (parts[1] || '').slice(0, 8)
+  }
+  if (s.includes('T')) {
+    const parts = s.split('T')
+    return (parts[1] || '').slice(0, 8)
+  }
+  return ''
+}
+
+async function onFilterPerson(val, update) {
+  searchPersonaFiltro.value = val
+  if (!val || val.length < 3) {
+    update(() => { personOptions.value = [] })
+    return
+  }
+  update(async () => {
+    try {
+      const res = await todasPersonas({ search: val })
+      personOptions.value = (Array.isArray(res) ? res : []).map(p => ({
+        ...p,
+        displayName: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim()
+      }))
+    } catch (e) {
+      console.error(e)
+      personOptions.value = []
     }
-    const needle = val.toLowerCase()
-    personOptions.value = allPersonOptions.value.filter(p => (p.displayName || '').toLowerCase().includes(needle))
+  })
+}
+
+async function onFilterUsuario(val, update) {
+  searchUsuario.value = val
+  if (!val || val.length < 3) {
+    update(() => { usuarioOptions.value = [] })
+    return
+  }
+  update(async () => {
+    try {
+      const res = await listarUsuarios({ search: val })
+      usuarioOptions.value = (Array.isArray(res) ? res : []).map(u => ({
+        ...u,
+        displayName: `${u.usuario} - ${u.persona?.nombres || ''} ${u.persona?.apellido_paterno || ''}`.trim()
+      }))
+    } catch (e) {
+      console.error(e)
+      usuarioOptions.value = []
+    }
   })
 }
 
 // Cargar pagos con filtros
-async function loadPagos() {
+async function loadPagos(append = false) {
   loading.value = true
   try {
     const params = {
@@ -639,12 +665,28 @@ async function loadPagos() {
       hasta: filterHasta.value,
       id_persona: filterPersona.value,
       estado: filterEstado.value,
-      search: searchTerm.value
+      search: searchTerm.value,
+      id_rol: filterRol.value,
+      id_usuario_recibe: filterUsuario.value,
+      id_categoria: filterCategoria.value,
+      page: page.value,
+      limit: limit.value
     }
+    console.log('📦 Params enviados a listarPagos:', params)
     const response = await listarPagos(params)
-    pagos.value = Array.isArray(response) ? response : (response.data || [])
-    displayedPagos.value = pagos.value.slice(0, 12)
-    console.log('pagossss: ', displayedPagos.value);
+    const newPagos = (response.lista || [])
+
+    if (append) {
+      displayedPagos.value.push(...newPagos)
+    } else {
+      displayedPagos.value = newPagos
+    }
+    totalPagos.value = response.totalPagos || 0
+    totalDeudas.value = response.totalDeudas || 0
+    // Si recibimos menos datos que el límite, no hay más datos
+    hasMoreData.value = newPagos.length === limit.value
+
+    console.log('pagos-----------------------', displayedPagos.value)
 
   } catch (e) {
     console.error(e)
@@ -655,25 +697,55 @@ async function loadPagos() {
 }
 
 // Infinite scroll
-function onLoad(index, done) {
-  setTimeout(() => {
-    const currentLength = displayedPagos.value.length
-    const nextBatch = pagos.value.slice(currentLength, currentLength + 12)
+async function onLoad(index, done) {
+  if (!hasMoreData.value) {
+    done(true)
+    return
+  }
 
-    if (nextBatch.length > 0) {
-      displayedPagos.value.push(...nextBatch)
-    }
-
-    done(nextBatch.length === 0)
-  }, 300)
+  page.value++
+  await loadPagos(true)
+  done(!hasMoreData.value)
 }
 
+// Watch page para log
+watch(page, (newPage) => {
+  console.log('📄 Page cambió a:', newPage)
+})
+
 // Watch filtros
-watch([filterDesde, filterHasta, filterPersona, filterEstado, searchTerm], () => {
+watch([filterDesde, filterHasta, filterPersona, filterEstado, searchTerm, filterRol, filterUsuario, filterCategoria], () => {
+  page.value = 1
+  hasMoreData.value = true
   loadPagos()
 })
 
+// Cargar roles (excluyendo Estudiante)
+const loadRoles = async () => {
+  try {
+    const res = await listarRoles()
+    rolOptions.value = (Array.isArray(res) ? res : [])
+      .filter(r => r.nombre !== 'Estudiante')
+      .map(r => ({ label: r.nombre, value: r.id }))
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+// Cargar categorías
+const loadCategorias = async () => {
+  try {
+    const res = await listarCategorias()
+    categoriaOptions.value = (Array.isArray(res) ? res : [])
+      .map(c => ({ label: c.nombre, value: c.id }))
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 onMounted(async () => {
+  await loadRoles()
+  await loadCategorias()
   await loadPagos()
 })
 
@@ -689,6 +761,8 @@ function pagarDeuda(pago) {
 }
 
 function onPagoSaved() {
+  page.value = 1
+  hasMoreData.value = true
   loadPagos()
 }
 
@@ -721,6 +795,8 @@ function abrirAnularPago(pago) {
 function onPagoAnulado() {
   anularDialog.value = false
   detalleDialog.value = false
+  page.value = 1
+  hasMoreData.value = true
   loadPagos()
 }
 </script>

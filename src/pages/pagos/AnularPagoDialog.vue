@@ -99,6 +99,8 @@ async function confirmarAnular() {
   loading.value = true
   try {
     // const res =
+    console.log('id del pago a anular: ', props.pago.id);
+
     await anularPago(props.pago.id)
     // if (res.ok) {
     emit('anulado')

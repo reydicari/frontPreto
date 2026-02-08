@@ -93,9 +93,9 @@ export const buscarCiRepetido = async (ci) => {
     return error.response.data;
   }
 };
-export const todasPersonas = async () => {
+export const todasPersonas = async (params = {}) => {
   try {
-    const response = await api.get(URL_PART + "/todasPersonas");
+    const response = await api.get(URL_PART + "/todasPersonas", { params });
     return response.data;
   } catch (error) {
     console.log("error en el store", error.response);

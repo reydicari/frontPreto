@@ -51,7 +51,7 @@
                 <q-icon name="calendar_month" class="cursor-pointer" />
               </template>
               <q-popup-proxy transition-show="scale" transition-hide="scale">
-                <q-date v-model="local.fecha" mask="YYYY-MM-DD">
+                <q-date v-model="fechaDate" mask="YYYY-MM-DD">
                   <div class="row items-center justify-end">
                     <q-btn v-close-popup label="OK" color="primary" flat />
                   </div>
@@ -146,11 +146,15 @@ const metodoOptions = ref([])
 const comprobanteFile = ref(null)
 
 const today = () => {
+  // Retornar fecha y hora en formato "YYYY-MM-DD HH:mm:ss"
   const d = new Date()
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}:${ss}`
 }
 
 const local = reactive({
@@ -170,12 +174,38 @@ const local = reactive({
   estado: 1
 })
 
+// Computed para mantener la parte de fecha en el selector y conservar la hora
+const fechaDate = computed({
+  get() {
+    const s = local.fecha ? String(local.fecha) : ''
+    if (!s) return today().slice(0, 10)
+    if (s.includes(' ')) return s.split(' ')[0]
+    if (s.includes('T')) return s.split('T')[0]
+    return s.slice(0, 10)
+  },
+  set(val) {
+    const s = local.fecha ? String(local.fecha) : ''
+    let time = '00:00:00'
+    if (s.includes(' ')) time = s.split(' ')[1] || time
+    else if (s.includes('T')) time = s.split('T')[1] || time
+    local.fecha = `${val} ${time}`.slice(0, 19)
+  }
+})
+
 watch(() => props.pago, (p) => {
   if (p) {
     local.id = p.id || null
     local.comprobante = p.comprobante || ''
     local.detalle = p.detalle || ''
-    local.fecha = p.fecha ? String(p.fecha).slice(0, 10) : today()
+    // Normalizar fecha: aceptar 'YYYY-MM-DD', 'YYYY-MM-DD HH:mm:ss' o ISO con 'T'
+    if (p.fecha) {
+      let s = String(p.fecha)
+      if (s.includes('T')) s = s.replace('T', ' ')
+      if (!s.includes(' ')) s = s + ' 00:00:00'
+      local.fecha = s.slice(0, 19)
+    } else {
+      local.fecha = today()
+    }
     local.id_inscripcion = p.id_inscripcion ?? null
     local.monto = p.monto ?? null
     local.id_categoria = p.id_categoria ?? (p.categoria ? p.categoria.id : null)
@@ -363,7 +393,7 @@ const handlePaymentMethod = async (metodo) => {
 
   if (nombreMetodo.includes('credito') || nombreMetodo.includes('crédito')) {
     // Para crédito: copiar monto a saldo y estado = 2 (Parcial)
-    local.saldo = local.monto
+    local.saldo = local.monto - local.descuento
     local.estado = 2
   } else {
     // Para efectivo o QR: estado = 1 (Pagado)

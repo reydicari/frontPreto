@@ -3,8 +3,9 @@ const URL_PART = "/api/reportes";
 
 export const reportePagosParams = async (params) => {
   try {
-    const response = await api.post(URL_PART + "/pagos", params, {
-      params,
+    console.log("params para reporte de pagos: ", params);
+
+    const response = await api.post(URL_PART + "/pagos",params, {
       responseType: "blob",
     });
     const blob = new Blob([response.data], { type: "application/pdf" });
