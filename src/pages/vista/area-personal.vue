@@ -121,7 +121,7 @@
         <q-icon name="school" size="24px" class="q-mr-sm" />
         <span class="card-title">Mis Inscripciones</span>
         <q-chip size="sm" color="green-8" text-color="white">
-          {{ inscripciones.length }} inscripción(es)
+          {{ totalInscripciones }} inscripción(es)
         </q-chip>
       </div>
 
@@ -137,10 +137,31 @@
           <!-- Resumen de inscripciones -->
           <div class="inscription-summary q-mb-md">
             <div class="summary-item">
-              <q-icon name="trending_up" size="24px" color="green-8" />
+              <q-icon name="groups" size="24px" color="green-8" />
               <div class="summary-content">
-                <div class="summary-label">Activas</div>
-                <div class="summary-value">{{ inscripcionesActivas }}</div>
+                <div class="summary-label">Total</div>
+                <div class="summary-value">{{ totalInscripciones }}</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <q-icon name="warning_amber" size="24px" color="orange-7" />
+              <div class="summary-content">
+                <div class="summary-label">Por vencer</div>
+                <div class="summary-value">{{ porVencer }}</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <q-icon name="event_busy" size="24px" color="red-7" />
+              <div class="summary-content">
+                <div class="summary-label">Vencidas</div>
+                <div class="summary-value">{{ vencidas }}</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <q-icon name="fiber_new" size="24px" color="green-8" />
+              <div class="summary-content">
+                <div class="summary-label">Nuevas este mes</div>
+                <div class="summary-value">{{ nuevasEsteMes }}</div>
               </div>
             </div>
           </div>
@@ -155,8 +176,7 @@
                     <q-icon name="inventory_2" size="20px" color="purple" class="q-mr-xs" />
                     <span class="text-weight-bold">{{ inscripcion.paquete?.nombre || 'Sin paquete' }}</span>
                   </div>
-                  <q-badge :color="estadoInscripcionColor(inscripcion.estado)"
-                    :label="estadoInscripcionLabel(inscripcion.estado)" />
+                  <q-badge :color="estadoInscripcionColor(inscripcion)" :label="estadoInscripcionLabel(inscripcion)" />
                 </div>
 
                 <div v-if="inscripcion.paquete?.disciplina" class="inscription-disciplina q-mt-sm">
@@ -450,6 +470,10 @@ const pagos = ref([])
 const totalPagos = ref(0)
 const totalDeudas = ref(0)
 const inscripciones = ref([])
+const totalInscripciones = ref(0)
+const porVencer = ref(0)
+const vencidas = ref(0)
+const nuevasEsteMes = ref(0)
 const loadingEvaluaciones = ref(false)
 const loadingProgresos = ref(false)
 const loadingPagos = ref(false)
@@ -651,7 +675,12 @@ const cargarInscripciones = async () => {
       id_persona: current?.persona?.id
     }
     const res = await listarInscripciones(params)
-    inscripciones.value = Array.isArray(res) ? res : (res?.data || [])
+    const data = res?.data || res
+    totalInscripciones.value = data?.totalInscripciones || 0
+    porVencer.value = data?.porVencer || 0
+    vencidas.value = data?.vencidas || 0
+    nuevasEsteMes.value = data?.nuevasEsteMes || 0
+    inscripciones.value = data?.lista || []
   } catch (error) {
     console.error('Error cargando inscripciones:', error)
     $q.notify({ type: 'negative', message: 'Error al cargar inscripciones' })
@@ -661,27 +690,53 @@ const cargarInscripciones = async () => {
 }
 
 // Utilidades para inscripciones
-const estadoInscripcionColor = (estado) => {
-  switch (estado) {
-    case 0: return 'negative'
-    case 1: return 'positive'
-    case 2: return 'warning'
-    default: return 'grey'
-  }
+const normalizeDate = (dateInput) => {
+  if (!dateInput) return null
+  const d = new Date(dateInput)
+  if (isNaN(d)) return null
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
-const estadoInscripcionLabel = (estado) => {
-  switch (estado) {
-    case 0: return 'Terminada'
-    case 1: return 'En marcha'
-    case 2: return 'Sin comenzar'
-    default: return 'Desconocido'
+const getInscripcionStatus = (row) => {
+  if (!row) return { label: 'Desconocido', color: 'grey' }
+
+  if (row.estado === 0) {
+    return { label: 'Suspendida', color: 'negative' }
   }
+
+  if (row.estado === 1) {
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    const fin = normalizeDate(row.fecha_fin)
+
+    if (!fin) {
+      return { label: 'En marcha', color: 'positive' }
+    }
+
+    const diffDays = Math.floor((fin - hoy) / 86400000)
+
+    if (diffDays < 0) {
+      return { label: 'Vencida', color: 'grey-7' }
+    }
+
+    if (diffDays <= 7) {
+      return { label: 'Por vencer', color: 'warning' }
+    }
+
+    return { label: 'En marcha', color: 'positive' }
+  }
+
+  return { label: 'Desconocido', color: 'grey' }
 }
 
-const inscripcionesActivas = computed(() => {
-  return inscripciones.value.filter(i => i.estado === 1).length
-})
+const estadoInscripcionColor = (row) => {
+  return getInscripcionStatus(row).color
+}
+
+const estadoInscripcionLabel = (row) => {
+  return getInscripcionStatus(row).label
+}
 
 // Renderizar gráfica radar
 const renderRadarChart = () => {

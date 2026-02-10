@@ -6,6 +6,8 @@ export const listar = async (params = {}) => {
     const response = await api.get(URL_PART + `/personasTipo`, {
       params: params,
     });
+    console.log("personas llenago: ", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Error en el store:", error.response || error);

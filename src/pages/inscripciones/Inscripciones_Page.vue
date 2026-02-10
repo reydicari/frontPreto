@@ -21,18 +21,8 @@
         <q-card class="stat-card stat-card-total">
           <q-card-section class="text-center">
             <q-icon name="groups" size="48px" class="stat-icon" />
-            <div class="stat-number">{{ filteredInscripciones.length }}</div>
+            <div class="stat-number">{{ totalInscripciones }}</div>
             <div class="stat-label">Total Inscripciones</div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="stat-card stat-card-activas">
-          <q-card-section class="text-center">
-            <q-icon name="trending_up" size="48px" class="stat-icon" />
-            <div class="stat-number">{{ inscripcionesActivas }}</div>
-            <div class="stat-label">En Marcha</div>
           </q-card-section>
         </q-card>
       </div>
@@ -40,9 +30,9 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card class="stat-card stat-card-warning">
           <q-card-section class="text-center">
-            <q-icon name="schedule" size="48px" class="stat-icon" />
-            <div class="stat-number">{{ inscripcionesPorComenzar }}</div>
-            <div class="stat-label">Sin Comenzar</div>
+            <q-icon name="warning_amber" size="48px" class="stat-icon" />
+            <div class="stat-number">{{ porVencer }}</div>
+            <div class="stat-label">Por vencer en 7 dias</div>
           </q-card-section>
         </q-card>
       </div>
@@ -50,9 +40,19 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card class="stat-card stat-card-alert">
           <q-card-section class="text-center">
-            <q-icon name="warning_amber" size="48px" class="stat-icon" />
-            <div class="stat-number">{{ inscripcionesPorVencer }}</div>
-            <div class="stat-label">Por Vencer</div>
+            <q-icon name="event_busy" size="48px" class="stat-icon" />
+            <div class="stat-number">{{ vencidas }}</div>
+            <div class="stat-label">Vencidas</div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-sm-6 col-md-3">
+        <q-card class="stat-card stat-card-activas">
+          <q-card-section class="text-center">
+            <q-icon name="fiber_new" size="48px" class="stat-icon" />
+            <div class="stat-number">{{ nuevasEsteMes }}</div>
+            <div class="stat-label">Nuevas este Mes</div>
           </q-card-section>
         </q-card>
       </div>
@@ -71,14 +71,45 @@
         </div>
 
         <div class="row q-col-gutter-md">
-          <!-- Búsqueda general -->
+          <!-- Búsqueda de persona -->
           <div class="col-12 col-md-6 col-lg-4">
-            <q-input v-model="searchTerm" outlined dense placeholder="Buscar estudiante, teléfono, paquete..."
-              clearable>
+            <q-select v-model="selectedPersona" :options="personasOptions" label="Nombre, ci o telefono" outlined dense
+              clearable use-input input-debounce="0" @filter="filterPersonasFn" option-label="nombres" emit-value
+              map-options>
               <template v-slot:prepend>
-                <q-icon name="search" color="primary" />
+                <q-icon name="person_search" color="primary" />
               </template>
-            </q-input>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar>
+                    <q-avatar color="primary" text-color="white">
+                      <img v-if="scope.opt.fotografia" :src="host + scope.opt.fotografia" />
+                      <span v-else>{{ getInitials(scope.opt) }}</span>
+                    </q-avatar>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.nombres }} {{ scope.opt.apellido_paterno }}</q-item-label>
+                    <q-item-label caption>CI: {{ scope.opt.ci || 'Sin CI' }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+              <template v-slot:selected-item="scope">
+                <div class="row items-center no-wrap" style="width: 100%">
+                  <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
+                    <img v-if="scope.opt.fotografia" :src="host + scope.opt.fotografia" />
+                    <span v-else style="font-size: 10px">{{ getInitials(scope.opt) }}</span>
+                  </q-avatar>
+                  <span>{{ scope.opt.nombres }} {{ scope.opt.apellido_paterno }}</span>
+                </div>
+              </template>
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">
+                    {{ searchPersona ? 'No se encontraron personas' : 'Escribe para buscar' }}
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
           </div>
 
           <!-- Estado -->
@@ -111,79 +142,31 @@
             </q-select>
           </div>
 
-          <!-- Vencimiento -->
-          <div class="col-6 col-md-3 col-lg-2">
-            <q-select v-model="filterVencimiento" :options="vencimientoOptions" label="Vencimiento" option-label="label"
-              option-value="value" emit-value map-options outlined dense clearable>
+          <!-- Paquete -->
+          <div class="col-6 col-md-3 col-lg-3">
+            <q-select v-model="filterPaquete" :options="paqueteOptions" label="Paquete" option-label="nombre"
+              option-value="id" emit-value map-options outlined dense clearable use-input input-debounce="300"
+              @filter="filterPaquetesFn">
               <template v-slot:prepend>
-                <q-icon name="event" />
+                <q-icon name="inventory_2" />
               </template>
             </q-select>
           </div>
 
-          <!-- Género -->
+          <!-- Vencimiento (Fecha Fin) -->
           <div class="col-6 col-md-3 col-lg-2">
-            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable emit-value
-              map-options>
-              <template v-slot:prepend>
-                <q-icon name="wc" />
-              </template>
-            </q-select>
+            <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
+              @update:model-value="filterFechaFin = $event" />
           </div>
 
-          <!-- Rango de edad -->
+          <!-- Fecha Inicio -->
           <div class="col-6 col-md-3 col-lg-2">
-            <q-input v-model.number="filterEdadMin" type="number" outlined dense label="Edad mínima" :min="0" :max="99">
-              <template v-slot:prepend>
-                <q-icon name="cake" />
-              </template>
-            </q-input>
+            <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
           </div>
 
+          <!-- Pagos -->
           <div class="col-6 col-md-3 col-lg-2">
-            <q-input v-model.number="filterEdadMax" type="number" outlined dense label="Edad máxima" :min="0" :max="99">
-              <template v-slot:prepend>
-                <q-icon name="cake" />
-              </template>
-            </q-input>
-          </div>
-
-          <!-- Rango de fechas de inicio -->
-          <div class="col-6 col-md-3 col-lg-2">
-            <q-input dense outlined v-model="filterFechaInicioDesde" label="Inicio desde" readonly clearable>
-              <template v-slot:prepend>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filterFechaInicioDesde" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-          </div>
-
-          <div class="col-6 col-md-3 col-lg-2">
-            <q-input dense outlined v-model="filterFechaInicioHasta" label="Inicio hasta" readonly clearable>
-              <template v-slot:prepend>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filterFechaInicioHasta" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-          </div>
-
-          <!-- Con pagos registrados -->
-          <div class="col-6 col-md-3 col-lg-2">
-            <q-select v-model="filterConPagos" :options="pagosOptions" label="Pagos" outlined dense clearable emit-value
+            <q-select v-model="filterPagos" :options="pagosOptions" label="Pagos" outlined dense clearable emit-value
               map-options>
               <template v-slot:prepend>
                 <q-icon name="payments" />
@@ -194,12 +177,12 @@
       </q-card-section>
     </q-card>
 
-    <!-- Tabla de inscripciones mejorada -->
+    <!-- Tabla de inscripciones con virtual scroll -->
     <q-card class="table-card">
       <q-card-section class="q-pa-none">
-        <q-table :rows="filteredInscripciones" :columns="columns" row-key="id" :loading="loading"
-          :pagination="pagination" @request="onRequest" :rows-per-page-options="[10, 25, 50, 100]" flat
-          class="inscripciones-table">
+        <q-table :rows="inscripciones" :columns="columns" row-key="id" :loading="loading" flat
+          class="inscripciones-table" virtual-scroll :rows-per-page-options="[0]" :virtual-scroll-item-size="48"
+          :virtual-scroll-sticky-size-start="48" @virtual-scroll="onVirtualScroll">
           <template v-slot:loading>
             <q-inner-loading showing color="primary" />
           </template>
@@ -208,7 +191,7 @@
           <template v-slot:body-cell-no="props">
             <q-td :props="props">
               <div class="row-number-simple">
-                {{filteredInscripciones.findIndex(r => r.id === props.row.id) + 1}}
+                {{inscripciones.findIndex(r => r.id === props.row.id) + 1}}
               </div>
             </q-td>
           </template>
@@ -276,9 +259,8 @@
           <template v-slot:body-cell-fecha_fin="props">
             <q-td :props="props">
               <div class="fecha-cell">
-                <q-icon name="event_available" size="16px" class="q-mr-xs"
-                  :class="estaPorVencer(props.row, 'pv30') ? 'text-orange' : 'text-grey-6'" />
-                <span :class="estaPorVencer(props.row, 'pv30') ? 'text-orange text-weight-bold' : ''">
+                <q-icon name="event_available" size="16px" class="q-mr-xs text-grey-6" />
+                <span>
                   {{ props.row.fecha_fin ? formatDate(props.row.fecha_fin) : 'Indefinida' }}
                 </span>
               </div>
@@ -288,15 +270,10 @@
           <!-- Columna estado mejorada con animación -->
           <template v-slot:body-cell-estado="props">
             <q-td :props="props">
-              <q-badge :color="estadoColor(props.row.estado)" class="estado-badge animated-badge">
-                <q-icon :name="estadoIcon(props.row.estado)" size="14px" class="q-mr-xs" />
-                {{ estadoLabel(props.row.estado) }}
+              <q-badge :color="estadoColor(props.row)" class="estado-badge animated-badge">
+                <q-icon :name="estadoIcon(props.row)" size="14px" class="q-mr-xs" />
+                {{ estadoLabel(props.row) }}
               </q-badge>
-              <div v-if="estaPorVencer(props.row, 'pv30') && props.row.fecha_fin" class="q-mt-xs">
-                <q-chip dense size="sm" color="orange-2" text-color="orange-9" icon="warning">
-                  Vence en {{ diasParaVencer(props.row) }} días
-                </q-chip>
-              </div>
             </q-td>
           </template>
 
@@ -309,6 +286,10 @@
                 </q-btn>
                 <q-btn icon="edit" color="primary" flat dense round size="sm" @click="showDialog(props.row)">
                   <q-tooltip>Editar inscripción</q-tooltip>
+                </q-btn>
+                <q-btn v-if="props.row.estado === 1" icon="pause_circle" color="negative" flat dense round size="sm"
+                  @click="openSuspenderDialog(props.row)">
+                  <q-tooltip>Suspender inscripción</q-tooltip>
                 </q-btn>
                 <q-btn v-if="props.row.pagos?.length > 0" icon="receipt_long" color="secondary" flat dense round
                   size="sm" @click="verPagos(props.row)">
@@ -328,35 +309,76 @@
 
     <!-- Diálogo de pagos -->
     <PagosDialog v-model="pagosDialogVisible" :inscripcion="selectedInscripcion" />
+
+    <!-- Diálogo de suspensión -->
+    <q-dialog v-model="suspenderDialog" :maximized="$q.screen.lt.sm">
+      <q-card class="suspend-dialog">
+        <q-card-section class="suspend-dialog__header">
+          <div class="text-h6">Suspender inscripción</div>
+          <div class="text-caption">Indica el motivo de la suspensión</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-input v-model="suspensionReason" outlined autogrow type="textarea" label="Razón"
+            :disable="suspenderLoading" />
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-px-md q-pb-md">
+          <q-btn flat label="Cancelar" color="grey-7" @click="suspenderDialog = false" />
+          <q-btn unelevated label="Confirmar" color="negative" :loading="suspenderLoading"
+            :disable="!suspensionReason.trim()" @click="confirmarSuspension" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import PagosDialog from './PagosDialog.vue'
 
-import { listar } from 'src/stores/inscripcion-store'
+import { listar, suspensderInscripcion } from 'src/stores/inscripcion-store'
 import NuevaInscripcionDialog from "pages/inscripciones/NuevaInscripcionDialog.vue";
 import { listarDisciplinas } from 'src/stores/disciplina-store.js'
+import { listarNiveles } from 'src/stores/nivel.js'
+import { listarPaquetes } from 'src/stores/paquete-store.js'
+import { todasPersonas as listarPersonas } from 'src/stores/persona-store.js'
+import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
+import { useDebounceFn } from '@vueuse/core'
 
+const $q = useQuasar()
 const host = import.meta.env.VITE_BASE_URL || 'http://localhost:3000'
 
 // Estado principal
 const loading = ref(false)
 const inscripciones = ref([])
-const searchTerm = ref('')
+const totalInscripciones = ref(0)
+const porVencer = ref(0)
+const vencidas = ref(0)
+const nuevasEsteMes = ref(0)
+
+// Filtros
+const selectedPersona = ref(null)
+const searchPersona = ref('')
 const filterEstado = ref(null)
 const filterDisciplina = ref(null)
-const filterVencimiento = ref(null)
-const filterGenero = ref(null)
-const filterEdadMin = ref(null)
-const filterEdadMax = ref(null)
-const filterFechaInicioDesde = ref(null)
-const filterFechaInicioHasta = ref(null)
-const filterConPagos = ref(null)
-const disciplinasOptions = ref([])
 const filterNivel = ref(null)
+const filterFechaFin = ref('vacio')
+const filterFechaInicio = ref('vacio')
+const filterPaquete = ref(null)
+const filterPagos = ref(null)
+
+// Opciones
+const personasOptions = ref([])
+const disciplinasOptions = ref([])
 const nivelOptions = ref([])
+const paqueteOptions = ref([])
+
+// Paginación para virtual scroll
+const page = ref(1)
+const limit = ref(12)
+const hasMoreData = ref(true)
 // Configuración de tabla mejorada
 const columns = [
   {
@@ -423,69 +445,30 @@ const columns = [
   }
 ]
 
-const pagination = ref({
-  sortBy: 'fecha_inicio',
-  descending: true,
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0
-})
-
 // Opciones para filtros mejoradas
 const estadoOptions = [
-  { label: 'Terminada', value: 0 },
-  { label: 'En marcha', value: 1 },
-  { label: 'Sin comenzar', value: 2 }
-]
-
-const vencimientoOptions = [
-  { label: 'Por vencer (15 días)', value: 'pv15' },
-  { label: 'Por vencer (30 días)', value: 'pv30' },
-  { label: 'Vencidas', value: 'vencidas' },
-  { label: 'Indefinidas', value: 'indefinidas' }
-]
-
-const generoOptions = [
-  { label: 'Masculino', value: 'M' },
-  { label: 'Femenino', value: 'F' }
+  { label: 'Todos', value: null },
+  { label: 'Activas', value: 1 },
+  { label: 'Suspendidas', value: 0 }
 ]
 
 const pagosOptions = [
-  { label: 'Con pagos', value: true },
-  { label: 'Sin pagos', value: false }
+  { label: 'Al Día', value: 1 },
+  { label: 'Debidas', value: 2 }
 ]
 
-// Cargar datos iniciales (con manejo de errores)
+// Cargar datos iniciales
 onMounted(async () => {
   try {
     loading.value = true
-    await loadInscripciones()
 
-    // Cargar opciones de disciplinas desde store
-    try {
-      const disciplinas = await listarDisciplinas()
-      disciplinasOptions.value = Array.isArray(disciplinas) ? disciplinas : (disciplinas?.data || [])
-    } catch (error) {
-      console.warn('Error al cargar disciplinas:', error)
-      disciplinasOptions.value = []
-    }
-
-    // Construir lista única de niveles a partir de inscripciones
-    try {
-      const niveles = []
-      const seen = new Set()
-      for (const ins of inscripciones.value || []) {
-        const n = ins.nivel
-        if (n && n.id && !seen.has(n.id)) {
-          seen.add(n.id)
-          niveles.push({ id: n.id, nombre_nivel: n.nombre_nivel })
-        }
-      }
-      nivelOptions.value = niveles
-    } catch (error) {
-      console.warn('Error al procesar niveles:', error)
-      nivelOptions.value = []
-    }
+    // Cargar opciones
+    await Promise.all([
+      loadDisciplinas(),
+      loadNiveles(),
+      loadPaquetes(),
+      loadInscripciones()
+    ])
   } catch (error) {
     console.error('Error en onMounted:', error)
   } finally {
@@ -493,18 +476,152 @@ onMounted(async () => {
   }
 })
 
-const loadInscripciones = async () => {
+// Cargar disciplinas
+const loadDisciplinas = async () => {
   try {
-    const data = await listar()
-    inscripciones.value = Array.isArray(data) ? data : (data?.data || [])
-    console.log('inscripciones cargadas:', inscripciones.value.length)
-    return inscripciones.value
+    const res = await listarDisciplinas()
+    disciplinasOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (error) {
+    console.error('Error al cargar disciplinas:', error)
+    disciplinasOptions.value = []
+  }
+}
+
+// Cargar niveles
+const loadNiveles = async () => {
+  try {
+    const res = await listarNiveles()
+    nivelOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (error) {
+    console.error('Error al cargar niveles:', error)
+    nivelOptions.value = []
+  }
+}
+
+// Cargar paquetes
+const loadPaquetes = async () => {
+  try {
+    const res = await listarPaquetes()
+    paqueteOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (error) {
+    console.error('Error al cargar paquetes:', error)
+    paqueteOptions.value = []
+  }
+}
+
+// Cargar inscripciones con params
+const loadInscripciones = async (append = false) => {
+  try {
+    loading.value = true
+
+    const params = {
+      id_persona: selectedPersona.value?.id || undefined,
+      estado: filterEstado.value !== null ? filterEstado.value : undefined,
+      id_disciplina: filterDisciplina.value || undefined,
+      id_nivel: filterNivel.value || undefined,
+      fecha_fin: filterFechaFin.value || undefined,
+      fecha_inicio: filterFechaInicio.value || undefined,
+      id_paquete: filterPaquete.value || undefined,
+      pagos: filterPagos.value || undefined,
+      page: page.value,
+      limit: limit.value
+    }
+
+    // Eliminar undefined
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+
+    const res = await listar(params)
+
+    // Extraer datos del backend
+    const data = res?.data || res
+    totalInscripciones.value = data?.totalInscripciones || 0
+    porVencer.value = data?.porVencer || 0
+    vencidas.value = data?.vencidas || 0
+    nuevasEsteMes.value = data?.nuevasEsteMes || 0
+
+    const newInscripciones = data?.lista || []
+
+    if (append) {
+      inscripciones.value.push(...newInscripciones)
+    } else {
+      inscripciones.value = newInscripciones
+    }
+
+    hasMoreData.value = newInscripciones.length === limit.value
   } catch (error) {
     console.error('Error al cargar inscripciones:', error)
     inscripciones.value = []
-    return []
+  } finally {
+    loading.value = false
   }
 }
+
+// Filtrar personas con búsqueda
+const filterPersonasFn = (val, update) => {
+  searchPersona.value = val
+
+  if (val === '') {
+    update(() => {
+      personasOptions.value = []
+    })
+    return
+  }
+
+  update(() => {
+    debouncedLoadPersonas()
+  })
+}
+
+// Cargar personas con debounce
+const debouncedLoadPersonas = useDebounceFn(async () => {
+  if (!searchPersona.value) {
+    personasOptions.value = []
+    return
+  }
+
+  try {
+    const res = await listarPersonas({ search: searchPersona.value })
+    personasOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (error) {
+    console.error('Error filtrando personas:', error)
+    personasOptions.value = []
+  }
+}, 500)
+
+// Filtrar paquetes con búsqueda
+const filterPaquetesFn = (val, update) => {
+  if (val === '') {
+    update(async () => {
+      try {
+        const res = await listarPaquetes()
+        paqueteOptions.value = Array.isArray(res) ? res : (res?.data || [])
+      } catch (error) {
+        console.error('Error cargando paquetes:', error)
+      }
+    })
+    return
+  }
+
+  update(async () => {
+    try {
+      const res = await listarPaquetes({ search: val })
+      paqueteOptions.value = Array.isArray(res) ? res : (res?.data || [])
+    } catch (error) {
+      console.error('Error filtrando paquetes:', error)
+    }
+  })
+}
+
+// Virtual scroll load
+const onVirtualScroll = async ({ index }) => {
+
+  const lastIndex = inscripciones.value.length - 1
+  if (index >= lastIndex - 10) {
+    page.value++
+    await loadInscripciones(true)
+  }
+}
+
 // Abrir diálogo (nuevo o edición)
 function openDialog(inscripcion = null) {
   try {
@@ -521,7 +638,7 @@ async function handleSaved() {
   try {
     dialogVisible.value = false
     loading.value = true
-    await loadInscripciones()
+    await reloadInscripcionesFirstPage()
   } catch (error) {
     console.error('Error al recargar inscripciones:', error)
   } finally {
@@ -529,195 +646,18 @@ async function handleSaved() {
   }
 }
 
-// Estadísticas computadas (safe con valores por defecto)
-const inscripcionesActivas = computed(() => {
-  try {
-    return (inscripciones.value || []).filter(i => i.estado === 1).length
-  } catch {
-    return 0
-  }
-})
-
-const inscripcionesPorComenzar = computed(() => {
-  try {
-    return (inscripciones.value || []).filter(i => i.estado === 2).length
-  } catch {
-    return 0
-  }
-})
-
-const inscripcionesPorVencer = computed(() => {
-  try {
-    return (inscripciones.value || []).filter(i => {
-      try {
-        return estaPorVencer(i, 'pv30')
-      } catch {
-        return false
-      }
-    }).length
-  } catch {
-    return 0
-  }
-})
-
-// Filtrado local (mantiene lógica original + filtros opcionales)
-const filteredInscripciones = computed(() => {
-  let result = inscripciones.value || []
-
-  // Filtro por vencimiento (original)
-  if (filterVencimiento.value !== null) {
-    try {
-      result = result.filter(ins => estaPorVencer(ins, filterVencimiento.value))
-    } catch (error) {
-      console.warn('Error en filtro vencimiento:', error)
-    }
-  }
-
-  // Filtro por estado (original)
-  if (filterEstado.value !== null) {
-    result = result.filter(ins => ins.estado === filterEstado.value)
-  }
-
-  // Filtro por disciplina (original)
-  if (filterDisciplina.value) {
-    result = result.filter(ins => (ins.paquete?.disciplina?.id || ins.disciplina?.id) === filterDisciplina.value)
-  }
-
-  // Filtro por nivel (original)
-  if (filterNivel.value) {
-    result = result.filter(ins => ins.nivel && ins.nivel.id === filterNivel.value)
-  }
-
-  // Filtro por género (nuevo - opcional)
-  if (filterGenero.value) {
-    try {
-      result = result.filter(ins => ins.persona?.genero === filterGenero.value)
-    } catch (error) {
-      console.warn('Error en filtro género:', error)
-    }
-  }
-
-  // Filtro por rango de edad (nuevo - opcional)
-  if (filterEdadMin.value !== null && filterEdadMin.value !== '') {
-    try {
-      result = result.filter(ins => {
-        const edad = calcularEdad(ins.persona?.fecha_nacimiento)
-        return edad >= filterEdadMin.value
-      })
-    } catch (error) {
-      console.warn('Error en filtro edad mínima:', error)
-    }
-  }
-  if (filterEdadMax.value !== null && filterEdadMax.value !== '') {
-    try {
-      result = result.filter(ins => {
-        const edad = calcularEdad(ins.persona?.fecha_nacimiento)
-        return edad <= filterEdadMax.value
-      })
-    } catch (error) {
-      console.warn('Error en filtro edad máxima:', error)
-    }
-  }
-
-  // Filtro por rango de fechas de inicio (nuevo - opcional)
-  if (filterFechaInicioDesde.value) {
-    try {
-      result = result.filter(ins => ins.fecha_inicio && ins.fecha_inicio >= filterFechaInicioDesde.value)
-    } catch (error) {
-      console.warn('Error en filtro fecha desde:', error)
-    }
-  }
-  if (filterFechaInicioHasta.value) {
-    try {
-      result = result.filter(ins => ins.fecha_inicio && ins.fecha_inicio <= filterFechaInicioHasta.value)
-    } catch (error) {
-      console.warn('Error en filtro fecha hasta:', error)
-    }
-  }
-
-  // Filtro por pagos (nuevo - opcional)
-  if (filterConPagos.value !== null) {
-    try {
-      result = result.filter(ins => filterConPagos.value
-        ? (ins.pagos && ins.pagos.length > 0)
-        : (!ins.pagos || ins.pagos.length === 0)
-      )
-    } catch (error) {
-      console.warn('Error en filtro pagos:', error)
-    }
-  }
-
-  // Filtro por término de búsqueda (original)
-  const term = (searchTerm.value || '').toString().trim().toLowerCase()
-  if (term) {
-    result = result.filter(ins => {
-      const nombres = (ins.persona?.nombres || '') + ' ' + (ins.persona?.apellido_paterno || '') + ' ' + (ins.persona?.apellido_materno || '')
-      const telefono = ins.persona?.telefono || ''
-      const paquete = ins.paquete?.nombre || ''
-      const disciplina = ins.paquete?.disciplina?.nombre || ins.disciplina?.nombre || ''
-      const nivel = ins.nivel?.nombre_nivel || ''
-      return (`${nombres} ${telefono} ${paquete} ${disciplina} ${nivel}`).toLowerCase().includes(term)
-    })
-  }
-
-  return result
-})
-
-// Lógica de vencimiento
-function estaPorVencer(inscripcion, mode) {
-  // Modes: 'pv15' | 'pv30' | 'vencidas' | 'indefinidas'
-  if (!mode) return false
-
-  // Indefinidas = no tienen fecha_fin
-  if (mode === 'indefinidas') {
-    return !inscripcion.fecha_fin
-  }
-
-  // Para los demás modos necesitamos fecha_fin
-  if (!inscripcion.fecha_fin) return false
-
-  const hoy = new Date()
-  const fechaFin = new Date(inscripcion.fecha_fin)
-  const diffDays = Math.ceil((fechaFin - hoy) / (1000 * 60 * 60 * 24))
-
-  if (mode === 'vencidas') {
-    return diffDays < 0
-  }
-
-  if (mode === 'pv15') {
-    return inscripcion.estado === 1 && diffDays > 0 && diffDays <= 15
-  }
-
-  if (mode === 'pv30') {
-    return inscripcion.estado === 1 && diffDays > 0 && diffDays <= 30
-  }
-
-  return false
+const reloadInscripcionesFirstPage = async () => {
+  page.value = 1
+  hasMoreData.value = true
+  await loadInscripciones()
 }
 
-function diasParaVencer(inscripcion) {
-  const hoy = new Date()
-  const fechaFin = new Date(inscripcion.fecha_fin)
-  return Math.ceil((fechaFin - hoy) / (1000 * 60 * 60 * 24))
-}
-
-// Calcular edad (con manejo de errores)
-function calcularEdad(fechaNacimiento) {
-  try {
-    if (!fechaNacimiento) return 0
-    const hoy = new Date()
-    const nacimiento = new Date(fechaNacimiento)
-    if (isNaN(nacimiento.getTime())) return 0
-    let edad = hoy.getFullYear() - nacimiento.getFullYear()
-    const mes = hoy.getMonth() - nacimiento.getMonth()
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--
-    }
-    return edad >= 0 ? edad : 0
-  } catch {
-    return 0
-  }
-}
+// Watch para filtros
+watch([selectedPersona, filterEstado, filterDisciplina, filterNivel, filterFechaFin, filterFechaInicio, filterPaquete, filterPagos], () => {
+  page.value = 1
+  hasMoreData.value = true
+  loadInscripciones()
+})
 
 // Obtener iniciales (con validación)
 function getInitials(persona) {
@@ -755,26 +695,57 @@ function formatDate(dateInput) {
   return `${day} ${mon} ${year}`
 }
 
-// Utilidades para mostrar etiqueta, color e icono según estado (0/1/2)
-function estadoLabel(e) {
-  if (e === 0) return 'Terminada'
-  if (e === 1) return 'En marcha'
-  if (e === 2) return 'Sin comenzar'
-  return String(e ?? '')
+// Utilidades para mostrar etiqueta, color e icono según estado y fecha_fin
+const normalizeDate = (dateInput) => {
+  if (!dateInput) return null
+  const d = new Date(dateInput)
+  if (isNaN(d)) return null
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
-function estadoColor(e) {
-  if (e === 0) return 'grey-7'
-  if (e === 1) return 'positive'
-  if (e === 2) return 'warning'
-  return 'dark'
+const getInscripcionStatus = (row) => {
+  if (!row) return { label: 'Desconocido', color: 'grey', icon: 'help' }
+
+  if (row.estado === 0) {
+    return { label: 'Suspendida', color: 'negative', icon: 'block' }
+  }
+
+  if (row.estado === 1) {
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    const fin = normalizeDate(row.fecha_fin)
+
+    if (!fin) {
+      return { label: 'En marcha', color: 'positive', icon: 'play_circle' }
+    }
+
+    const diffDays = Math.floor((fin - hoy) / 86400000)
+
+    if (diffDays < 0) {
+      return { label: 'Vencida', color: 'grey-7', icon: 'event_busy' }
+    }
+
+    if (diffDays <= 7) {
+      return { label: 'Por vencer', color: 'warning', icon: 'warning_amber' }
+    }
+
+    return { label: 'En marcha', color: 'positive', icon: 'play_circle' }
+  }
+
+  return { label: 'Desconocido', color: 'grey', icon: 'help' }
 }
 
-function estadoIcon(e) {
-  if (e === 0) return 'check_circle'
-  if (e === 1) return 'play_circle'
-  if (e === 2) return 'schedule'
-  return 'help'
+function estadoLabel(row) {
+  return getInscripcionStatus(row).label
+}
+
+function estadoColor(row) {
+  return getInscripcionStatus(row).color
+}
+
+function estadoIcon(row) {
+  return getInscripcionStatus(row).icon
 }
 
 // Gestión de diálogo
@@ -845,37 +816,78 @@ function resetCurrentInscripcion() {
 const pagosDialogVisible = ref(false)
 const selectedInscripcion = ref(null)
 
+const suspenderDialog = ref(false)
+const suspensionReason = ref('')
+const inscripcionToSuspend = ref(null)
+const suspenderLoading = ref(false)
+
 function verPagos(inscripcion) {
   selectedInscripcion.value = inscripcion
   pagosDialogVisible.value = true
 }
 
-// Resetear filtros (con validación)
-function resetFilters() {
+const isFechaFinVencida = (row) => {
+  const fin = normalizeDate(row?.fecha_fin)
+  if (!fin) return false
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  return fin < hoy
+}
+
+const openSuspenderDialog = (row) => {
+  if (!row || row.estado !== 1) return
+
+  if (isFechaFinVencida(row)) {
+    $q.notify({ type: 'warning', message: 'No puedes suspender inscripciones terminadas.' })
+    return
+  }
+
+  inscripcionToSuspend.value = row
+  suspensionReason.value = ''
+  suspenderDialog.value = true
+}
+
+const confirmarSuspension = async () => {
+  if (!inscripcionToSuspend.value || !suspensionReason.value.trim()) return
+
+  suspenderLoading.value = true
   try {
-    searchTerm.value = ''
-    filterEstado.value = null
-    filterDisciplina.value = null
-    filterVencimiento.value = null
-    filterNivel.value = null
-    filterGenero.value = null
-    filterEdadMin.value = null
-    filterEdadMax.value = null
-    filterFechaInicioDesde.value = null
-    filterFechaInicioHasta.value = null
-    filterConPagos.value = null
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    const suspension = {
+      id_inscripcion: inscripcionToSuspend.value.id,
+      razon_anulacion: suspensionReason.value.trim(),
+      id_usuario_suspende: current?.id || current?.usuario?.id || current?.persona?.id
+    }
+
+    await suspensderInscripcion(suspension)
+    suspenderDialog.value = false
+    await reloadInscripcionesFirstPage()
   } catch (error) {
-    console.error('Error al resetear filtros:', error)
+    console.error('Error al suspender inscripción:', error)
+    $q.notify({ type: 'negative', message: 'Error al suspender la inscripción' })
+  } finally {
+    suspenderLoading.value = false
   }
 }
 
-// Manejo de paginación
-function onRequest(props) {
-  const { page, rowsPerPage, sortBy, descending } = props.pagination
-  pagination.value.page = page
-  pagination.value.rowsPerPage = rowsPerPage
-  pagination.value.sortBy = sortBy
-  pagination.value.descending = descending
+// Resetear filtros
+function resetFilters() {
+  try {
+    selectedPersona.value = null
+    searchPersona.value = ''
+    filterEstado.value = null
+    filterDisciplina.value = null
+    filterNivel.value = null
+    filterFechaFin.value = null
+    filterFechaInicio.value = null
+    filterPaquete.value = null
+    filterPagos.value = null
+    page.value = 1
+    hasMoreData.value = true
+    loadInscripciones()
+  } catch (error) {
+    console.error('Error al resetear filtros:', error)
+  }
 }
 
 </script>
@@ -1125,6 +1137,19 @@ function onRequest(props) {
 
 .animated-badge {
   animation: pulse 2s ease-in-out infinite;
+}
+
+.suspend-dialog {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+}
+
+.suspend-dialog__header {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: white;
 }
 
 // Responsividad

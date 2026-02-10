@@ -2,7 +2,7 @@ import { api } from "boot/axios.js";
 const URL_PART = "/api/inscripcion";
 import { Notify } from "quasar";
 
-export const listar = async (params) => {
+export const listar = async (params = {}) => {
   try {
     const response = await api.get(URL_PART + "/listar", { params });
     return response.data;
@@ -60,5 +60,26 @@ export const agregarIscripcionPersona = async (dataform) => {
       position: "bottom",
     });
     return error.response;
+  }
+};
+export const suspensderInscripcion = async (suspension = {}) => {
+  try {
+    console.log("suspension en store: ", suspension);
+
+    const response = await api.put(URL_PART + "/suspender", suspension);
+    Notify.create({
+      type: "info",
+      message: "Suspensión exitosa",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error.response);
+    Notify.create({
+      type: "negative",
+      message: "Error al suspender la inscripción",
+      position: "bottom",
+    });
+    return error.response.data;
   }
 };
