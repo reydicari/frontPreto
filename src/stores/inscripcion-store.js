@@ -32,15 +32,16 @@ export const agregarIscripcionNuevaPersona = async (dataform) => {
       message: "Inscripcion creada con éxito",
       position: "bottom",
     });
-    return response;
+    return response.data;
   } catch (error) {
-    console.log("error en el store", error.response.data.error);
+    console.log("error en el store", error.response?.data?.error);
     Notify.create({
       type: "negative",
       message: "Error al crear la inscripción",
       position: "bottom",
     });
-    return error.response;
+    // Lanzar el error para que el componente pueda manejarlo
+    throw error;
   }
 };
 export const agregarIscripcionPersona = async (dataform) => {
@@ -48,18 +49,18 @@ export const agregarIscripcionPersona = async (dataform) => {
     const response = await api.post(URL_PART + "/agregarNormal", dataform);
     Notify.create({
       type: "info",
-      message: "inscripcion creada con éxito",
+      message: response.data.mensaje || "Inscripción creada con éxito",
       position: "bottom",
     });
-    return response;
+    return response.data;
   } catch (error) {
-    console.log("error en el store", error.response.data.error);
     Notify.create({
       type: "negative",
-      message: "Error al crear la inscripción",
+      message: error.response?.data?.mensaje || "Error al crear la inscripción",
       position: "bottom",
     });
-    return error.response;
+    // Lanzar el error para que el componente pueda manejarlo
+    throw error;
   }
 };
 export const suspensderInscripcion = async (suspension = {}) => {

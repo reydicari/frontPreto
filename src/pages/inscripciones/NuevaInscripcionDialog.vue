@@ -108,7 +108,7 @@
                               </q-badge>
                               <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                                }} disponibles</span>
+                              }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>
@@ -470,16 +470,27 @@ const displayedEstudiantes = computed(() => {
 })
 // Filtrar estudiantes
 function filterEstudiantes(val, update) {
-  update(() => {
-    if (val === '') {
-      filteredEstudiantes.value = [...estudiantesWithDisplayName.value]
-    } else {
-      const needle = val.toLowerCase()
-      filteredEstudiantes.value = estudiantesWithDisplayName.value.filter(
-        e => e.displayName.toLowerCase().includes(needle))
+  update(async () => {
+    try {
+      const params = {
+        search: val || '',
+        estado: true,
+        tipo_persona: 'estudiante'
+      }
+      const resp = await listar(params)
+      const lista = resp?.data || resp?.data?.lista || []
+
+      // Agregar displayName a cada estudiante de la respuesta
+      filteredEstudiantes.value = lista.map(e => ({
+        ...e,
+        displayName: `${e.nombres} ${e.apellido_paterno} ${e.apellido_materno}`
+      }))
 
       // Guardar el texto para posible nuevo estudiante
       newEstudianteName.value = val
+    } catch (error) {
+      console.error('Error filtrando estudiantes:', error)
+      filteredEstudiantes.value = []
     }
   })
 }
@@ -998,6 +1009,7 @@ async function saveInscripcion() {
     } catch {
       inscripcionData.estado = 1
     }
+    let resp = null
     inscripcionData.fecha_creacion = new Date().toISOString()
     if (JSON.parse(JSON.stringify(selectedEstudiante.value)).id) {
       if (inscripcionIndefinida.value) {
@@ -1005,29 +1017,27 @@ async function saveInscripcion() {
         inscripcionData.pago = null
         inscripcionData.meses_duracion = null
       }
-      await agregarIscripcionPersona(inscripcionData)
+      resp = await agregarIscripcionPersona(inscripcionData)
     } else {
       StudentToCreate.value.append('inscripcion', JSON.stringify(inscripcionData))
       inscripcionData.persona = selectedEstudiante.value
       // await agregarIscripcionNormal(inscripcionData) StudentToCreate.value.get('persona')
       console.log('INSCRIPCION CON ESTUDIANTE CREADO: ', inscripcionData);
     }
-    selectedEstudiante.value = localInscripcion
-    $q.notify({
-      type: 'positive',
-      message: 'Inscripción actualizada correctamente'
-    })
 
-    // refrescar lista de inscripciones del estudiante para actualizar badges
-    try {
-      const pid = localInscripcion.id_persona || (selectedEstudiante.value && selectedEstudiante.value.id)
-      if (pid) await loadInscripcionesForStudent(pid)
-    } catch {
-      // ignore
+    // Verificar que la respuesta sea exitosa antes de continuar
+    if (resp && resp.ok) {
+      // refrescar lista de inscripciones del estudiante para actualizar badges
+      try {
+        const pid = localInscripcion.id_persona || (selectedEstudiante.value && selectedEstudiante.value.id)
+        if (pid) await loadInscripcionesForStudent(pid)
+      } catch {
+        // ignore
+      }
+
+      emit('saved')
+      closeDialog()
     }
-
-    emit('saved')
-    closeDialog()
   } catch (error) {
     console.log(error)
     $q.notify({
@@ -1051,7 +1061,6 @@ function closeDialogEstudiante() {
 }
 // Cerrar diálogo
 function closeDialog() {
-  selectedEstudiante.value = localInscripcion
   emit('update:modelValue', false)
   resetForm()
 }
@@ -1075,6 +1084,8 @@ function resetForm() {
     metodo_pago: 'Efectivo',
     detalle: ''
   }
+  // Resetear estudiante seleccionado
+  selectedEstudiante.value = {}
   registrarPago.value = false
   inscripcionIndefinida.value = false
 }
