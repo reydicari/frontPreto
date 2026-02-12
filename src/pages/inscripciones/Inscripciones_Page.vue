@@ -187,117 +187,77 @@
             <q-inner-loading showing color="primary" />
           </template>
 
-          <!-- Columna número mejorada -->
-          <template v-slot:body-cell-no="props">
-            <q-td :props="props">
-              <div class="row-number-simple">
-                {{inscripciones.findIndex(r => r.id === props.row.id) + 1}}
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Columna estudiante con avatar -->
-          <template v-slot:body-cell-estudiante="props">
-            <q-td :props="props">
-              <div class="row items-center no-wrap">
-                <q-avatar size="40px" color="primary" text-color="white" class="q-mr-sm">
-                  <img v-if="props.row.persona?.fotografia" :src="host + props.row.persona.fotografia" />
-                  <span v-else>{{ getInitials(props.row.persona) }}</span>
-                </q-avatar>
-                <div>
-                  <div class="text-weight-medium">
-                    {{ props.row.persona?.nombres }} {{ props.row.persona?.apellido_paterno }}
+          <template v-slot:body="props">
+            <q-tr :props="props" @click="verDetalles(props.row)" class="cursor-pointer">
+              <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                <template v-if="col.name === 'no'">
+                  <div class="row-number-simple">{{ props.rowIndex + 1 }}</div>
+                </template>
+                <template v-else-if="col.name === 'estudiante'">
+                  <div class="row items-center">
+                    <q-avatar size="36px" color="teal-7" text-color="white" class="q-mr-sm">
+                      <img v-if="props.row.persona?.fotografia" :src="`${host}${props.row.persona.fotografia}`" />
+                      <span v-else>{{ getInitials(props.row.persona) }}</span>
+                    </q-avatar>
+                    <div>
+                      <div class="text-weight-medium">{{ col.value }}</div>
+                      <div class="text-caption text-grey-7">CI: {{ props.row.persona?.ci || '—' }}</div>
+                    </div>
                   </div>
-                  <div class="text-caption text-grey-7">
-                    <q-icon name="phone" size="14px" class="q-mr-xs" />
-                    {{ props.row.persona?.telefono || 'Sin teléfono' }}
+                </template>
+                <template v-else-if="col.name === 'paquete'">
+                  <div class="paquete-cell">
+                    <q-icon name="inventory_2" size="18px" class="q-mr-xs text-teal-7" />
+                    <span>{{ col.value }}</span>
                   </div>
-                </div>
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Columna paquete mejorada -->
-          <template v-slot:body-cell-paquete="props">
-            <q-td :props="props">
-              <div class="paquete-cell">
-                <q-icon name="inventory_2" size="18px" class="q-mr-xs text-purple" />
-                <span class="text-weight-medium">{{ props.row.paquete?.nombre || '—' }}</span>
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Columna disciplina con icono mejorado -->
-          <template v-slot:body-cell-disciplina="props">
-            <q-td :props="props">
-              <q-chip size="md" :icon="getDisciplinaIcon(props.row)" color="green-2" text-color="green-9"
-                class="disciplina-chip">
-                {{ props.row.paquete?.disciplina?.nombre || props.row.disciplina?.nombre || '—' }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <!-- Columna nivel mejorada -->
-          <template v-slot:body-cell-nivel="props">
-            <q-td :props="props">
-              <q-badge color="teal-7" class="nivel-badge">
-                {{ props.row.nivel?.nombre_nivel || '—' }}
-              </q-badge>
-            </q-td>
-          </template>
-
-          <!-- Columna fechas mejorada -->
-          <template v-slot:body-cell-fecha_inicio="props">
-            <q-td :props="props">
-              <div class="fecha-cell">
-                <q-icon name="event" size="16px" class="q-mr-xs text-primary" />
-                {{ formatDate(props.row.fecha_inicio) }}
-              </div>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-fecha_fin="props">
-            <q-td :props="props">
-              <div class="fecha-cell">
-                <q-icon name="event_available" size="16px" class="q-mr-xs text-grey-6" />
-                <span>
-                  {{ props.row.fecha_fin ? formatDate(props.row.fecha_fin) : 'Indefinida' }}
-                </span>
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Columna estado mejorada con animación -->
-          <template v-slot:body-cell-estado="props">
-            <q-td :props="props">
-              <q-badge :color="estadoColor(props.row)" class="estado-badge animated-badge">
-                <q-icon :name="estadoIcon(props.row)" size="14px" class="q-mr-xs" />
-                {{ estadoLabel(props.row) }}
-              </q-badge>
-            </q-td>
-          </template>
-
-          <!-- Columna acciones mejorada -->
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <div class="row no-wrap q-gutter-xs">
-                <q-btn icon="visibility" color="info" flat dense round size="sm" @click="showDialog(props.row)">
-                  <q-tooltip>Ver detalles</q-tooltip>
-                </q-btn>
-                <q-btn icon="edit" color="primary" flat dense round size="sm" @click="showDialog(props.row)">
-                  <q-tooltip>Editar inscripción</q-tooltip>
-                </q-btn>
-                <q-btn v-if="props.row.estado === 1" icon="pause_circle" color="negative" flat dense round size="sm"
-                  @click="openSuspenderDialog(props.row)">
-                  <q-tooltip>Suspender inscripción</q-tooltip>
-                </q-btn>
-                <q-btn v-if="props.row.pagos?.length > 0" icon="receipt_long" color="secondary" flat dense round
-                  size="sm" @click="verPagos(props.row)">
-                  <q-badge color="red" floating>{{ props.row.pagos.length }}</q-badge>
-                  <q-tooltip>Ver pagos ({{ props.row.pagos.length }})</q-tooltip>
-                </q-btn>
-              </div>
-            </q-td>
+                </template>
+                <template v-else-if="col.name === 'disciplina'">
+                  <q-chip :icon="getDisciplinaIcon(props.row)" color="teal-7" text-color="white" dense
+                    class="disciplina-chip">
+                    {{ col.value }}
+                  </q-chip>
+                </template>
+                <template v-else-if="col.name === 'nivel'">
+                  <q-badge color="deep-orange-6" class="nivel-badge">{{ col.value }}</q-badge>
+                </template>
+                <template v-else-if="col.name === 'fecha_inicio'">
+                  <div class="fecha-cell">
+                    <q-icon name="event_available" size="16px" class="q-mr-xs text-teal-7" />
+                    {{ formatDate(col.value) }}
+                  </div>
+                </template>
+                <template v-else-if="col.name === 'fecha_fin'">
+                  <div class="fecha-cell">
+                    <q-icon name="event_busy" size="16px" class="q-mr-xs text-orange-7" />
+                    {{ formatDate(col.value) || 'Indefinida' }}
+                  </div>
+                </template>
+                <template v-else-if="col.name === 'estado'">
+                  <q-badge :color="estadoColor(props.row)" :icon="estadoIcon(props.row)"
+                    class="estado-badge animated-badge">
+                    {{ estadoLabel(props.row) }}
+                  </q-badge>
+                </template>
+                <template v-else-if="col.name === 'actions'">
+                  <div class="row items-center justify-center q-gutter-xs" @click.stop>
+                    <q-btn size="sm" flat dense round icon="payments" color="teal-7" @click.stop="verPagos(props.row)">
+                      <q-tooltip>Ver pagos</q-tooltip>
+                    </q-btn>
+                    <q-btn v-if="puedeRenovar(props.row)" size="sm" flat dense round icon="refresh" color="primary"
+                      @click.stop="renovarInscripcion(props.row)">
+                      <q-tooltip>Renovar inscripción</q-tooltip>
+                    </q-btn>
+                    <q-btn v-if="props.row.estado === 1 && !isFechaFinVencida(props.row)" size="sm" flat dense round
+                      icon="block" color="negative" @click.stop="openSuspenderDialog(props.row)">
+                      <q-tooltip>Suspender inscripción</q-tooltip>
+                    </q-btn>
+                  </div>
+                </template>
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
       </q-card-section>
@@ -305,10 +265,13 @@
 
     <!-- Diálogo de inscripción -->
     <nueva-inscripcion-dialog v-model="dialogVisible" :current-inscripcion="currentInscripcion" :edit-mode="editMode"
-      @saved="handleSaved" />
+      :renew-mode="renewMode" @saved="handleSaved" />
+
+    <!-- Diálogo de detalles -->
+    <detalle-inscripcion-dialog v-model="detalleDialogVisible" :inscripcion="selectedInscripcionDetalle" />
 
     <!-- Diálogo de pagos -->
-    <PagosDialog v-model="pagosDialogVisible" :inscripcion="selectedInscripcion" />
+    <PagosInscripcionDialog v-model="pagosDialogVisible" :inscripcion="selectedInscripcion" />
 
     <!-- Diálogo de suspensión -->
     <q-dialog v-model="suspenderDialog" :maximized="$q.screen.lt.sm">
@@ -336,7 +299,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import PagosDialog from './PagosDialog.vue'
+import PagosInscripcionDialog from './PagosInscripcionDialog.vue'
+import DetalleInscripcionDialog from './DetalleInscripcionDialog.vue'
 
 import { listar, suspensderInscripcion } from 'src/stores/inscripcion-store'
 import NuevaInscripcionDialog from "pages/inscripciones/NuevaInscripcionDialog.vue";
@@ -348,7 +312,7 @@ import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 import { useDebounceFn } from '@vueuse/core'
 
 const $q = useQuasar()
-const host = import.meta.env.VITE_BASE_URL || 'http://localhost:3000'
+const host = process.env.API_URL + '/uploads/' || 'http://localhost:3000'
 
 // Estado principal
 const loading = ref(false)
@@ -626,6 +590,7 @@ const onVirtualScroll = async ({ index }) => {
 function openDialog(inscripcion = null) {
   try {
     editMode.value = inscripcion !== null
+    renewMode.value = false
     currentInscripcion.value = inscripcion ? { ...inscripcion } : null
     dialogVisible.value = true
   } catch (error) {
@@ -683,11 +648,44 @@ function getDisciplinaIcon(row) {
   }
 }
 
-// Formato de fecha: dd Mes(Abreviado en español) aaaa -> e.g. 05 Nov 2025
+// Parsear fecha como local sin cambios de zona horaria
+// Convierte "2025-02-27" a Date en hora local (no UTC) para evitar desfase de días
+function parseDateLocal(dateInput) {
+  if (!dateInput) return null
+
+  // Si ya es un objeto Date, normalizarlo
+  if (dateInput instanceof Date) {
+    const d = new Date(dateInput)
+    d.setHours(0, 0, 0, 0)
+    return d
+  }
+
+  // Si es string, extraer año-mes-día y crear fecha local
+  const str = String(dateInput)
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+  if (match) {
+    const [, year, month, day] = match
+    // Crear fecha local (mes es 0-indexed en JS)
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    if (isNaN(d)) return null
+    d.setHours(0, 0, 0, 0)
+    return d
+  }
+
+  // Fallback: intentar parsear normalmente
+  const d = new Date(dateInput)
+  if (isNaN(d)) return null
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+// Formato de fecha: dd Mes(Abreviado en español) aaaa -> e.g. 27 Feb 2025
 function formatDate(dateInput) {
   if (!dateInput) return ''
-  const d = new Date(dateInput)
-  if (isNaN(d)) return String(dateInput)
+  const d = parseDateLocal(dateInput)
+  if (!d) return String(dateInput)
+
   const day = String(d.getDate()).padStart(2, '0')
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
   const mon = months[d.getMonth()] || ''
@@ -695,13 +693,9 @@ function formatDate(dateInput) {
   return `${day} ${mon} ${year}`
 }
 
-// Utilidades para mostrar etiqueta, color e icono según estado y fecha_fin
+// Normalizar fecha para comparaciones (medianoche local)
 const normalizeDate = (dateInput) => {
-  if (!dateInput) return null
-  const d = new Date(dateInput)
-  if (isNaN(d)) return null
-  d.setHours(0, 0, 0, 0)
-  return d
+  return parseDateLocal(dateInput)
 }
 
 const getInscripcionStatus = (row) => {
@@ -751,9 +745,10 @@ function estadoIcon(row) {
 // Gestión de diálogo
 const dialogVisible = ref(false)
 const editMode = ref(false)
-const step = ref('estudiante')
-const inscripcionIndefinida = ref(false)
-const registrarPago = ref(false)
+const renewMode = ref(false)
+// const step = ref('estudiante')
+// const inscripcionIndefinida = ref(false)
+// const registrarPago = ref(false)
 
 const currentInscripcion = ref({
   id: null,
@@ -764,52 +759,62 @@ const currentInscripcion = ref({
   estado: 1
 })
 
-const nuevoPago = ref({
-  monto: 0,
-  meses_cubiertos: 1,
-  metodo: 'Efectivo',
-  observaciones: ''
-})
+// const nuevoPago = ref({
+//   monto: 0,
+//   meses_cubiertos: 1,
+//   metodo: 'Efectivo',
+//   observaciones: ''
+// })
 
-const currentEstudiante = ref(null)
-const currentDisciplina = ref(null)
+// const currentEstudiante = ref(null)
+// const currentDisciplina = ref(null)
 
-function showDialog(inscripcion) {
-  editMode.value = !!inscripcion
+// Diálogo de detalles
+const detalleDialogVisible = ref(false)
+const selectedInscripcionDetalle = ref(null)
 
-  if (inscripcion) {
-    currentInscripcion.value = { ...inscripcion }
-    currentEstudiante.value = inscripcion.persona
-    currentDisciplina.value = inscripcion.disciplina
-    inscripcionIndefinida.value = !inscripcion.fecha_fin
-  } else {
-    resetCurrentInscripcion()
-  }
-
-  step.value = 'estudiante'
-  dialogVisible.value = true
+// Ver detalles de inscripción
+function verDetalles(inscripcion) {
+  selectedInscripcionDetalle.value = inscripcion
+  detalleDialogVisible.value = true
 }
 
-function resetCurrentInscripcion() {
-  currentInscripcion.value = {
-    id: null,
-    id_persona: null,
-    id_diciplina: null,
-    fecha_inicio: '',
-    fecha_fin: '',
-    estado: 1
-  }
-  nuevoPago.value = {
-    monto: 0,
-    meses_cubiertos: 1,
-    metodo: 'Efectivo',
-    observaciones: ''
-  }
-  currentEstudiante.value = null
-  currentDisciplina.value = null
-  inscripcionIndefinida.value = false
-  registrarPago.value = false
-}
+// function showDialog(inscripcion) {
+//   editMode.value = !!inscripcion
+
+//   if (inscripcion) {
+//     currentInscripcion.value = { ...inscripcion }
+//     currentEstudiante.value = inscripcion.persona
+//     currentDisciplina.value = inscripcion.disciplina
+//     inscripcionIndefinida.value = !inscripcion.fecha_fin
+//   } else {
+//     resetCurrentInscripcion()
+//   }
+
+//   step.value = 'estudiante'
+//   dialogVisible.value = true
+// }
+
+// function resetCurrentInscripcion() {
+//   currentInscripcion.value = {
+//     id: null,
+//     id_persona: null,
+//     id_diciplina: null,
+//     fecha_inicio: '',
+//     fecha_fin: '',
+//     estado: 1
+//   }
+//   nuevoPago.value = {
+//     monto: 0,
+//     meses_cubiertos: 1,
+//     metodo: 'Efectivo',
+//     observaciones: ''
+//   }
+//   currentEstudiante.value = null
+//   currentDisciplina.value = null
+//   inscripcionIndefinida.value = false
+//   registrarPago.value = false
+// }
 
 
 // Diálogo de pagos
@@ -868,6 +873,38 @@ const confirmarSuspension = async () => {
   } finally {
     suspenderLoading.value = false
   }
+}
+
+// Verificar si una inscripción puede ser renovada
+// Solo suspendidas o terminadas (fecha_fin < hoy)
+const puedeRenovar = (row) => {
+  if (!row) return false
+
+  // Suspendidas siempre pueden renovarse
+  if (row.estado === 0) return true
+
+  // Activas solo si están vencidas (fecha_fin < hoy)
+  if (row.estado === 1) {
+    return isFechaFinVencida(row)
+  }
+
+  return false
+}
+
+// Renovar inscripción
+const renovarInscripcion = (row) => {
+  if (!puedeRenovar(row)) return
+
+  // Abrir el diálogo en modo renovación
+  editMode.value = false
+  renewMode.value = true
+  currentInscripcion.value = {
+    ...row,
+    fecha_inicio: new Date().toISOString().split('T')[0], // Nueva fecha de inicio
+    fecha_fin: '', // Limpiar fecha fin para que se recalcule
+    meses_duracion: 1 // Duración por defecto
+  }
+  dialogVisible.value = true
 }
 
 // Resetear filtros
@@ -1071,12 +1108,11 @@ function resetFilters() {
   }
 
   :deep(.q-table tbody tr) {
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
 
     &:hover {
       background-color: #e8f5e9;
-      transform: scale(1.01);
-      box-shadow: 0 2px 8px rgba(27, 94, 32, 0.15);
     }
   }
 
@@ -1165,5 +1201,10 @@ function resetFilters() {
   .stat-label {
     font-size: 0.75rem !important;
   }
+}
+
+// Utilidades
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

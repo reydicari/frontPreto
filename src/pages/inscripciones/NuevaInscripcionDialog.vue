@@ -4,7 +4,7 @@
       <q-card-section class="row items-center justify-between dialog-header">
         <div class="dialog-title">
           <q-icon name="local_activity" size="28px" class="q-mr-sm" />
-          {{ editMode ? 'Modificar Inscripción' : 'Nueva Inscripción' }}
+          {{ renewMode ? 'Renovar Inscripción' : (editMode ? 'Modificar Inscripción' : 'Nueva Inscripción') }}
         </div>
         <div>
           <q-btn flat dense round class="help-nueva-inscripcion help-btn" aria-label="Ayuda" title="Ayuda"
@@ -29,8 +29,9 @@
               <div class="col-12 col-sm-6">
                 <q-select ref="estudianteSelect" data-driver="estudiante-select" v-model="selectedEstudiante"
                   :options="displayedEstudiantes" option-label="displayName" label="Estudiante *" outlined dense
-                  :use-input="!props.editMode" @filter="filterEstudiantes" @input-value="updateNewEstudianteName"
-                  @click.stop @popup-show="onPopupShow" :readonly="props.editMode" :clearable="!props.editMode"
+                  :use-input="!props.editMode && !props.renewMode" @filter="filterEstudiantes"
+                  @input-value="updateNewEstudianteName" @click.stop @popup-show="onPopupShow"
+                  :readonly="props.editMode || props.renewMode" :clearable="!props.editMode && !props.renewMode"
                   :rules="[val => !!val || 'Seleccione un estudiante']">
                   <template v-slot:no-option>
                     <q-item>
@@ -53,7 +54,7 @@
                   </template>
                 </q-select>
               </div>
-              <div class="col-12 col-sm-3">
+              <div v-if="!props.renewMode" class="col-12 col-sm-3">
                 <q-btn icon="person_add" class="btn-add-student" label="Nuevo" data-driver="new-student-btn" unelevated
                   no-caps dense @click="showNewStudentDialog = true" style="width: 100%;" />
               </div>
@@ -66,6 +67,9 @@
                 <div class="text-subtitle2 text-weight-medium q-mb-sm">
                   <q-icon name="inventory_2" size="20px" class="q-mr-xs" />
                   Seleccione un paquete
+                  <q-badge v-if="props.renewMode && !paqueteDisponible" color="red" class="q-ml-sm">
+                    El paquete anterior no está disponible - seleccione uno nuevo
+                  </q-badge>
                 </div>
                 <!-- Paquetes: scroller horizontal -->
                 <div class="packages-row">
@@ -236,7 +240,8 @@ const props = defineProps({
     default: false
   },
   currentInscripcion: Object,
-  editMode: Boolean
+  editMode: Boolean,
+  renewMode: Boolean
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
@@ -255,6 +260,7 @@ const inscripcionIndefinida = ref(false)
 //para el despleagable del select de estudiantes
 const estudianteSelect = ref(null)
 const nivelSelect = ref(null)
+const paqueteDisponible = ref(true)
 const errorNivel = ref(false)
 
 // Datos del formulario para una nueva inscripción
@@ -400,12 +406,39 @@ function onPopupShow() {
   })
 }
 
-watch(isDialogVisible, (visible) => {
+watch(isDialogVisible, async (visible) => {
   if (visible) {
-    loadPaquetes()
-    loadNiveles()
+    // Cargar paquetes y niveles primero
+    await Promise.all([loadPaquetes(), loadNiveles()])
+
     // limpiar paquetes del estudiante cuando se abre el diálogo
     studentPackageIds.value = []
+
+    // Si estamos en modo renovar, verificar si el paquete está disponible y hacer scroll
+    if (props.renewMode && props.currentInscripcion?.id_paquete) {
+      nextTick(() => {
+        const paqueteId = props.currentInscripcion.id_paquete
+        const paqueteEncontrado = paquetesAvailable.value.find(p => p.id === paqueteId)
+
+        if (paqueteEncontrado) {
+          paqueteDisponible.value = true
+          // Pre-seleccionar el paquete
+          localInscripcion.id_paquete = paqueteId
+
+          // Hacer scroll al paquete seleccionado para centrarlo
+          nextTick(() => {
+            if (packagesContainer.value) {
+              const el = packagesContainer.value.querySelector(`[data-pkg-id="${paqueteId}"]`)
+              if (el && el.scrollIntoView) {
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+              }
+            }
+          })
+        } else {
+          paqueteDisponible.value = false
+        }
+      })
+    }
   }
 });
 // const loadStudents = async () => {
@@ -545,7 +578,7 @@ async function loadOptions() {
 // Cargar paquetes disponibles
 async function loadPaquetes() {
   try {
-    const res = await listarPaquetes()
+    const res = await listarPaquetes({ estado: true })
     paquetesAvailable.value = Array.isArray(res) ? res : (res && res.data ? res.data : [])
     // No seleccionar ningún paquete por defecto: el usuario debe elegir explícitamente
     console.log('paquetes cargados', paquetesAvailable.value)
@@ -923,6 +956,27 @@ async function saveInscripcion() {
     }
     return
   }
+
+  // Validar que el paquete seleccionado esté disponible en la lista (especialmente en modo renovación)
+  if (props.renewMode && localInscripcion.id_paquete) {
+    const paqueteExiste = paquetesAvailable.value.some(p => p.id === localInscripcion.id_paquete)
+    if (!paqueteExiste) {
+      $q.notify({
+        type: 'warning',
+        message: 'El paquete anterior no está disponible. Por favor seleccione un paquete de la lista.',
+        timeout: 3000
+      })
+      try {
+        if (packagesContainer.value && typeof packagesContainer.value.scrollIntoView === 'function') {
+          packagesContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      } catch (err) {
+        console.warn('No se pudo desplazar al contenedor de paquetes', err)
+      }
+      return
+    }
+  }
+
   try {
     const inscripcionData = {
       ...localInscripcion,

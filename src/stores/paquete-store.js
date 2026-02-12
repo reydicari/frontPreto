@@ -1,9 +1,9 @@
 import { api } from "boot/axios.js";
 const URL_PART = "/api/paquete";
 import { Notify } from "quasar";
-export const listarPaquetes = async () => {
+export const listarPaquetes = async (params = {}) => {
   try {
-    const response = await api.get(URL_PART + "/listar");
+    const response = await api.get(URL_PART + "/listar", { params });
     return response.data;
   } catch (error) {
     console.log("error en el store", error);
