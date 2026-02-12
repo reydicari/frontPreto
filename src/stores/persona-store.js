@@ -110,9 +110,9 @@ export const todasPersonas = async (params = {}) => {
   }
 };
 
-export const datosEstudiantes = async () => {
+export const datosEstudiantes = async (params = {}) => {
   try {
-    const response = await api.get(URL_PART + "/datosEstudiantes");
+    const response = await api.get(URL_PART + "/datosEstudiantes", { params });
     return response.data;
   } catch (error) {
     console.log("error en el store", error.response);
@@ -132,10 +132,11 @@ export const datosEstudiantes = async () => {
   }
 };
 
-export const datosEntrenadoresAdministradores = async () => {
+export const datosEntrenadoresAdministradores = async (params = {}) => {
   try {
     const response = await api.get(
       URL_PART + "/datosEntrenadoresAdministradores",
+      { params },
     );
     return response.data;
   } catch (error) {

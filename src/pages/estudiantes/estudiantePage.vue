@@ -296,7 +296,7 @@ import { agregar, listar, categoriasUnicas, modificar, cambiarEstado, datosEstud
 import { listarDisciplinas } from 'src/stores/disciplina-store.js'
 
 const $q = useQuasar()
-const host = 'http://localhost:3001/uploads/'
+const host = process.env.API_URL + '/uploads/'
 // Datos de ejemplo
 
 // Estado del componente
@@ -309,7 +309,7 @@ const itemsPerPage = 10
 const searchInput = ref('')
 const searchTerm = ref('')
 const filterCategory = ref(null)
-const filterStatus = ref(true)
+const filterStatus = ref(null)
 const filterType = ref('estudiante')
 const filterEdadMin = ref(null)
 const filterEdadMax = ref(null)
@@ -348,9 +348,9 @@ const estadisticasPrincipales = ref({
   cumpleanosEsteMes: 0
 })
 
-const cargarEstadisticas = async () => {
+const cargarEstadisticas = async (params = {}) => {
   try {
-    const datos = await datosEstudiantes()
+    const datos = await datosEstudiantes(params)
     estadisticasPrincipales.value = datos
   } catch (error) {
     console.error('Error al cargar estadísticas:', error)
@@ -389,7 +389,8 @@ const infiniteScrollRef = ref(null)
 // Opciones para filtros
 const statusOptions = [
   { label: 'Activo', value: true },
-  { label: 'Inactivo', value: false }
+  { label: 'Inactivo', value: false },
+  { label: 'Cumpleañeros este mes', value: 'cumpleañero' }
 ]
 const categoryOptions = ref([])
 const disciplinaOptions = ref([])
@@ -577,6 +578,8 @@ const loadStudents = async (page = 1, append = false) => {
         personas.value.push(...response.data)
       } else {
         personas.value = response.data
+        // Cargar estadísticas con los mismos parámetros
+        await cargarEstadisticas(params)
       }
       hasMoreData.value = response.data.length === itemsPerPage
       currentPage.value++

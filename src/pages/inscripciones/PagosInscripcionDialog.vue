@@ -51,91 +51,95 @@
 
         <div v-else class="pagos-grid">
           <div v-for="pago in pagos" :key="pago.id" class="pago-card" @click="verDetallePago(pago)">
-            <!-- Header del pago -->
             <div class="pago-header">
-              <div class="pago-id">
-                <q-icon name="tag" size="18px" class="q-mr-xs" />
-                Pago #{{ pago.id }}
+              <div class="pago-date">
+                <q-icon name="event" size="18px" />
+                <span>{{ formatDate(pago.fecha) }}</span>
+                <span v-if="extractTime(pago.fecha)">, {{ extractTime(pago.fecha) }}</span>
               </div>
-              <q-badge :color="getEstadoColor(pago.estado)" :label="getEstadoLabel(pago.estado)" class="estado-badge">
+              <q-badge :color="getEstadoColor(pago.estado)" :label="getEstadoLabel(pago.estado)">
                 <q-icon :name="getEstadoIcon(pago.estado)" size="14px" class="q-ml-xs" />
               </q-badge>
             </div>
 
-            <!-- Fecha -->
-            <div class="pago-fecha">
-              <q-icon name="event" size="20px" color="primary" class="q-mr-sm" />
-              <span>{{ formatDate(pago.fecha) }}</span>
-              <span v-if="extractTime(pago.fecha)" class="pago-hora">{{ extractTime(pago.fecha) }}</span>
-            </div>
-
-            <!-- Detalles -->
-            <div class="pago-details">
-              <div class="detail-row">
-                <span class="detail-label">
-                  <q-icon name="account_balance_wallet" size="16px" class="q-mr-xs" />
-                  Método:
-                </span>
-                <span class="detail-value">{{ pago.metodo_pago?.nombre || 'N/A' }}</span>
+            <div class="pago-body">
+              <div class="pago-detail" v-if="pago.metodo_pago">
+                <q-icon name="credit_card" size="18px" />
+                <span>{{ pago.metodo_pago.nombre }}</span>
               </div>
 
-              <div class="detail-row" v-if="pago.meses_cubiertos">
-                <span class="detail-label">
-                  <q-icon name="calendar_month" size="16px" class="q-mr-xs" />
-                  Meses cubiertos:
-                </span>
-                <span class="detail-value">{{ pago.meses_cubiertos }}</span>
+              <div class="pago-detail" v-if="pago.meses_cubiertos">
+                <q-icon name="calendar_month" size="18px" />
+                <span>Meses: {{ pago.meses_cubiertos }}</span>
               </div>
 
-              <div class="detail-row" v-if="pago.descuento > 0">
-                <span class="detail-label">
-                  <q-icon name="discount" size="16px" class="q-mr-xs" />
-                  Descuento:
-                </span>
-                <span class="detail-value discount-value">-${{ pago.descuento.toLocaleString() }}</span>
+              <div class="pago-detail" v-if="pago.observaciones">
+                <q-icon name="comment" size="18px" />
+                <span>{{ pago.observaciones }}</span>
               </div>
 
-              <div class="detail-row" v-if="pago.id_usuario">
-                <span class="detail-label">
-                  <q-icon name="person" size="16px" class="q-mr-xs" />
-                  Registrado por:
-                </span>
-                <span class="detail-value">{{ pago.usuario?.nombre || 'Usuario' }}</span>
+              <div class="pago-detail" v-if="pago.usuario">
+                <q-icon name="person" size="18px" />
+                <span>{{ pago.usuario.usuario || 'Usuario' }}</span>
               </div>
 
-              <div class="detail-row" v-if="pago.observaciones">
-                <span class="detail-label">
-                  <q-icon name="comment" size="16px" class="q-mr-xs" />
-                  Nota:
-                </span>
-                <span class="detail-value">{{ pago.observaciones }}</span>
-              </div>
-            </div>
-
-            <!-- Monto destacado -->
-            <div class="pago-monto" :class="{ 'monto-deuda': pago.estado === 2 }">
-              <span class="monto-label">{{ pago.estado === 2 ? 'Adeuda' : 'Monto' }}</span>
-              <span class="monto-value">${{ pago.monto.toLocaleString() }}</span>
-            </div>
-
-            <!-- Sub-pagos si existen -->
-            <div v-if="pago.subpagos && pago.subpagos.length > 0" class="subpagos-section">
-              <div class="subpagos-header">
-                <q-icon name="payments" size="16px" class="q-mr-xs" />
-                Abonos ({{ pago.subpagos.length }})
-              </div>
-              <div class="subpagos-list">
-                <div v-for="subpago in pago.subpagos" :key="subpago.id" class="subpago-item">
-                  <span class="subpago-fecha">{{ formatDate(subpago.fecha) }}</span>
-                  <span class="subpago-monto">${{ subpago.monto.toLocaleString() }}</span>
+              <!-- Caso: tiene descuento -->
+              <template v-if="pago.descuento && pago.descuento > 0">
+                <div class="row q-mt-sm">
+                  <div class="col-6">
+                    <div class="pago-amount-small">
+                      <div class="amount-label-small">Monto</div>
+                      <div class="amount-value-small">Bs {{ pago.monto.toLocaleString() }}</div>
+                    </div>
+                  </div>
+                  <div class="col-5">
+                    <div class="pago-discount-small">
+                      <div class="discount-label-small">Descuento</div>
+                      <div class="discount-value-small">Bs {{ pago.descuento.toLocaleString() }}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+                <!-- Mostrar Total Pagado o Saldo Pendiente según saldo real -->
+                <div v-if="pago.saldo > 0" class="pago-saldo">
+                  <div class="saldo-label">Saldo Pendiente</div>
+                  <div class="saldo-value">Bs {{ pago.saldo.toLocaleString() }}</div>
+                </div>
+                <div v-else class="pago-total">
+                  <div class="total-label">{{ pago.estado === 2 && pago.saldo === 0 ? 'Monto Pagado' : 'Total Pagado' }}
+                  </div>
+                  <div class="total-value">Bs {{ (pago.monto - pago.descuento).toLocaleString() }}</div>
+                </div>
+              </template>
+
+              <!-- Caso: no tiene descuento -->
+              <template v-else>
+                <!-- Si estado es 1 (Pagado), mostrar como Total Pagado -->
+                <div v-if="pago.estado === 1" class="pago-total">
+                  <div class="total-label">Total Pagado</div>
+                  <div class="total-value">Bs {{ pago.monto.toLocaleString() }}</div>
+                </div>
+                <!-- Si estado es 2 (Parcial), verificar saldo real -->
+                <div v-else-if="pago.estado === 2 && pago.saldo > 0" class="pago-saldo">
+                  <div class="saldo-label">Saldo Pendiente</div>
+                  <div class="saldo-value">Bs {{ pago.saldo.toLocaleString() }}</div>
+                </div>
+                <!-- Si estado es 2 pero saldo real es 0, mostrar como pagado -->
+                <div v-else-if="pago.estado === 2 && pago.saldo === 0" class="pago-total">
+                  <div class="total-label">Monto Pagado</div>
+                  <div class="total-value">Bs {{ pago.monto.toLocaleString() }}</div>
+                </div>
+                <!-- Otros estados, mostrar monto normal -->
+                <div v-else class="pago-amount">
+                  <div class="amount-label">Monto</div>
+                  <div class="amount-value">Bs {{ pago.monto.toLocaleString() }}</div>
+                </div>
+              </template>
             </div>
 
-            <!-- Comprobante -->
-            <div v-if="pago.comprobante" class="pago-comprobante">
-              <q-btn icon="attach_file" label="Ver comprobante" size="sm" color="primary" outline dense
-                @click.stop="verComprobante(pago)" />
+            <div class="pago-footer">
+              <q-btn v-if="pago.comprobante" flat dense icon="image" color="primary" @click.stop="verComprobante(pago)">
+                <q-tooltip>Ver comprobante</q-tooltip>
+              </q-btn>
             </div>
           </div>
         </div>
@@ -424,11 +428,11 @@ watch(isDialogVisible, (visible) => {
 
 .pago-card {
   background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba($primary, 0.12);
   transition: all 0.3s ease;
+  border: 2px solid rgba($primary, 0.15);
   cursor: pointer;
 
   &:hover {
@@ -440,159 +444,168 @@ watch(isDialogVisible, (visible) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 2px solid rgba($primary, 0.2);
-
-    .pago-id {
-      font-weight: 700;
-      color: $primary;
-      display: flex;
-      align-items: center;
-    }
-
-    .estado-badge {
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-    }
+    border-bottom: 3px solid rgba($primary, 0.4);
   }
 
-  .pago-fecha {
+  .pago-date {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 8px;
     font-weight: 600;
-    color: $grey-8;
-
-    .pago-hora {
-      margin-left: auto;
-      font-size: 0.85em;
-      color: $grey-6;
-    }
+    color: $secondary;
+    font-size: 0.9em;
   }
 
-  .pago-details {
-    margin-bottom: 12px;
+  .pago-body {
+    margin-bottom: 16px;
 
-    .detail-row {
+    >div:not(.row) {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 6px 0;
-      border-bottom: 1px solid $grey-3;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: $grey-7;
+      font-size: 0.95em;
 
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .detail-label {
-        font-size: 0.85em;
-        color: $grey-7;
-        display: flex;
-        align-items: center;
-        font-weight: 500;
-      }
-
-      .detail-value {
-        font-weight: 600;
-        color: $grey-9;
-        text-align: right;
-        max-width: 60%;
-        word-break: break-word;
-
-        &.discount-value {
-          color: $secondary;
-        }
+      .q-icon {
+        color: $primary;
+        opacity: 1;
       }
     }
   }
 
-  .pago-monto {
-    background: linear-gradient(135deg, rgba(#2e7d32, 0.15) 0%, rgba(#558b2f, 0.1) 100%);
-    padding: 12px;
-    border-radius: 10px;
+  .pago-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: $grey-7;
+    font-size: 0.95em;
+
+    .q-icon {
+      color: $primary;
+      opacity: 1;
+    }
+  }
+
+  .pago-amount {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: rgba($primary, 0.2);
+    padding: 12px;
+    border-radius: 12px;
     margin-top: 12px;
-    border: 2px solid rgba(#2e7d32, 0.3);
 
-    &.monto-deuda {
-      background: linear-gradient(135deg, rgba(#ef6c00, 0.15) 0%, rgba(#f57c00, 0.1) 100%);
-      border-color: rgba(#ef6c00, 0.3);
-
-      .monto-label {
-        color: #ef6c00;
-      }
-
-      .monto-value {
-        color: #ef6c00;
-      }
+    .amount-label {
+      font-weight: 600;
+      color: $grey-8;
     }
 
-    .monto-label {
+    .amount-value {
+      font-size: 1.5em;
       font-weight: 700;
-      color: #2e7d32;
-      text-transform: uppercase;
-      font-size: 0.85em;
-    }
-
-    .monto-value {
-      font-size: 1.4em;
-      font-weight: 700;
-      color: #2e7d32;
+      color: $primary;
     }
   }
 
-  .subpagos-section {
-    margin-top: 12px;
-    padding: 12px;
-    background: rgba($primary, 0.05);
+  .pago-amount-small {
+    background: rgba($primary, 0.15);
+    padding: 8px;
     border-radius: 8px;
-    border: 1px solid rgba($primary, 0.2);
+    text-align: center;
 
-    .subpagos-header {
+    .amount-label-small {
+      font-size: 0.75em;
       font-weight: 600;
+      color: $grey-7;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .amount-value-small {
+      font-size: 1.1em;
+      font-weight: 700;
       color: $primary;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
+    }
+  }
+
+  .pago-discount-small {
+    background: rgba($secondary, 0.15);
+    padding: 8px;
+    border-radius: 8px;
+    text-align: center;
+
+    .discount-label-small {
+      font-size: 0.75em;
+      font-weight: 600;
+      color: $grey-7;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .discount-value-small {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: $secondary;
+    }
+  }
+
+  .pago-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba($primary, 0.25) 0%, rgba($primary, 0.15) 100%);
+    padding: 12px;
+    border-radius: 12px;
+    margin-top: 8px;
+    border: 2px solid rgba($primary, 0.3);
+
+    .total-label {
+      font-weight: 700;
+      color: $primary;
+      font-size: 0.95em;
+      text-transform: uppercase;
+    }
+
+    .total-value {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: $primary;
+    }
+  }
+
+  .pago-saldo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(#f59e0b, 0.2);
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-top: 8px;
+    border: 2px solid rgba(#f59e0b, 0.4);
+
+    .saldo-label {
+      font-weight: 700;
+      color: #d97706;
       font-size: 0.9em;
     }
 
-    .subpagos-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-
-      .subpago-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 6px 8px;
-        background: white;
-        border-radius: 6px;
-        font-size: 0.85em;
-
-        .subpago-fecha {
-          color: $grey-7;
-        }
-
-        .subpago-monto {
-          font-weight: 700;
-          color: $primary;
-        }
-      }
+    .saldo-value {
+      font-size: 1.3em;
+      font-weight: 700;
+      color: #d97706;
     }
   }
 
-  .pago-comprobante {
-    margin-top: 12px;
+  .pago-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
     padding-top: 12px;
-    border-top: 1px solid $grey-3;
+    border-top: 1px solid rgba($primary, 0.2);
   }
 }
 

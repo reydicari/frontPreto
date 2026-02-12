@@ -300,7 +300,7 @@ const itemsPerPage = 10
 const searchInput = ref('')
 const searchTerm = ref('')
 const filterCategory = ref(null)
-const filterStatus = ref(true)
+const filterStatus = ref(null)
 const filterType = ref('')
 const filterExperienciaMin = ref(null)
 const filterSalarioMin = ref(null)
@@ -333,9 +333,9 @@ const estadisticasPrincipales = ref({
   cumpleanosEsteMes: 0
 })
 
-const cargarEstadisticas = async () => {
+const cargarEstadisticas = async (params = {}) => {
   try {
-    const datos = await datosEntrenadoresAdministradores()
+    const datos = await datosEntrenadoresAdministradores(params)
     estadisticasPrincipales.value = datos
     console.log('estadistica principales:-------------------------', datos);
 
@@ -375,7 +375,8 @@ const infiniteScrollRef = ref(null)
 // Opciones para filtros
 const statusOptions = [
   { label: 'Activo', value: true },
-  { label: 'Inactivo', value: false }
+  { label: 'Inactivo', value: false },
+  { label: 'Cumpleañeros', value: 'cumpleañero' }
 ]
 const typeOptions = ['entrenador', 'administrador']
 const categoryOptions = ref([])
@@ -625,6 +626,8 @@ const loadStudents = async (page = 1, append = false) => {
         personas.value.push(...response.data)
       } else {
         personas.value = response.data
+        // Cargar estadísticas con los mismos parámetros
+        await cargarEstadisticas(params)
       }
       hasMoreData.value = response.data.length === itemsPerPage
       currentPage.value++

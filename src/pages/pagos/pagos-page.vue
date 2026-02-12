@@ -150,7 +150,9 @@
                   <span>{{ formatDate(pago.fecha) }}</span>
                   <span v-if="extractTime(pago.fecha)">, {{ extractTime(pago.fecha) }}</span>
                 </div>
-                <q-badge :color="estadoColor(pago.estado)" :label="estadoLabel(pago.estado)" />
+                <q-badge :color="estadoColor(pago.estado)" :label="estadoLabel(pago.estado)">
+                  <q-icon :name="estadoIcon(pago.estado)" size="14px" class="q-ml-xs" />
+                </q-badge>
               </div>
 
               <div class="payment-body">
@@ -317,7 +319,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -338,7 +340,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -583,6 +585,15 @@ function estadoLabel(estado) {
     case 1: return 'Pagado'
     case 2: return 'Parcial'
     default: return 'Desconocido'
+  }
+}
+
+function estadoIcon(estado) {
+  switch (estado) {
+    case 0: return 'cancel'
+    case 1: return 'check_circle'
+    case 2: return 'error'
+    default: return 'help'
   }
 }
 

@@ -5,7 +5,7 @@
         <div class="header-title-payment">
           <q-icon name="add_card" size="32px" class="q-mr-sm" />
           <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (isEdit ? 'Editar Pago' : 'Nuevo Pago')
-            }}</div>
+          }}</div>
         </div>
       </q-card-section>
 
@@ -295,10 +295,21 @@ const loadLists = async () => {
 }
 
 const filterPerson = (val, update) => {
-  update(() => {
-    if (!val) { personOptions.value = [...allPersonOptions.value]; return }
+  update(async () => {
+    if (!val) {
+      const resp = await todasPersonas({ estado: true, limit: 5 })
+      personOptions.value = (Array.isArray(resp) ? resp : []).map(p => ({
+        ...p,
+        displayName: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`
+      }))
+      return
+    }
     const needle = val.toLowerCase()
-    personOptions.value = allPersonOptions.value.filter(p => (p.displayName || '').toLowerCase().includes(needle))
+    const resp = await todasPersonas({ estado: true, search: needle, limit: 5 })
+    personOptions.value = (Array.isArray(resp) ? resp : []).map(p => ({
+      ...p,
+      displayName: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`
+    }))
   })
 }
 
