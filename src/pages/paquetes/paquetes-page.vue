@@ -4,7 +4,7 @@
       <div class="header-content">
         <div class="header-title">
           <q-icon name="inventory_2" size="42px" class="q-mr-sm" />
-          <h4 class="page-title">Gestión de Paquetes</h4>
+          <h4 class="page-title">Paquetes</h4>
         </div>
         <p class="header-subtitle">Crea y gestiona paquetes educativos con horarios personalizados</p>
       </div>
@@ -1033,7 +1033,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   padding: 8px;
   background: white;
   border-radius: 8px;
-  border: 2px solid $color-orange;
+  border: 2px solid grey;
 }
 
 .body--dark .date-range {

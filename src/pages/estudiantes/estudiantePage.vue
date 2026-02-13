@@ -291,7 +291,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import PersonaDialog from './PersonaDialog.vue'
 import PersonaDetails from './PersonaDetails.vue'
-import PagosPersonaDialog from 'src/components/PagosPersonaDialog.vue'
+import PagosPersonaDialog from './PagosPersonaDialog.vue'
 import { agregar, listar, categoriasUnicas, modificar, cambiarEstado, datosEstudiantes } from 'src/stores/persona-store.js'
 import { listarDisciplinas } from 'src/stores/disciplina-store.js'
 
