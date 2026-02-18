@@ -86,7 +86,7 @@
                       <q-icon name="badge" size="18px" class="info-icon" />
                       <span class="info-label">CI:</span>
                       <span class="info-value">{{ userData?.persona?.ci }} {{ userData?.persona?.complemento || ''
-                        }}</span>
+                      }}</span>
                     </div>
 
                     <div class="info-row">

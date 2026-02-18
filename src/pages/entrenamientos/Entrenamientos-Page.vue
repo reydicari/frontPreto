@@ -2,10 +2,10 @@
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Header con estadísticas -->
     <div class="page-header q-mb-lg">
-      <div class="header-content">
-        <div class="row items-center justify-between q-col-gutter-md">
-          <div class="col-12 col-sm-auto">
-            <div class="header-title">
+      <div class="header-content ">
+        <div class="row items-center justify-between  q-col-gutter-md">
+          <div class="col-12 col-sm-auto ">
+            <div class="header-title ">
               <q-icon name="fitness_center" size="42px" class="q-mr-sm" />
               <h2 class="page-title">Entrenamientos</h2>
             </div>
@@ -75,15 +75,15 @@
     <!-- Barra de herramientas -->
     <q-card class="q-mb-md toolbar-card">
       <q-card-section>
-        <div class="row items-center q-col-gutter-sm">
-          <!-- Buscador -->
-          <q-input v-model="searchTerm" clearable outlined dense placeholder="Buscar por nombre de entrenamiento"
+        <!-- <div class="row items-center q-col-gutter-sm"> -->
+        <!-- Buscador -->
+        <!-- <q-input v-model="searchTerm" clearable outlined dense placeholder="Buscar por nombre de entrenamiento"
             class="col-12 search-input">
             <template v-slot:prepend>
               <q-icon name="search" class="text-brown-7" />
             </template>
-          </q-input>
-        </div>
+</q-input>
+</div> -->
 
         <!-- Filtros avanzados -->
         <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
@@ -120,30 +120,27 @@
                 </template>
               </q-select>
 
-              <q-select v-model="filterStatus" :options="statusOptions" emit-value option-value="value"
+              <q-select v-model="filterStatus" :options="statusOptions" map-options emit-value option-value="value"
                 option-label="label" label="Estado" outlined dense clearable class="col-12 col-sm-6 col-md-4">
                 <template v-slot:prepend>
                   <q-icon name="assignment" color="blue-7" />
                 </template>
               </q-select>
 
-              <q-input v-model="filterDateFrom" label="Fecha inicio desde" type="date" outlined dense
-                class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
-                </template>
-              </q-input>
+              <!-- Vencimiento (Fecha Fin) -->
+              <div class="col-6 col-md-3 col-lg-2">
+                <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
+                  @update:model-value="filterFechaFin = $event" />
+              </div>
 
-              <q-input v-model="filterDateTo" label="Fecha inicio hasta" type="date" outlined dense
-                class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
-                </template>
-              </q-input>
+              <!-- Fecha Inicio -->
+              <div class="col-6 col-md-3 col-lg-2">
+                <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
+              </div>
             </div>
-            <div class="row justify-end q-mt-md">
+            <!-- <div class="row justify-end q-mt-md">
               <q-btn label="Limpiar filtros" flat icon="clear_all" @click="clearFilters" class="btn-clear-filters" />
-            </div>
+            </div> -->
           </div>
         </q-expansion-item>
       </q-card-section>
@@ -350,6 +347,7 @@ import { listar, listarTodosEstudiantes } from 'stores/persona-store.js'
 import { listarPaquetes } from "stores/paquete-store.js";
 import { listarUbicaciones } from "stores/ubicacion-store.js";
 import { guardarAsistencias } from "stores/asistencia-store.js";
+import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 
 // Mock data para coaches (se carga dinámicamente)
 const mockCoaches = ref([])
@@ -375,8 +373,8 @@ const searchTerm = ref('')
 const filtersExpanded = ref(false)
 const filterDiscipline = ref(null)
 const filterStatus = ref(null)
-const filterDateFrom = ref(null)
-const filterDateTo = ref(null)
+const filterFechaInicio = ref('vacio')
+const filterFechaFin = ref('vacio')
 const trainingDialog = ref(false)
 const detailsDialog = ref(false)
 const coachesDialog = ref(false)
@@ -402,8 +400,8 @@ const activeFiltersCount = computed(() => {
   if (filterPaquete.value) count++
   if (filterUbicacion.value) count++
   if (filterStatus.value !== null && filterStatus.value !== undefined) count++
-  if (filterDateFrom.value) count++
-  if (filterDateTo.value) count++
+  if (filterFechaInicio.value && filterFechaInicio.value !== 'vacio') count++
+  if (filterFechaFin.value && filterFechaFin.value !== 'vacio') count++
   return count
 })
 
@@ -428,10 +426,11 @@ const currentTraining = ref({
 // Opciones para filtros y selects
 const disciplineOptions = ref([])
 const statusOptions = [
-  { label: 'Suspendido', value: -1 },
-  { label: 'Terminado', value: 0 },
-  { label: 'En marcha', value: 1 },
-  { label: 'Sin comenzar', value: 2 }
+  { label: 'Suspendidos', value: 0 },
+  { label: 'Activos', value: 1 },
+  { label: 'Indefinidas', value: 2 },
+  // { label: 'En marcha', value: 3 },
+  // { label: 'Sin comenzar', value: 4 }
 ]
 
 // Filtros adicionales
@@ -449,9 +448,13 @@ const fetchTrainings = async () => {
       id_paquete: filterPaquete.value,
       id_ubicacion: filterUbicacion.value,
       estado: filterStatus.value,
-      desde: filterDateFrom.value,
-      hasta: filterDateTo.value
+      fecha_inicio: filterFechaInicio.value || undefined,
+      fecha_fin: filterFechaFin.value || undefined
     }
+
+    // Eliminar undefined
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+
     const response = await listarEntrenamientos(params)
     trainings.value = Array.isArray(response) ? response : (response?.data || [])
     console.log("Entrenamientos ", trainings.value);
@@ -686,15 +689,15 @@ const getInitials = (coach) => {
 }
 
 // Limpiar filtros
-const clearFilters = () => {
-  searchTerm.value = ''
-  filterDiscipline.value = null
-  filterPaquete.value = null
-  filterUbicacion.value = null
-  filterStatus.value = null
-  filterDateFrom.value = null
-  filterDateTo.value = null
-}
+// const clearFilters = () => {
+//   searchTerm.value = ''
+//   filterDiscipline.value = null
+//   filterPaquete.value = null
+//   filterUbicacion.value = null
+//   filterStatus.value = null
+//   filterFechaInicio.value = 'vacio'
+//   filterFechaFin.value = 'vacio'
+// }
 
 // formatDate is not used in this page; details component handles formatting
 
@@ -760,7 +763,7 @@ const getStatusLabel = (entrenamiento) => {
 }
 
 // Watch filtros para recargar datos
-watch([searchTerm, filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterDateFrom, filterDateTo], () => {
+watch([searchTerm, filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterFechaInicio, filterFechaFin], () => {
   fetchTrainings()
 })
 
@@ -837,7 +840,7 @@ $pastel-clay: #d7ccc8; // Arcilla pastel
 }
 
 .header-content {
-  padding: 24px;
+  padding: 0px 24px;
   border-radius: 16px;
 }
 

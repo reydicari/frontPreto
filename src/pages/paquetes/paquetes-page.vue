@@ -8,16 +8,7 @@
         </div>
         <p class="header-subtitle">Crea y gestiona paquetes educativos con horarios personalizados</p>
       </div>
-      <div class="header-stats row q-gutter-sm">
-        <div class="stat-card">
-          <div class="stat-number">{{paquetes.filter(p => p.estado).length}}</div>
-          <div class="stat-label">Activos</div>
-        </div>
-        <div class="stat-card stat-card-alt">
-          <div class="stat-number">{{ paquetes.length }}</div>
-          <div class="stat-label">Total</div>
-        </div>
-      </div>
+
     </div>
 
     <!-- Filtros y Botón -->
@@ -52,8 +43,8 @@
         </q-select>
       </div>
 
-      <q-btn unelevated rounded icon="add_circle" label="Nuevo Paquete" color="orange-7" size="md"
-        @click="openAddDialog" class="btn-add-package" />
+      <q-btn unelevated rounded icon="add_circle" label="Nuevo Paquete" color="teal-8" size="md" @click="openAddDialog"
+        class="btn-add-package" />
     </div>
 
     <!-- Grid de paquetes -->
@@ -84,7 +75,7 @@
         <q-card-section class="card-body">
           <div class="info-grid">
             <div class="info-item">
-              <q-icon name="people" class="info-icon text-indigo-6" size="20px" />
+              <q-icon name="people" class="info-icon text-teal-7" size="20px" />
               <div class="info-content">
                 <div class="info-label">Edad</div>
                 <div class="info-value">{{ pkg.edad_minima }}-{{ pkg.edad_maxima }} años</div>
@@ -92,7 +83,7 @@
             </div>
 
             <div class="info-item">
-              <q-icon name="group" class="info-icon text-cyan-6" size="20px" />
+              <q-icon name="group" class="info-icon text-green-7" size="20px" />
               <div class="info-content">
                 <div class="info-label">Cupo</div>
                 <div class="info-value">{{ pkg.max_estudiantes }}</div>
@@ -100,7 +91,7 @@
             </div>
 
             <div class="info-item">
-              <q-icon name="payments" class="info-icon text-green-6" size="20px" />
+              <q-icon name="payments" class="info-icon text-green-8" size="20px" />
               <div class="info-content">
                 <div class="info-label">Mensualidad</div>
                 <div class="info-value">Bs {{ pkg.mensualidad }}</div>
@@ -108,7 +99,7 @@
             </div>
 
             <div class="info-item">
-              <q-icon name="receipt" class="info-icon text-amber-6" size="20px" />
+              <q-icon name="receipt" class="info-icon text-light-green-7" size="20px" />
               <div class="info-content">
                 <div class="info-label">Registro</div>
                 <div class="info-value">Bs {{ pkg.costo_registro }}</div>
@@ -118,12 +109,12 @@
 
           <div class="date-range q-mt-sm">
             <div class="date-item">
-              <q-icon name="event" size="16px" class="text-pink-6" />
+              <q-icon name="event" size="16px" class="text-green-6" />
               <span>{{ formatDate(pkg.fecha_inicio) }}</span>
             </div>
-            <q-icon name="arrow_forward" size="14px" class="text-grey-6" />
+            <q-icon name="arrow_forward" size="14px" class="text-grey-5" />
             <div class="date-item">
-              <q-icon name="event_busy" size="16px" class="text-deep-orange-6" />
+              <q-icon name="event_busy" size="16px" class="text-teal-6" />
               <span>{{ formatDate(pkg.fecha_vencimiento) || '—' }}</span>
             </div>
           </div>
@@ -441,41 +432,21 @@ const canEditPackage = (pkg) => {
 <style scoped lang="scss">
 @import 'src/css/quasar.variables.scss';
 
-/* Paleta de colores personalizada - Verde y Naranja */
-$color-primary-green: #2e7d32; // Verde principal (forest green)
-$color-green-medium: #43a047; // Verde medio
-$color-green-light: #66bb6a; // Verde claro
-$color-green-lighter: #81c784; // Verde más claro
-$color-orange: #ff6f00; // Naranja para detalles
-$color-orange-light: #ff8f00; // Naranja claro
-$color-orange-accent: #ffa726; // Naranja acento
+/* Paleta de colores verdosa unificada - Limpia y profesional */
+$color-primary: #1b5e20;
+$color-primary-light: #2e7d32;
+$color-primary-medium: #43a047;
+$color-accent: #558b2f;
+$color-accent-light: #7cb342;
+$color-highlight: #ef6c00;
 
-// Variaciones y tonos
-$color-green-dark: darken(#2e7d32, 8%); // Verde más oscuro
-$color-green-pale: lighten(#2e7d32, 45%); // Verde muy claro
-$color-orange-soft: lighten(#ff6f00, 30%); // Naranja suave
-$color-orange-pale: lighten(#ff6f00, 40%); // Naranja muy claro
+// Fondos y superficies
+$bg-light: #f5f7fa;
+$bg-surface: #ffffff;
+$bg-hover: #e8f5e9;
+$border-color: rgba(27, 94, 32, 0.12);
 
-// Pasteles
-$pastel-green: #c8e6c9; // Verde pastel
-$pastel-green-light: #e8f5e9; // Verde pastel claro
-$pastel-orange: #ffe0b2; // Naranja pastel
-$pastel-orange-light: #fff3e0; // Naranja pastel claro
-
-/* Fondo degradado suave */
-.bg-gradient {
-  background: linear-gradient(135deg, $pastel-green-light 0%, $pastel-green 50%, lighten($pastel-green, 5%) 100%);
-}
-
-.page-container {
-  animation: fadeIn 0.5s ease;
-  background: linear-gradient(to bottom, #fafafa 0%, $pastel-green-light 100%);
-}
-
-.body--dark .page-container {
-  background: $grey-10;
-}
-
+/* Animaciones suaves */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -486,11 +457,6 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Header principal */
-.page-header {
-  animation: slideDown 0.6s ease;
 }
 
 @keyframes slideDown {
@@ -505,6 +471,27 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   }
 }
 
+@keyframes cardFadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Layout principal */
+.page-container {
+  animation: fadeIn 0.5s ease;
+  background: linear-gradient(to bottom, $bg-light 0%, #e8f5e9 100%);
+}
+
+.body--dark .page-container {
+  background: $grey-10;
+}
+
+/* Header */
+.page-header {
+  animation: slideDown 0.6s ease;
+}
+
 .header-content {
   flex: 1;
 }
@@ -512,10 +499,10 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .header-title {
   display: flex;
   align-items: center;
-  color: $color-primary-green;
+  color: $color-primary;
 
   .q-icon {
-    color: $color-primary-green;
+    color: $color-primary;
   }
 }
 
@@ -524,6 +511,7 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   font-weight: 800;
   line-height: 1.2;
   margin: 0;
+  color: $color-primary;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -534,296 +522,18 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   font-weight: 500;
 }
 
-.header-stats {
-  display: flex;
-  gap: 12px;
-}
-
-.stat-card {
-  background: $color-primary-green;
-  color: white;
-  padding: 16px 24px;
-  border-radius: 16px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-  transition: all 0.3s ease;
-  min-width: 100px;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.4);
-  background: $color-green-dark;
-}
-
-.stat-card-alt {
-  background: white;
-  color: $color-primary-green;
-  border: 2px solid $color-primary-green;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
-}
-
-.stat-card-alt:hover {
-  background: $pastel-green-light;
-  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.2);
-}
-
-.stat-number {
-  font-size: 2em;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.85em;
-  opacity: 0.95;
-  margin-top: 4px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Botón de nuevo paquete */
+/* Botón nuevo paquete */
 .btn-add-package {
   font-weight: 700;
   padding: 10px 24px;
-  box-shadow: 0 4px 16px rgba(255, 111, 0, 0.3);
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  box-shadow: 0 4px 16px rgba(27, 94, 32, 0.3);
   transition: all 0.3s ease;
 }
 
 .btn-add-package:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 111, 0, 0.5);
-}
-
-/* Formulario */
-.form-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  animation: slideRight 0.6s ease;
-}
-
-.body--dark .form-card {
-  background: $grey-9;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-@keyframes slideRight {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.form-header {
-  background: $color-primary-green;
-  color: white;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  font-size: 1.3em;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-}
-
-.form-title {
-  font-weight: 700;
-}
-
-.form-body {
-  padding: 24px;
-}
-
-.body--dark .form-body {
-  background: $grey-9;
-}
-
-.input-field {
-  transition: all 0.3s ease;
-}
-
-.input-field:hover :deep(.q-field__control) {
-  border-color: $color-primary-green;
-}
-
-.input-field:focus-within :deep(.q-field__control) {
-  box-shadow: 0 0 0 2px rgba(115, 152, 66, 0.3);
-}
-
-.toggles-section {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  border-left: 4px solid $color-orange;
-}
-
-.body--dark .toggles-section {
-  background: rgba(255, 255, 255, 0.05);
-  border-left-color: $color-orange;
-}
-
-.toggle-item {
-  font-weight: 600;
-}
-
-.horarios-section {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  border-left: 4px solid $color-primary-green;
-}
-
-.body--dark .horarios-section {
-  background: rgba(255, 255, 255, 0.05);
-  border-left-color: $color-primary-green;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  font-size: 1.2em;
-  font-weight: 700;
-  color: $color-green-dark;
-  margin-bottom: 16px;
-}
-
-.body--dark .section-title {
-  color: $color-green-light;
-}
-
-.horario-row {
-  background: white;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  transition: all 0.3s ease;
-}
-
-.body--dark .horario-row {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.horario-row:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateX(4px);
-}
-
-.btn-delete-horario {
-  background: #e53935;
-  color: white;
-  transition: all 0.3s ease;
-}
-
-.btn-delete-horario:hover {
-  background: #c62828;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
-}
-
-.btn-add-horario {
-  background: white;
-  color: $color-green-dark;
-  border: 2px solid $color-primary-green;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-add-horario:hover {
-  background: $color-primary-green;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 169, 31, 0.4);
-}
-
-.btn-reset {
-  border: 2px solid $color-orange;
-  color: $color-orange;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-reset:hover {
-  background: $color-orange;
-  color: white;
-  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.4);
-}
-
-.btn-save {
-  background: $color-primary-green;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-  transition: all 0.3s ease;
-}
-
-.btn-save:hover {
-  background: $color-green-dark;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
-}
-
-.btn-update {
-  background: $color-primary-green;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-  transition: all 0.3s ease;
-}
-
-.btn-update:hover {
-  background: $color-green-dark;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
-}
-
-/* Filtros */
-.filters-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  animation: slideLeft 0.6s ease;
-}
-
-.body--dark .filters-card {
-  background: $grey-9;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-@keyframes slideLeft {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.filters-title {
-  display: flex;
-  align-items: center;
-  font-size: 1.1em;
-  font-weight: 700;
-  color: $color-green-dark;
-}
-
-.body--dark .filters-title {
-  color: $color-green-light;
-}
-
-.filter-input :deep(.q-field__control) {
-  transition: all 0.3s ease;
-}
-
-.filter-input:hover :deep(.q-field__control) {
-  border-color: $color-primary-green;
+  box-shadow: 0 6px 20px rgba(27, 94, 32, 0.4);
 }
 
 /* Grid de paquetes */
@@ -840,92 +550,87 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   }
 }
 
-/* Tarjetas de paquetes */
+/* Tarjetas de paquetes - Diseño limpio */
 .paquete-card {
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 2px solid rgba(46, 125, 50, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid $border-color;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
   position: relative;
   opacity: 0;
   animation: cardFadeIn 0.6s ease forwards;
-  background: white;
+  background: $bg-surface;
 }
 
 .body--dark .paquete-card {
   background: $grey-9;
-  border-color: rgba(46, 125, 50, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-@keyframes cardFadeIn {
-  to {
-    opacity: 1;
-  }
+  border-color: rgba(67, 160, 71, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .paquete-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: $color-primary-green;
-  box-shadow: 0 12px 36px rgba(46, 125, 50, 0.2);
+  transform: translateY(-4px);
+  border-color: $color-primary-light;
+  box-shadow: 0 8px 24px rgba(27, 94, 32, 0.15);
 }
 
 .body--dark .paquete-card:hover {
-  border-color: $color-primary-green;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
+/* Ribbon de estado */
 .card-ribbon {
   position: absolute;
-  top: 16px;
-  right: -32px;
-  padding: 4px 40px;
-  font-size: 0.7em;
-  font-weight: 800;
-  letter-spacing: 1px;
+  top: 12px;
+  right: -28px;
+  padding: 4px 36px;
+  font-size: 0.65em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   transform: rotate(45deg);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   z-index: 10;
 }
 
 .ribbon-active {
-  background: $color-primary-green;
+  background: $color-primary-medium;
   color: white;
 }
 
 .ribbon-inactive {
-  background: #9e9e9e;
+  background: #757575;
   color: white;
 }
 
+/* Header de la card */
 .card-header {
-  background: $pastel-green-light;
-  padding: 12px 16px;
-  border-bottom: 2px solid rgba(46, 125, 50, 0.1);
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  padding: 14px 16px;
+  border-bottom: 1px solid $border-color;
 }
 
 .body--dark .card-header {
-  background: rgba(46, 125, 50, 0.15);
-  border-bottom-color: rgba(102, 187, 106, 0.3);
+  background: rgba(27, 94, 32, 0.12);
+  border-bottom-color: rgba(67, 160, 71, 0.2);
 }
 
 .package-title {
   display: flex;
   align-items: center;
-  font-size: 1.1em;
+  font-size: 1.15em;
   font-weight: 700;
-  color: $color-green-dark;
+  color: $color-primary;
   margin-bottom: 8px;
 }
 
 .body--dark .package-title {
-  color: $color-green-light;
+  color: $color-accent-light;
 }
 
 .title-icon {
   margin-right: 8px;
-  color: $color-orange;
+  color: $color-primary-light;
 }
 
 .package-meta {
@@ -935,21 +640,29 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .chip-disciplina {
-  background: $color-primary-green;
+  background: $color-primary-light;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+  font-size: 0.75em;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(27, 94, 32, 0.2);
 }
 
 .chip-nivel {
-  background: $color-orange;
+  background: $color-accent;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.3);
+  font-size: 0.75em;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(85, 139, 47, 0.2);
 }
 
+/* Body de la card */
 .card-body {
-  padding: 12px 16px;
+  padding: 14px 16px;
+  background: $bg-surface;
 }
 
 .body--dark .card-body {
@@ -959,40 +672,37 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .info-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
-  background: white;
+  padding: 10px;
+  background: $bg-hover;
   border-radius: 8px;
   transition: all 0.3s ease;
-  border-left: 3px solid transparent;
-  border: 1px solid rgba(46, 125, 50, 0.1);
+  border-left: 3px solid $color-primary-light;
 }
 
 .info-item:hover {
-  background: $pastel-green-light;
-  transform: translateX(4px);
-  border-left-color: $color-primary-green;
-  border-left-width: 3px;
+  background: #c8e6c9;
+  transform: translateX(2px);
 }
 
 .body--dark .info-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(46, 125, 50, 0.2);
+  background: rgba(27, 94, 32, 0.1);
+  border-left-color: $color-primary-medium;
 }
 
 .body--dark .info-item:hover {
-  background: rgba(46, 125, 50, 0.15);
-  border-left-color: $color-primary-green;
+  background: rgba(27, 94, 32, 0.2);
 }
 
 .info-icon {
   font-size: 20px;
+  color: $color-primary-light;
   flex-shrink: 0;
 }
 
@@ -1017,28 +727,30 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 .info-value {
   font-size: 0.9em;
   font-weight: 700;
-  color: #37474f;
+  color: #263238;
   margin-top: 2px;
   line-height: 1.2;
 }
 
 .body--dark .info-value {
-  color: #b0bec5;
+  color: #cfd8dc;
 }
 
+/* Rango de fechas */
 .date-range {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px;
-  background: white;
+  padding: 10px;
+  background: $bg-hover;
   border-radius: 8px;
-  border: 2px solid grey;
+  border-left: 3px solid $color-accent;
+  margin-top: 10px;
 }
 
 .body--dark .date-range {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: $color-orange;
+  background: rgba(85, 139, 47, 0.12);
+  border-left-color: $color-accent-light;
 }
 
 .date-item {
@@ -1047,38 +759,49 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   gap: 4px;
   font-size: 0.75em;
   font-weight: 600;
-  color: #424242;
+  color: #37474f;
 }
 
 .body--dark .date-item {
-  color: #cfd8dc;
+  color: #b0bec5;
 }
 
+/* Badge de materiales */
 .materials-badge {
   display: flex;
   justify-content: center;
+  margin-top: 10px;
 }
 
 .chip-materiales-si {
-  background: $color-green-dark;
+  background: $color-primary-medium;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+  font-size: 0.75em;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(67, 160, 71, 0.2);
 }
 
 .chip-materiales-no {
   background: #e0e0e0;
   color: #616161;
   font-weight: 600;
+  font-size: 0.75em;
+  padding: 4px 12px;
+  border-radius: 12px;
 }
 
+/* Acciones de la card */
 .card-actions {
   background: #fafafa;
-  padding: 10px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid $border-color;
 }
 
 .body--dark .card-actions {
-  background: $grey-10;
+  background: rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(67, 160, 71, 0.2);
 }
 
 .action-buttons {
@@ -1088,40 +811,41 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .btn-edit-card {
-  background: $color-primary-green;
+  background: $color-primary-light;
   color: white;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.3);
 }
 
 .btn-edit-card:hover {
-  background: $color-green-dark;
-  transform: scale(1.15) rotate(5deg);
-  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
+  background: $color-primary;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.4);
 }
 
 .btn-delete-card {
-  background: #e53935;
+  background: #d32f2f;
   color: white;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+  box-shadow: 0 2px 6px rgba(211, 47, 47, 0.3);
 }
 
 .btn-delete-card:hover {
-  background: #c62828;
-  transform: scale(1.15) rotate(-5deg);
-  box-shadow: 0 6px 16px rgba(229, 57, 53, 0.4);
+  background: #b71c1c;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4);
 }
 
+/* Sección de horarios */
 .card-horarios {
-  background: $pastel-green-light;
-  padding: 10px 16px;
-  border-top: 3px solid $color-primary-green;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  padding: 12px 16px;
+  border-top: 2px solid $color-primary-light;
 }
 
 .body--dark .card-horarios {
-  background: rgba(46, 125, 50, 0.1);
-  border-top-color: $color-primary-green;
+  background: rgba(27, 94, 32, 0.12);
+  border-top-color: $color-primary-medium;
 }
 
 .horarios-title {
@@ -1130,18 +854,21 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   gap: 6px;
   font-weight: 700;
   font-size: 0.9em;
-  color: $color-green-dark;
-  margin-bottom: 8px;
+  color: $color-primary;
+  margin-bottom: 10px;
 }
 
 .body--dark .horarios-title {
-  color: $color-green-light;
+  color: $color-accent-light;
 }
 
 .horarios-count {
-  background: $color-orange;
+  background: $color-primary-light;
   color: white;
   font-weight: 700;
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 .horarios-list {
@@ -1151,65 +878,37 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
 }
 
 .horario-chip-modern {
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 8px;
+  background: white;
+  border-left: 3px solid $color-primary-light;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   min-width: 110px;
 }
 
 .horario-chip-modern:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(27, 94, 32, 0.15);
+  background: $bg-hover;
 }
 
-.horario-color-0 {
-  background: white;
-  border-left: 4px solid $color-primary-green;
-  border: 1px solid rgba(46, 125, 50, 0.2);
-}
-
-.horario-color-1 {
-  background: $pastel-green-light;
-  border-left: 4px solid $color-green-medium;
-  border: 1px solid rgba(67, 160, 71, 0.2);
-}
-
-.horario-color-2 {
-  background: white;
-  border-left: 4px solid $color-orange;
-  border: 1px solid rgba(255, 111, 0, 0.2);
-}
-
-.horario-color-3 {
-  background: $pastel-green;
-  border-left: 4px solid $color-green-light;
-  border: 1px solid rgba(102, 187, 106, 0.2);
-}
-
-.horario-color-4 {
-  background: $pastel-orange-light;
-  border-left: 4px solid $color-orange;
-  border: 1px solid rgba(255, 111, 0, 0.2);
-}
-
-.horario-color-5 {
-  background: white;
-  border-left: 4px solid $color-green-dark;
-  border: 1px solid rgba(27, 94, 32, 0.2);
+.body--dark .horario-chip-modern {
+  background: rgba(27, 94, 32, 0.15);
+  border-left-color: $color-accent-light;
 }
 
 .horario-day {
   font-weight: 700;
   font-size: 0.75em;
-  color: #37474f;
+  color: $color-primary;
   margin-bottom: 2px;
   line-height: 1;
 }
 
 .body--dark .horario-day {
-  color: #b0bec5;
+  color: $color-accent-light;
 }
 
 .horario-time {
@@ -1226,20 +925,35 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
   color: #90a4ae;
 }
 
+/* Variación de colores para horarios (sutil) */
+.horario-color-0 {
+  border-left-color: #1b5e20;
+}
+
+.horario-color-1 {
+  border-left-color: #2e7d32;
+}
+
+.horario-color-2 {
+  border-left-color: #43a047;
+}
+
+.horario-color-3 {
+  border-left-color: #558b2f;
+}
+
+.horario-color-4 {
+  border-left-color: #689f38;
+}
+
+.horario-color-5 {
+  border-left-color: #7cb342;
+}
+
 /* Responsive */
 @media (max-width: 959px) {
   .page-title {
     font-size: 2em;
-  }
-
-  .header-stats {
-    flex-direction: column;
-    width: 100%;
-    margin-top: 16px;
-  }
-
-  .stat-card {
-    width: 100%;
   }
 
   .info-grid {
@@ -1269,132 +983,17 @@ $pastel-orange-light: #fff3e0; // Naranja pastel claro
     width: 100%;
   }
 
-  .package-title {
-    font-size: 1.2em;
-  }
-
   .action-buttons {
     justify-content: center;
   }
 }
 
-/* Estilos para modo dark */
-.body--dark .form-card {
-  background: $grey-9;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+/* Modo oscuro mejorado */
+.body--dark .info-icon {
+  color: $color-accent-light;
 }
 
-.body--dark .filters-card {
-  background: $grey-9;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-}
-
-.body--dark .paquete-card {
-  background: $grey-9;
-  border-color: rgba(102, 187, 106, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-}
-
-.body--dark .paquete-card:hover {
-  border-color: rgba(102, 187, 106, 0.5);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
-}
-
-.body--dark .card-header {
-  background: linear-gradient(135deg, darken($color-primary-green, 25%) 0%, darken($color-green-medium, 20%) 100%);
-}
-
-.body--dark .card-body {
-  background: $grey-9;
-}
-
-.body--dark .info-item {
-  background: rgba(46, 125, 50, 0.15);
-  border-left-color: transparent;
-}
-
-.body--dark .info-item:hover {
-  background: rgba(46, 125, 50, 0.25);
-  border-left-color: $color-orange-light;
-}
-
-.body--dark .date-range {
-  background: rgba(255, 111, 0, 0.15);
-  border-color: rgba(255, 143, 0, 0.3);
-}
-
-.body--dark .card-actions {
-  background: $grey-10;
-}
-
-.body--dark .card-horarios {
-  background: linear-gradient(135deg, rgba(46, 125, 50, 0.2) 0%, rgba(67, 160, 71, 0.15) 100%);
-  border-top-color: rgba(102, 187, 106, 0.4);
-}
-
-.body--dark .horario-row {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.body--dark .filters-body {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.body--dark .toggles-section {
-  background: rgba(232, 245, 233, 0.08);
-  border-left-color: $color-orange-light;
-}
-
-.body--dark .horarios-section {
-  background: rgba(200, 230, 201, 0.08);
-  border-left-color: $color-green-light;
-}
-
-.body--dark .form-body {
-  background: $grey-9;
-}
-
-.body--dark .package-title {
-  color: $color-green-light;
-}
-
-.body--dark .info-value {
-  color: #cfd8dc;
-}
-
-.body--dark .date-item {
-  color: #cfd8dc;
-}
-
-.body--dark .horario-day {
-  color: #cfd8dc;
-}
-
-.body--dark .horario-time {
-  color: #b0bec5;
-}
-
-.body--dark .section-title {
-  color: $color-green-light;
-}
-
-.body--dark .horarios-title {
-  color: $color-green-light;
-}
-
-.body--dark .filters-title {
-  color: $color-green-light;
-}
-
-.body--dark .info-label {
-  color: #90a4ae;
-}
-
-.body--dark .horario-chip-modern {
-  border-left-width: 4px;
-}
-
-.body--dark .filters-expansion {
-  background: rgba(200, 230, 201, 0.08);
+.body--dark .horario-chip-modern:hover {
+  background: rgba(27, 94, 32, 0.25);
 }
 </style>

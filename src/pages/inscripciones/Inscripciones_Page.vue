@@ -177,12 +177,11 @@
       </q-card-section>
     </q-card>
 
-    <!-- Tabla de inscripciones con virtual scroll -->
+    <!-- Tabla de inscripciones con scroll infinito -->
     <q-card class="table-card">
       <q-card-section class="q-pa-none">
         <q-table :rows="inscripciones" :columns="columns" row-key="id" :loading="loading" flat
-          class="inscripciones-table" virtual-scroll :rows-per-page-options="[0]" :virtual-scroll-item-size="48"
-          :virtual-scroll-sticky-size-start="48" @virtual-scroll="onVirtualScroll">
+          class="inscripciones-table" :rows-per-page-options="[0]" hide-pagination>
           <template v-slot:loading>
             <q-inner-loading showing color="primary" />
           </template>
@@ -260,6 +259,18 @@
             </q-tr>
           </template>
         </q-table>
+
+        <!-- Infinite scroll para cargar más datos -->
+        <div v-if="hasMoreData && inscripciones.length > 0" class="text-center q-pa-md">
+          <q-btn v-if="!loadingMore" flat color="primary" label="Cargar más inscripciones" icon="expand_more"
+            @click="loadMoreInscripciones" />
+          <q-spinner-dots v-else color="primary" size="40px" />
+        </div>
+
+        <div v-if="!hasMoreData && inscripciones.length > 0" class="text-center q-pa-md text-grey-6">
+          <q-icon name="check_circle" size="24px" class="q-mr-sm" />
+          No hay más inscripciones
+        </div>
       </q-card-section>
     </q-card>
 
@@ -310,12 +321,14 @@ import { listarPaquetes } from 'src/stores/paquete-store.js'
 import { todasPersonas as listarPersonas } from 'src/stores/persona-store.js'
 import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 import { useDebounceFn } from '@vueuse/core'
+import { currentUser } from 'src/composables/auxiliares'
 
 const $q = useQuasar()
 const host = process.env.API_URL + '/uploads/' || 'http://localhost:3000'
 
 // Estado principal
 const loading = ref(false)
+const loadingMore = ref(false)
 const inscripciones = ref([])
 const totalInscripciones = ref(0)
 const porVencer = ref(0)
@@ -424,6 +437,8 @@ const pagosOptions = [
 // Cargar datos iniciales
 onMounted(async () => {
   try {
+    console.log('current user----------------------------------', await currentUser());
+
     loading.value = true
 
     // Cargar opciones
@@ -494,6 +509,7 @@ const loadInscripciones = async (append = false) => {
     // Eliminar undefined
     Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
 
+    console.log('📡 Enviando request con params:', params)
     const res = await listar(params)
 
     // Extraer datos del backend
@@ -504,14 +520,18 @@ const loadInscripciones = async (append = false) => {
     nuevasEsteMes.value = data?.nuevasEsteMes || 0
 
     const newInscripciones = data?.lista || []
+    console.log(`📦 Recibidos ${newInscripciones.length} items del servidor (append: ${append})`)
 
     if (append) {
       inscripciones.value.push(...newInscripciones)
+      console.log(`➕ Items agregados. Total ahora: ${inscripciones.value.length}`)
     } else {
       inscripciones.value = newInscripciones
+      console.log(`🔄 Items reemplazados. Total: ${inscripciones.value.length}`)
     }
 
     hasMoreData.value = newInscripciones.length === limit.value
+    console.log(`🎯 hasMoreData: ${hasMoreData.value} (recibidos: ${newInscripciones.length}, límite: ${limit.value})`)
   } catch (error) {
     console.error('Error al cargar inscripciones:', error)
     inscripciones.value = []
@@ -576,14 +596,21 @@ const filterPaquetesFn = (val, update) => {
   })
 }
 
-// Virtual scroll load
-const onVirtualScroll = async ({ index }) => {
+// Cargar más inscripciones (para botón)
+const loadMoreInscripciones = async () => {
+  if (loadingMore.value || !hasMoreData.value) return
 
-  const lastIndex = inscripciones.value.length - 1
-  if (index >= lastIndex - 10) {
-    page.value++
-    await loadInscripciones(true)
-  }
+  console.log('🔄 Cargando más inscripciones...')
+  console.log(`📄 Página actual: ${page.value}, incrementando a ${page.value + 1}`)
+
+  loadingMore.value = true
+  page.value++
+
+  console.log('📡 Llamando a loadInscripciones(true) con params: { page:', page.value, ', limit:', limit.value, '}')
+  await loadInscripciones(true)
+  console.log(`✔️ Carga completada. Total items: ${inscripciones.value.length}, hasMoreData: ${hasMoreData.value}`)
+
+  loadingMore.value = false
 }
 
 // Abrir diálogo (nuevo o edición)

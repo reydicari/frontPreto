@@ -1,43 +1,48 @@
 <template>
   <q-page class="payments-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con título y botón -->
+    <!-- Header con título, botón y estadísticas -->
     <div class="page-header">
       <div class="header-content">
-        <div class="header-title-section">
-          <div class="row items-center justify-between">
-            <div class="col-auto">
+        <div class="row items-center q-col-gutter-md">
+          <!-- Título e icono -->
+          <div class="col-12 col-md-auto">
+            <div class="header-title-group">
               <q-icon name="payments" size="48px" class="page-icon" />
-              <h1 class="page-title q-ma-none">Gestión de Pagos</h1>
-              <!-- <p class="header-subtitle">Registro y control de transacciones</p> -->
-            </div>
-            <div class="col-auto">
-              <q-btn icon="add_circle" label="Nuevo Pago" class="btn-add-header" @click="openDialog" />
+              <h1 class="page-title q-ma-none">Pagos</h1>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Estadísticas -->
-    <div class="statistics-section">
-      <div class="row q-col-gutter-md justify-center">
-        <div class="col-12 col-sm-6 col-md-5">
-          <div class="stat-card stat-card-total">
-            <div class="stat-content">
-              <div class="stat-label">Total Pagos</div>
-              <div class="stat-value">Bs {{ totalPagos.toFixed(2) }}</div>
+          <!-- Estadísticas compactas -->
+          <div class="col-12 col-md q-mt-md q-mt-md-none">
+            <div class="row q-col-gutter-sm">
+              <div class="col-6 col-sm-4">
+                <div class="stat-card-compact stat-card-total">
+                  <div class="stat-compact-content">
+                    <q-icon name="account_balance_wallet" size="24px" class="stat-compact-icon" />
+                    <div>
+                      <div class="stat-compact-label">Total Pagos</div>
+                      <div class="stat-compact-value">Bs {{ totalPagos.toFixed(2) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4">
+                <div class="stat-card-compact stat-card-count">
+                  <div class="stat-compact-content">
+                    <q-icon name="warning" size="24px" class="stat-compact-icon" />
+                    <div>
+                      <div class="stat-compact-label">Total Deudas</div>
+                      <div class="stat-compact-value">Bs {{ totalDeudas.toFixed(2) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <q-icon name="account_balance_wallet" class="stat-icon" />
           </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-md-5">
-          <div class="stat-card stat-card-count">
-            <div class="stat-content">
-              <div class="stat-label">Total Deudas</div>
-              <div class="stat-value">Bs {{ totalDeudas.toFixed(2) }}</div>
-            </div>
-            <q-icon name="warning" class="stat-icon" />
+          <!-- Botón de nuevo -->
+          <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
+            <q-btn icon="add_circle" label="Nuevo Pago" class="btn-add-header" @click="openDialog" />
           </div>
         </div>
       </div>
@@ -319,7 +324,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -340,7 +345,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -835,7 +840,7 @@ function onPagoAnulado() {
 
 .header-content {
   background: linear-gradient(135deg, rgba($primary, 0.25) 0%, rgba($primary, 0.15) 100%);
-  padding: 12px 24px;
+  padding: 20px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba($primary, 0.35);
   border: 2px solid rgba($primary, 0.5);
@@ -846,32 +851,102 @@ function onPagoAnulado() {
   }
 }
 
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .page-icon {
   color: $secondary;
-  vertical-align: middle;
-  margin-right: 12px;
 }
 
 .page-title {
-  display: inline-block;
   font-size: 2em;
   font-weight: 700;
   color: $primary;
   margin: 0;
-  vertical-align: middle;
 
   :global(.body--dark) & {
     color: $primary;
   }
 }
 
-.header-subtitle {
-  color: $grey-7;
-  margin: 8px 0 0 60px;
-  font-size: 1em;
+/* Estadísticas compactas dentro del header */
+.stat-card-compact {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  height: 100%;
 
   :global(.body--dark) & {
-    color: $grey-5;
+    background: rgba(30, 30, 30, 0.95);
+  }
+}
+
+.stat-card-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card-compact.stat-card-total {
+  border-left: 4px solid #2e7d32;
+}
+
+.stat-card-compact.stat-card-count {
+  border-left: 4px solid #ff6f00;
+}
+
+.stat-compact-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-compact-icon {
+  color: #2e7d32;
+  opacity: 0.8;
+
+  :global(.body--dark) & {
+    opacity: 1;
+  }
+}
+
+.stat-card-compact.stat-card-count .stat-compact-icon {
+  color: #ff6f00;
+}
+
+.stat-compact-label {
+  font-size: 11px;
+  color: #757575;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+
+  :global(.body--dark) & {
+    color: #9e9e9e;
+  }
+}
+
+.stat-compact-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2e7d32;
+  line-height: 1.2;
+
+  :global(.body--dark) & {
+    color: lighten(#2e7d32, 20%);
+  }
+}
+
+.stat-card-compact.stat-card-count .stat-compact-value {
+  color: #ff6f00;
+
+  :global(.body--dark) & {
+    color: lighten(#ff6f00, 15%);
   }
 }
 
@@ -879,169 +954,17 @@ function onPagoAnulado() {
   background: $primary;
   color: white;
   font-weight: 600;
-  padding: 12px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba($primary, 0.3);
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba($primary, 0.3);
   transition: all 0.3s ease;
   white-space: nowrap;
+  width: 100%;
 
   &:hover {
     background: darken($primary, 8%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba($primary, 0.4);
-  }
-}
-
-.statistics-section {
-  margin-bottom: 24px;
-  animation: slideDown 0.6s ease-out;
-}
-
-.stat-card {
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.3s ease;
-  border-left: 4px solid transparent;
-
-  :global(.body--dark) & {
-    background: $dark-page;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-
-    :global(.body--dark) & {
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-    }
-  }
-}
-
-.stat-card-total {
-  border-left-color: #2e7d32;
-  border-left-width: 5px;
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
-
-  :global(.body--dark) & {
-    background: linear-gradient(135deg, rgba(46, 125, 50, 0.3) 0%, rgba(46, 125, 50, 0.4) 100%);
-  }
-
-  .stat-value {
-    color: #1b5e20;
-  }
-
-  .stat-icon {
-    color: #2e7d32;
-  }
-}
-
-.stat-card-month {
-  border-left-color: #558b2f;
-  border-left-width: 5px;
-  background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 50%, #c5e1a5 100%);
-
-  :global(.body--dark) & {
-    background: linear-gradient(135deg, rgba(85, 139, 47, 0.3) 0%, rgba(85, 139, 47, 0.4) 100%);
-  }
-
-  .stat-value {
-    color: #33691e;
-  }
-
-  .stat-icon {
-    color: #558b2f;
-  }
-}
-
-.stat-card-count {
-  border-left-color: #ff6f00;
-  border-left-width: 5px;
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 50%, #ffcc80 100%);
-
-  :global(.body--dark) & {
-    background: linear-gradient(135deg, rgba(255, 111, 0, 0.3) 0%, rgba(255, 111, 0, 0.4) 100%);
-  }
-
-  .stat-value {
-    color: #e65100;
-  }
-
-  .stat-icon {
-    color: #ff6f00;
-  }
-}
-
-.stat-card-average {
-  border-left-color: #7cb342;
-  border-left-width: 5px;
-  background: linear-gradient(135deg, #f9fbe7 0%, #f0f4c3 30%, #ffecb3 70%, #ffe082 100%);
-
-  :global(.body--dark) & {
-    background: linear-gradient(135deg, rgba(124, 179, 66, 0.3) 0%, rgba(255, 160, 0, 0.3) 100%);
-  }
-
-  .stat-value {
-    color: #689f38;
-  }
-
-  .stat-icon {
-    color: #8bc34a;
-  }
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 1.8em;
-  font-weight: 700;
-  color: $primary;
-
-  :global(.body--dark) & {
-    color: lighten($primary, 10%);
-  }
-}
-
-.stat-icon {
-  font-size: 48px;
-  color: $primary;
-  opacity: 0.6;
-
-  :global(.body--dark) & {
-    opacity: 0.8;
-  }
-}
-
-.toolbar-section {
-  margin-bottom: 16px;
-}
-
-.search-input {
-  background: white;
-  border-radius: 12px;
-
-  :global(.body--dark) & {
-    background: $dark-page;
-  }
-
-  :deep(.q-field__control) {
-    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba($primary, 0.4);
   }
 }
 
@@ -1064,11 +987,11 @@ function onPagoAnulado() {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  background: rgba($primary, 0.2);
+  background: rgba($primary, 0.5);
   transition: all 0.3s ease;
 
   :global(.body--dark) & {
-    background: rgba($primary, 0.25);
+    background: rgba($primary, 0.5);
   }
 
   &:hover {
@@ -1495,22 +1418,6 @@ function onPagoAnulado() {
   }
 }
 
-@media (max-width: 959px) {
-  .btn-add-header {
-    width: 100%;
-    margin-top: 12px;
-  }
-
-  .page-title {
-    font-size: 1.6em;
-  }
-
-  .header-subtitle {
-    font-size: 0.9em;
-    margin-left: 0;
-  }
-}
-
 .subpagos-section {
   background: rgba($primary, 0.08);
   border-radius: 12px;
@@ -1641,20 +1548,28 @@ function onPagoAnulado() {
     padding: 16px;
   }
 
+  .header-title-group {
+    margin-bottom: 12px;
+  }
+
   .page-title {
     font-size: 1.4em;
   }
 
-  .stat-card {
-    padding: 16px;
-  }
-
-  .stat-value {
-    font-size: 1.5em;
-  }
-
-  .stat-icon {
+  .page-icon {
     font-size: 36px;
+  }
+
+  .stat-compact-label {
+    font-size: 10px;
+  }
+
+  .stat-compact-value {
+    font-size: 16px;
+  }
+
+  .btn-add-header {
+    width: 100%;
   }
 
   .payment-card {
@@ -1698,6 +1613,23 @@ function onPagoAnulado() {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .btn-add-header {
+    width: auto;
+  }
+}
+
+@media (max-width: 959px) {
+  .btn-add-header {
+    padding: 10px 16px;
+    font-size: 0.9em;
+  }
+
+  .page-title {
+    font-size: 1.6em;
   }
 }
 </style>

@@ -200,13 +200,14 @@
       <!-- Stepper actions -->
       <q-card-actions align="right" class="dialog-actions">
         <q-btn flat label="Cancelar" color="brown-7" icon="close" @click="onCancel" class="btn-cancel" />
-        <q-btn v-if="currentStep === 1" unelevated label="Siguiente" color="white" class="btn-next"
+        <q-btn v-if="currentStep === 1" unelevated label="Siguiente" color="primary" class="btn-next"
           icon-right="arrow_forward" @click="goToStep2">
           <q-icon name="sports_martial_arts" size="18px" class="q-mr-xs" />
         </q-btn>
         <div v-else class="row q-gutter-sm">
           <q-btn flat label="Volver" color="green-8" icon="arrow_back" @click="currentStep = 1" class="btn-back" />
-          <q-btn unelevated label="Guardar Entrenamiento" color="white" class="btn-save" icon="save" @click="onSave" />
+          <q-btn unelevated label="Guardar Entrenamiento" color="primary" class="btn-save" icon="save"
+            @click="onSave" />
         </div>
       </q-card-actions>
     </q-card>

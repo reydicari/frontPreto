@@ -72,14 +72,54 @@
     </q-card>
 
     <!-- Mis Evaluaciones -->
-    <q-card class="evaluations-card q-mb-md">
+    <q-card v-if="isNotStudent" class="evaluations-card q-mb-md">
       <div class="card-header">
         <q-icon name="star" size="24px" class="q-mr-sm" />
         <span class="card-title">Mis Evaluaciones</span>
         <q-chip size="sm" color="green-8" text-color="white">
           {{ evaluaciones.length }} evaluación(es)
         </q-chip>
+        <q-space />
+        <q-select v-model="limitEvaluaciones" :options="limitOptions" dense outlined map-options emit-value
+          class="limit-select">
+          <template v-slot:prepend>
+            <q-icon name="format_list_numbered" size="16px" />
+          </template>
+        </q-select>
       </div>
+
+      <!-- Filtros de evaluaciones -->
+      <q-card-section class="q-pb-none">
+        <div class="filters-header" @click="showEvaluacionesFilters = !showEvaluacionesFilters">
+          <div class="filters-title">
+            <q-icon name="filter_list" size="20px" />
+            <span>Filtros</span>
+          </div>
+          <q-icon :name="showEvaluacionesFilters ? 'expand_less' : 'expand_more'" size="24px" />
+        </div>
+
+        <q-slide-transition>
+          <div v-show="showEvaluacionesFilters" class="filters-content q-mt-md">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-6">
+                <FiltroFechas @update:desde="filterEvaluacionesDesde = $event"
+                  @update:hasta="filterEvaluacionesHasta = $event" />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-6">
+                <q-select map-options emit-value option-value="value" dense outlined
+                  v-model="filterEvaluacionesCualidad" :options="cualidadOptions" label="Cualidad" clearable
+                  class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="star" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+            </div>
+          </div>
+        </q-slide-transition>
+      </q-card-section>
+
       <q-card-section>
         <div v-if="loadingEvaluaciones" class="text-center q-pa-md">
           <q-spinner color="green-8" size="40px" />
@@ -123,7 +163,87 @@
         <q-chip size="sm" color="green-8" text-color="white">
           {{ totalInscripciones }} inscripción(es)
         </q-chip>
+        <q-space />
+        <q-select v-model="limitInscripciones" :options="limitOptions" dense outlined map-options emit-value
+          class="limit-select">
+          <template v-slot:prepend>
+            <q-icon name="format_list_numbered" size="16px" />
+          </template>
+        </q-select>
       </div>
+
+      <!-- Filtros de inscripciones -->
+      <q-card-section class="q-pb-none">
+        <div class="filters-header" @click="showInscripcionesFilters = !showInscripcionesFilters">
+          <div class="filters-title">
+            <q-icon name="filter_list" size="20px" />
+            <span>Filtros</span>
+          </div>
+          <q-icon :name="showInscripcionesFilters ? 'expand_less' : 'expand_more'" size="24px" />
+        </div>
+
+        <q-slide-transition>
+          <div v-show="showInscripcionesFilters" class="filters-content q-mt-md">
+            <div class="row q-col-gutter-md">
+              <div class="col-6 col-md-3 col-lg-2">
+                <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
+                  @update:model-value="filterFechaFin = $event" />
+              </div>
+
+              <div class="col-6 col-md-3 col-lg-2">
+                <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select v-model="filterInscripcionesEstado" :options="estadoInscripcionOptions" label="Estado"
+                  clearable emit-value map-options dense outlined class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="info" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select v-model="filterInscripcionesDisciplina" :options="disciplinasOptions" option-label="nombre"
+                  option-value="id" emit-value map-options label="Disciplina" clearable dense outlined
+                  class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="sports_martial_arts" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select v-model="filterInscripcionesNivel" :options="nivelOptions" option-label="nombre_nivel"
+                  option-value="id" emit-value map-options label="Nivel" clearable dense outlined class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="military_tech" color="orange-7" />
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select v-model="filterInscripcionesPaquete" :options="paqueteOptions" option-label="nombre"
+                  option-value="id" emit-value map-options label="Paquete" clearable dense outlined
+                  class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="inventory_2" color="purple" />
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-select v-model="filterInscripcionesPagos" :options="pagosInscripcionOptions" label="Estado de Pagos"
+                  clearable emit-value map-options dense outlined class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="payments" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+            </div>
+          </div>
+        </q-slide-transition>
+      </q-card-section>
 
       <q-card-section>
         <div v-if="loadingInscripciones" class="text-center q-pa-md">
@@ -239,6 +359,13 @@
         <q-chip size="sm" color="green-8" text-color="white">
           {{ pagos.length }} pago(s)
         </q-chip>
+        <q-space />
+        <q-select v-model="limitPagos" :options="limitOptions" dense outlined map-options emit-value
+          class="limit-select">
+          <template v-slot:prepend>
+            <q-icon name="format_list_numbered" size="16px" />
+          </template>
+        </q-select>
         <div style="margin-left: 12px">
           <q-btn dense flat color="white" icon="picture_as_pdf" label="Generar reporte" @click="generarReportePagos" />
         </div>
@@ -246,20 +373,20 @@
 
       <!-- Filtros de pagos -->
       <q-card-section class="q-pb-none">
-        <div class="filters-header" @click="showPaymentFilters = !showPaymentFilters">
+        <div class="filters-header" @click="showPagosFilters = !showPagosFilters">
           <div class="filters-title">
             <q-icon name="filter_list" size="20px" />
             <span>Filtros</span>
             <q-badge v-if="activeFiltersCount > 0" :label="activeFiltersCount" color="orange-7" class="q-ml-sm" />
           </div>
-          <q-icon :name="showPaymentFilters ? 'expand_less' : 'expand_more'" size="24px" />
+          <q-icon :name="showPagosFilters ? 'expand_less' : 'expand_more'" size="24px" />
         </div>
 
         <q-slide-transition>
-          <div v-show="showPaymentFilters" class="filters-content q-mt-md">
+          <div v-show="showPagosFilters" class="filters-content q-mt-md">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6 col-md-4">
-                <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
+                <FiltroFechas @update:desde="filterPagosDesde = $event" @update:hasta="filterPagosHasta = $event" />
               </div>
 
               <div class="col-12 col-sm-6 col-md-4">
@@ -272,7 +399,7 @@
               </div>
 
               <div class="col-12 col-sm-6 col-md-4">
-                <q-select map-options emit-value option-value="value" dense outlined v-model="filterCategoria"
+                <q-select map-options emit-value option-value="value" dense outlined v-model="filterPagosCategoria"
                   :options="categoriaOptions" label="Categoría de Pago" clearable class="filter-input">
                   <template v-slot:prepend>
                     <q-icon name="category" color="green-7" />
@@ -386,8 +513,15 @@
       <div class="card-header">
         <q-icon name="trending_up" size="24px" class="q-mr-sm" />
         <span class="card-title">Mis Progresos</span>
+        <q-space />
+        <q-select v-model="limitProgresos" :options="limitOptions" dense outlined map-options emit-value
+          class="limit-select">
+          <template v-slot:prepend>
+            <q-icon name="format_list_numbered" size="16px" />
+          </template>
+        </q-select>
         <!-- Input de búsqueda por ID solo para Administrador -->
-        <div v-if="isAdmin" class="search-progress q-ml-auto">
+        <div v-if="isAdmin" class="search-progress" style="margin-left: 12px;">
           <q-input v-model.number="searchProgressId" label="Buscar por ID de Progreso" outlined dense
             @update:model-value="buscarProgreso" type="number">
             <template v-slot:prepend>
@@ -396,6 +530,38 @@
           </q-input>
         </div>
       </div>
+
+      <!-- Filtros de progresos -->
+      <q-card-section class="q-pb-none">
+        <div class="filters-header" @click="showProgresosFilters = !showProgresosFilters">
+          <div class="filters-title">
+            <q-icon name="filter_list" size="20px" />
+            <span>Filtros</span>
+          </div>
+          <q-icon :name="showProgresosFilters ? 'expand_less' : 'expand_more'" size="24px" />
+        </div>
+
+        <q-slide-transition>
+          <div v-show="showProgresosFilters" class="filters-content q-mt-md">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-6">
+                <FiltroFechas @update:desde="filterProgresosDesde = $event"
+                  @update:hasta="filterProgresosHasta = $event" />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-6">
+                <q-select map-options emit-value option-value="value" dense outlined v-model="filterProgresosCualidad"
+                  :options="cualidadOptions" label="Cualidad" clearable class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="star" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+            </div>
+          </div>
+        </q-slide-transition>
+      </q-card-section>
+
       <q-card-section>
         <div v-if="loadingProgresos" class="text-center q-pa-md">
           <q-spinner color="green-8" size="40px" />
@@ -410,17 +576,17 @@
             <div ref="radarChart" class="radar-chart"></div>
           </div>
 
-          <!-- Lista de progresos -->
-          <div class="progress-list q-mt-md">
-            <q-card v-for="prog in progresos" :key="prog.id" flat bordered class="progress-item q-mb-sm">
+          <!-- Grid de progresos -->
+          <div class="progress-grid q-mt-md">
+            <q-card v-for="prog in progresos" :key="prog.id" flat bordered class="progress-item">
               <q-card-section class="q-pa-md">
                 <div class="progress-header">
                   <q-chip size="sm" color="orange-7" text-color="white" icon="tag">
                     ID: {{ prog.id }}
                   </q-chip>
-                  <span class="cualidad-name">{{ prog.cualidad?.nombre }}</span>
                   <q-badge color="green-8" :label="`${prog.valor}/5`" />
                 </div>
+                <div class="cualidad-name q-mt-sm">{{ prog.cualidad?.nombre }}</div>
                 <div class="progress-date">
                   <q-icon name="event" size="16px" class="q-mr-xs" />
                   {{ formatDateShort(prog.fecha) }}
@@ -445,6 +611,123 @@
         </div>
       </q-card-section>
     </q-card>
+
+    <!-- Mis Gastos -->
+    <q-card v-if="isNotStudent" class="expenses-card q-mb-md">
+      <div class="card-header">
+        <q-icon name="receipt_long" size="24px" class="q-mr-sm" />
+        <span class="card-title">Mis Gastos</span>
+        <q-chip size="sm" color="green-8" text-color="white">
+          {{ gastos.length }} gasto(s)
+        </q-chip>
+        <q-space />
+        <q-select v-model="limitGastos" :options="limitOptions" dense outlined map-options emit-value
+          class="limit-select">
+          <template v-slot:prepend>
+            <q-icon name="format_list_numbered" size="16px" />
+          </template>
+        </q-select>
+      </div>
+
+      <!-- Filtros de gastos -->
+      <q-card-section class="q-pb-none">
+        <div class="filters-header" @click="showGastosFilters = !showGastosFilters">
+          <div class="filters-title">
+            <q-icon name="filter_list" size="20px" />
+            <span>Filtros</span>
+          </div>
+          <q-icon :name="showGastosFilters ? 'expand_less' : 'expand_more'" size="24px" />
+        </div>
+
+        <q-slide-transition>
+          <div v-show="showGastosFilters" class="filters-content q-mt-md">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-6">
+                <FiltroFechas @update:desde="filterGastosDesde = $event" @update:hasta="filterGastosHasta = $event" />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-6">
+                <q-select map-options emit-value option-value="value" dense outlined v-model="filterGastosCategoria"
+                  :options="categoriaOptions" label="Categoría" clearable class="filter-input">
+                  <template v-slot:prepend>
+                    <q-icon name="category" color="green-7" />
+                  </template>
+                </q-select>
+              </div>
+            </div>
+          </div>
+        </q-slide-transition>
+      </q-card-section>
+
+      <q-card-section>
+        <div v-if="loadingGastos" class="text-center q-pa-md">
+          <q-spinner color="green-8" size="40px" />
+        </div>
+        <div v-else-if="gastos.length === 0" class="empty-state">
+          <q-icon name="receipt_long" size="64px" color="grey-5" />
+          <p class="text-grey-7">No tienes gastos registrados</p>
+        </div>
+        <div v-else>
+          <!-- Resumen de gastos -->
+          <div class="expense-summary q-mb-md">
+            <div class="summary-item">
+              <q-icon name="money_off" size="24px" color="orange-7" />
+              <div class="summary-content">
+                <div class="summary-label">Total Gastado</div>
+                <div class="summary-value">Bs {{ totalGastos.toFixed(2) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid de gastos -->
+          <div class="expenses-grid">
+            <q-card v-for="gasto in gastos" :key="gasto.id" flat bordered class="expense-card-item"
+              :class="`expense-estado-${gasto.estado !== undefined ? gasto.estado : 1}`">
+              <q-card-section class="q-pa-md">
+                <!-- Header con estado y monto -->
+                <div class="expense-header-row">
+                  <q-chip :color="!gasto.estado ? 'red-7' : 'primary'" text-color="white" size="sm"
+                    :icon="!gasto.estado ? 'block' : 'check_circle'">
+                    {{ !gasto.estado ? 'Anulado' : 'Válido' }}
+                  </q-chip>
+                  <q-space />
+                  <div class="expense-amount">
+                    <q-icon name="payments" size="20px" color="orange-7" class="q-mr-xs" />
+                    <span class="amount-text">Bs {{ gasto.monto }}</span>
+                  </div>
+                </div>
+
+                <!-- Detalle del gasto -->
+                <div v-if="gasto.detalle" class="expense-detail-info q-mt-md">
+                  <q-icon name="description" size="20px" color="orange-7" class="q-mr-xs" />
+                  <span class="text-weight-bold">{{ gasto.detalle }}</span>
+                </div>
+
+                <!-- Información adicional -->
+                <div class="expense-meta-info q-mt-md">
+                  <div class="expense-date-info">
+                    <q-icon name="event" size="16px" color="green-7" class="q-mr-xs" />
+                    <span class="text-caption">{{ formatDateShort(gasto.fecha) }}</span>
+                    <q-icon name="access_time" size="16px" color="green-7" class="q-ml-sm q-mr-xs" />
+                    <span class="text-caption">{{ formatTime(gasto.fecha) }}</span>
+                  </div>
+
+                  <div v-if="gasto.categorium" class="expense-category-info q-mt-xs">
+                    <q-icon name="category" size="16px" color="green-7" class="q-mr-xs" />
+                    <span class="text-caption">{{ gasto.categorium.nombre || gasto.categorium }}</span>
+                  </div>
+
+                  <div v-if="gasto.usuario" class="expense-user-info q-mt-xs">
+                    <q-icon name="person" size="16px" color="green-7" class="q-mr-xs" />
+                    <span class="text-caption"><strong>@{{ gasto.usuario.usuario || 'Usuario' }}</strong></span>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
   </q-page>
 </template>
 
@@ -454,10 +737,15 @@ import { useQuasar } from 'quasar'
 import { listarEvaluaciones } from 'src/stores/evaluacion-store'
 import { listarProgreso } from 'src/stores/progreso-store'
 import { listarPagos } from 'src/stores/pago_store.js'
+import { listarGastos } from 'src/stores/gasto-store'
 import { reportePagosParams } from 'src/stores/reportes.js'
 import { listar as listarInscripciones } from 'src/stores/inscripcion-store'
 import { listarCategorias } from 'src/stores/categoria-store.js'
-import FiltroFechas from 'src/components/FiltroFechas.vue'
+import { listar as listarCualidades } from 'src/stores/cualidad-store.js'
+import { listarDisciplinas } from 'src/stores/disciplina-store.js'
+import { listarNiveles } from 'src/stores/nivel.js'
+import { listarPaquetes } from 'src/stores/paquete-store.js'
+import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 import * as echarts from 'echarts'
 
 const $q = useQuasar()
@@ -479,18 +767,81 @@ const loadingProgresos = ref(false)
 const loadingPagos = ref(false)
 const loadingInscripciones = ref(false)
 const radarChart = ref(null)
+const radarData = ref([])
 let chartInstance = null
 
 // Búsqueda de progreso por ID (solo para admin)
 const searchProgressId = ref(null)
 
+// Opciones de límite
+const limitOptions = [
+  { label: 'Ver 10', value: 10 },
+  { label: 'Ver 20', value: 20 },
+  { label: 'Ver 50', value: 50 },
+  { label: 'Todos', value: null }
+]
+
+// Límites por sección
+const limitEvaluaciones = ref(10)
+const limitInscripciones = ref(10)
+const limitPagos = ref(10)
+const limitProgresos = ref(10)
+const limitGastos = ref(10)
+
+// Filtros de evaluaciones
+const filterEvaluacionesDesde = ref(null)
+const filterEvaluacionesHasta = ref(null)
+const filterEvaluacionesCualidad = ref(null)
+const showEvaluacionesFilters = ref(false)
+
+// Filtros de inscripciones
+const filterInscripcionesEstado = ref(null)
+const filterInscripcionesDisciplina = ref(null)
+const filterInscripcionesNivel = ref(null)
+const filterFechaFin = ref('vacio')
+const filterFechaInicio = ref('vacio')
+const filterInscripcionesPaquete = ref(null)
+const filterInscripcionesPagos = ref(null)
+const showInscripcionesFilters = ref(false)
+
+const estadoInscripcionOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Activas', value: 1 },
+  { label: 'Suspendidas', value: 0 }
+]
+
+const pagosInscripcionOptions = [
+  { label: 'Al Día', value: 1 },
+  { label: 'Debidas', value: 2 }
+]
+
+const disciplinasOptions = ref([])
+const nivelOptions = ref([])
+const paqueteOptions = ref([])
+
 // Filtros de pagos
-const filterDesde = ref(null)
-const filterHasta = ref(null)
+const filterPagosDesde = ref(null)
+const filterPagosHasta = ref(null)
 const filterEstado = ref(null)
-const filterCategoria = ref(null)
+const filterPagosCategoria = ref(null)
 const categoriaOptions = ref([])
-const showPaymentFilters = ref(false)
+const cualidadOptions = ref([])
+const showPagosFilters = ref(false)
+
+// Filtros de progresos
+const filterProgresosDesde = ref(null)
+const filterProgresosHasta = ref(null)
+const filterProgresosCualidad = ref(null)
+const showProgresosFilters = ref(false)
+
+// Filtros de gastos (solo visible si no es estudiante)
+const filterGastosDesde = ref(null)
+const filterGastosHasta = ref(null)
+const filterGastosCategoria = ref(null)
+const showGastosFilters = ref(false)
+const gastos = ref([])
+const totalGastos = ref(0)
+const loadingGastos = ref(false)
 
 const estadoOptions = [
   { label: 'Todos', value: null },
@@ -504,7 +855,13 @@ const isAdmin = computed(() => {
   return userData.value?.rols?.some(rol => rol.id === 4 && rol.nombre === 'Administrador')
 })
 
-// Cargar categorías
+// Computed para verificar si NO es estudiante
+const isNotStudent = computed(() => {
+  const savedRoleId = sessionStorage.getItem('selectedRoleId')
+  return savedRoleId !== '3'
+})
+
+// Cargar categorías (para gastos, pagos, inscripciones)
 const loadCategorias = async () => {
   try {
     const res = await listarCategorias()
@@ -512,6 +869,50 @@ const loadCategorias = async () => {
       .map(c => ({ label: c.nombre, value: c.id }))
   } catch (e) {
     console.error('Error cargando categorías:', e)
+  }
+}
+
+// Cargar cualidades (para evaluaciones y progresos)
+const loadCualidades = async () => {
+  try {
+    const res = await listarCualidades()
+    cualidadOptions.value = (Array.isArray(res) ? res : [])
+      .map(c => ({ label: c.nombre, value: c.id }))
+  } catch (e) {
+    console.error('Error cargando cualidades:', e)
+  }
+}
+
+// Cargar disciplinas (para inscripciones)
+const loadDisciplinas = async () => {
+  try {
+    const res = await listarDisciplinas()
+    disciplinasOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (e) {
+    console.error('Error cargando disciplinas:', e)
+    disciplinasOptions.value = []
+  }
+}
+
+// Cargar niveles (para inscripciones)
+const loadNiveles = async () => {
+  try {
+    const res = await listarNiveles()
+    nivelOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (e) {
+    console.error('Error cargando niveles:', e)
+    nivelOptions.value = []
+  }
+}
+
+// Cargar paquetes (para inscripciones)
+const loadPaquetes = async () => {
+  try {
+    const res = await listarPaquetes()
+    paqueteOptions.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (e) {
+    console.error('Error cargando paquetes:', e)
+    paqueteOptions.value = []
   }
 }
 
@@ -523,10 +924,19 @@ onMounted(async () => {
 
   if (current?.persona?.id) {
     await loadCategorias()
-    await cargarEvaluaciones(current.persona.id)
+    await loadCualidades()
+    await loadDisciplinas()
+    await loadNiveles()
+    await loadPaquetes()
+    if (isNotStudent.value) {
+      await cargarEvaluaciones(current.persona.id)
+    }
     await cargarProgresos({ id_persona: current.persona.id })
     await cargarPagos()
     await cargarInscripciones()
+    if (isNotStudent.value) {
+      await cargarGastos()
+    }
   }
 })
 
@@ -544,10 +954,19 @@ watch([progresos, loadingProgresos], ([newProgresos, isLoading]) => {
 })
 
 // Cargar evaluaciones
-const cargarEvaluaciones = async (idPersona) => {
+const cargarEvaluaciones = async (idPersona = null) => {
   loadingEvaluaciones.value = true
   try {
-    const res = await listarEvaluaciones({ id_persona: idPersona })
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    const params = {
+      id_persona: idPersona || current?.persona?.id,
+      limit: limitEvaluaciones.value,
+      desde: filterEvaluacionesDesde.value,
+      hasta: filterEvaluacionesHasta.value,
+      id_cualidad: filterEvaluacionesCualidad.value,
+      page: 1
+    }
+    const res = await listarEvaluaciones(params)
     evaluaciones.value = Array.isArray(res) ? res : (res?.data || [])
   } catch (error) {
     console.error('Error cargando evaluaciones:', error)
@@ -561,10 +980,27 @@ const cargarEvaluaciones = async (idPersona) => {
 const cargarProgresos = async (params = {}) => {
   loadingProgresos.value = true
   try {
-    const res = await listarProgreso(params)
-    progresos.value = Array.isArray(res) ? res : (res?.data || [])
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    const fullParams = {
+      id_persona: params.id_persona || current?.persona?.id,
+      limit: limitProgresos.value,
+      desde: filterProgresosDesde.value,
+      hasta: filterProgresosHasta.value,
+      id_cualidad: filterProgresosCualidad.value,
+      page: 1,
+      ...params
+    }
+    const res = await listarProgreso(fullParams)
+    console.log('📊 Respuesta de listarProgreso:', res)
+    // Extraer datos del radar del backend (si están disponibles)
+    radarData.value = res?.radarData || []
+
+    // Extraer lista de progresos
+    progresos.value = Array.isArray(res) ? res : (res?.progresos || res?.data || [])
+
     console.log('🔍 Array de progresos:', progresos.value)
     console.log('📊 Total de progresos:', progresos.value.length)
+    console.log('📈 Datos del radar desde backend:', radarData.value)
     if (progresos.value.length > 0) {
       console.log('📋 Primer progreso de ejemplo:', progresos.value[0])
     }
@@ -592,13 +1028,13 @@ const cargarPagos = async () => {
   try {
     const current = JSON.parse(sessionStorage.getItem('user'))
     const params = {
-      desde: filterDesde.value,
-      hasta: filterHasta.value,
+      desde: filterPagosDesde.value,
+      hasta: filterPagosHasta.value,
       id_persona: current?.persona?.id,
       estado: filterEstado.value,
-      id_categoria: filterCategoria.value,
+      id_categoria: filterPagosCategoria.value,
       page: 1,
-      limit: 500
+      limit: limitPagos.value
     }
     const res = await listarPagos(params)
     // Extraer totalPagos, totalDeudas y lista del backend
@@ -618,8 +1054,8 @@ const generarReportePagos = async () => {
   try {
     const current = JSON.parse(sessionStorage.getItem('user'))
     const params = {
-      desde: filterDesde.value,
-      hasta: filterHasta.value,
+      desde: filterPagosDesde.value,
+      hasta: filterPagosHasta.value,
       id_persona: current?.persona?.id,
       estado: filterEstado.value,
     }
@@ -632,11 +1068,64 @@ const generarReportePagos = async () => {
 }
 
 // Watch para filtros de pagos
-watch([filterDesde, filterHasta, filterEstado, filterCategoria], () => {
+watch([limitPagos, filterPagosDesde, filterPagosHasta, filterEstado, filterPagosCategoria], () => {
   if (userData.value?.persona?.id) {
     cargarPagos()
   }
 })
+
+// Watch para filtros de evaluaciones
+watch([limitEvaluaciones, filterEvaluacionesDesde, filterEvaluacionesHasta, filterEvaluacionesCualidad], () => {
+  if (userData.value?.persona?.id && isNotStudent.value) {
+    cargarEvaluaciones()
+  }
+})
+
+// Watch para filtros de inscripciones
+watch([filterInscripcionesEstado, filterInscripcionesDisciplina, filterInscripcionesNivel, filterFechaFin, filterFechaInicio, filterInscripcionesPaquete, filterInscripcionesPagos], () => {
+  cargarInscripciones()
+})
+
+// Watch para filtros de progresos
+watch([limitProgresos, filterProgresosDesde, filterProgresosHasta, filterProgresosCualidad], () => {
+  if (userData.value?.persona?.id) {
+    cargarProgresos()
+  }
+})
+
+// Watch para filtros de gastos
+watch([limitGastos, filterGastosDesde, filterGastosHasta, filterGastosCategoria], () => {
+  if (userData.value?.persona?.id && isNotStudent.value) {
+    cargarGastos()
+  }
+})
+
+// Cargar gastos
+const cargarGastos = async () => {
+  loadingGastos.value = true
+  try {
+    const current = JSON.parse(sessionStorage.getItem('user'))
+    const params = {
+      id_usuario_gasta: current?.id,
+      limit: limitGastos.value,
+      desde: filterGastosDesde.value,
+      hasta: filterGastosHasta.value,
+      id_categoria: filterGastosCategoria.value,
+      page: 1
+    }
+    const res = await listarGastos(params)
+    const data = res?.data || res
+    totalGastos.value = data?.totalGastos || 0
+    gastos.value = data?.lista || []
+    console.log('gastos.-----------------------------', gastos.value);
+
+  } catch (error) {
+    console.error('Error cargando gastos:', error)
+    $q.notify({ type: 'negative', message: 'Error al cargar gastos' })
+  } finally {
+    loadingGastos.value = false
+  }
+}
 
 // Utilidades para pagos
 const estadoColor = (estado) => {
@@ -659,10 +1148,10 @@ const estadoLabel = (estado) => {
 
 const activeFiltersCount = computed(() => {
   let count = 0
-  if (filterDesde.value) count++
-  if (filterHasta.value) count++
+  if (filterPagosDesde.value) count++
+  if (filterPagosHasta.value) count++
   if (filterEstado.value !== null && filterEstado.value !== undefined) count++
-  if (filterCategoria.value) count++
+  if (filterPagosCategoria.value) count++
   return count
 })
 
@@ -672,8 +1161,21 @@ const cargarInscripciones = async () => {
   try {
     const current = JSON.parse(sessionStorage.getItem('user'))
     const params = {
-      id_persona: current?.persona?.id
+      id_persona: current?.persona?.id || undefined,
+      estado: filterInscripcionesEstado.value !== null ? filterInscripcionesEstado.value : undefined,
+      id_disciplina: filterInscripcionesDisciplina.value || undefined,
+      id_nivel: filterInscripcionesNivel.value || undefined,
+      fecha_fin: filterFechaFin.value || undefined,
+      fecha_inicio: filterFechaInicio.value || undefined,
+      id_paquete: filterInscripcionesPaquete.value || undefined,
+      pagos: filterInscripcionesPagos.value || undefined,
+      page: 1,
+      limit: limitInscripciones.value
     }
+
+    // Eliminar undefined
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+
     const res = await listarInscripciones(params)
     const data = res?.data || res
     totalInscripciones.value = data?.totalInscripciones || 0
@@ -742,10 +1244,10 @@ const estadoInscripcionLabel = (row) => {
 const renderRadarChart = () => {
   console.log('🎨 Renderizando gráfica radar...')
   console.log('📍 Elemento radarChart:', radarChart.value)
-  console.log('📈 Cantidad de progresos:', progresos.value.length)
+  console.log('📈 Datos del radar desde backend:', radarData.value)
 
-  if (!radarChart.value || progresos.value.length === 0) {
-    console.log('⚠️ No se puede renderizar: elemento o datos faltantes')
+  if (!radarChart.value) {
+    console.log('⚠️ No se puede renderizar: elemento faltante')
     return
   }
 
@@ -755,33 +1257,48 @@ const renderRadarChart = () => {
 
   chartInstance = echarts.init(radarChart.value)
 
-  // Agrupar progresos por cualidad y calcular el promedio
-  const cualidadesMap = new Map()
-  progresos.value.forEach(prog => {
-    const nombre = prog.cualidad?.nombre || 'Sin nombre'
-    console.log('📝 Procesando progreso:', { cualidad: nombre, valor: prog.valor, fecha: prog.fecha })
+  let indicator = []
+  let values = []
 
-    if (!cualidadesMap.has(nombre)) {
-      cualidadesMap.set(nombre, [])
+  // Si el backend envió datos del radar, usarlos
+  if (radarData.value && radarData.value.length > 0) {
+    console.log('✅ Usando datos del radar desde el backend')
+    indicator = radarData.value.map(item => ({
+      name: item.cualidad || item.nombre,
+      max: 5
+    }))
+    values = radarData.value.map(item => parseFloat(item.promedio || 0))
+  } else {
+    // Fallback: calcular en el frontend si el backend no envió datos
+    console.log('⚠️ Backend no envió radarData, calculando en frontend...')
+
+    if (progresos.value.length === 0) {
+      console.log('⚠️ No hay progresos para calcular')
+      return
     }
-    cualidadesMap.get(nombre).push(prog.valor)
-  })
 
-  console.log('🗺️ Mapa de cualidades agrupadas:', Array.from(cualidadesMap.entries()))
+    const cualidadesMap = new Map()
+    progresos.value.forEach(prog => {
+      const nombre = prog.cualidad?.nombre || 'Sin nombre'
+      if (!cualidadesMap.has(nombre)) {
+        cualidadesMap.set(nombre, [])
+      }
+      cualidadesMap.get(nombre).push(prog.valor)
+    })
 
-  // Calcular promedio para cada cualidad
-  const promedios = new Map()
-  cualidadesMap.forEach((valores, nombre) => {
-    const promedio = valores.reduce((sum, val) => sum + val, 0) / valores.length
-    promedios.set(nombre, promedio.toFixed(2))
-  })
+    const promedios = new Map()
+    cualidadesMap.forEach((valores, nombre) => {
+      const promedio = valores.reduce((sum, val) => sum + val, 0) / valores.length
+      promedios.set(nombre, promedio.toFixed(2))
+    })
 
-  const indicator = Array.from(promedios.keys()).map(nombre => ({
-    name: nombre,
-    max: 5
-  }))
+    indicator = Array.from(promedios.keys()).map(nombre => ({
+      name: nombre,
+      max: 5
+    }))
 
-  const values = Array.from(promedios.values()).map(v => parseFloat(v))
+    values = Array.from(promedios.values()).map(v => parseFloat(v))
+  }
 
   console.log('📊 Indicadores para radar:', indicator)
   console.log('💯 Valores para radar:', values)
@@ -1034,6 +1551,32 @@ $pastel-orange: #ffe0b2;
   font-size: 1.2em;
   font-weight: 700;
   flex: 1;
+}
+
+.limit-select {
+  width: 130px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+
+  :deep(.q-field__control) {
+    color: white;
+
+    &:before {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  :deep(.q-field__label) {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  :deep(.q-field__native) {
+    color: white;
+  }
+
+  :deep(.q-icon) {
+    color: rgba(255, 255, 255, 0.9);
+  }
 }
 
 // ===== DATOS PERSONALES =====
@@ -1400,6 +1943,124 @@ $pastel-orange: #ffe0b2;
   color: $color-orange-dark;
 }
 
+// ===== GASTOS =====
+.expenses-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.expense-summary {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba($color-forest, 0.05) 0%, rgba($color-orange, 0.05) 100%);
+  border-radius: 12px;
+  border: 2px solid rgba($color-forest, 0.1);
+}
+
+.expenses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.expense-card-item {
+  border-radius: 12px;
+  border: 2px solid rgba($color-forest, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, $color-forest 0%, $color-moss 100%);
+    transition: width 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.2);
+    border-color: $color-forest;
+
+    &::before {
+      width: 6px;
+    }
+  }
+
+  &.expense-estado-0 {
+    opacity: 0.7;
+    border-color: rgba(#9e9e9e, 0.3);
+
+    &::before {
+      background: linear-gradient(180deg, #757575 0%, #9e9e9e 100%);
+    }
+
+    &:hover {
+      border-color: #9e9e9e;
+    }
+  }
+}
+
+.expense-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expense-amount {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba($color-orange, 0.1) 0%, rgba($color-orange-light, 0.1) 100%);
+  padding: 8px 12px;
+  border-radius: 8px;
+
+  .amount-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: $color-orange-dark;
+  }
+}
+
+.expense-detail-info {
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+  font-size: 1.05em;
+  line-height: 1.4;
+}
+
+.expense-meta-info {
+  padding: 12px;
+  background: rgba($color-forest, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid $color-forest;
+}
+
+.expense-date-info {
+  display: flex;
+  align-items: center;
+  color: $color-moss;
+}
+
+.expense-category-info,
+.expense-user-info {
+  display: flex;
+  align-items: center;
+  color: $color-moss;
+}
+
 // ===== PROGRESOS =====
 .search-progress {
   min-width: 250px;
@@ -1435,28 +2096,10 @@ $pastel-orange: #ffe0b2;
   height: 450px;
 }
 
-.progress-list {
-  max-height: 500px;
-  overflow-y: auto;
-  padding-right: 8px;
-
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: $pastel-sage;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: $color-orange;
-    border-radius: 4px;
-
-    &:hover {
-      background: $color-orange-dark;
-    }
-  }
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .progress-item {
@@ -1465,17 +2108,17 @@ $pastel-orange: #ffe0b2;
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: $color-leaf;
-    box-shadow: 0 4px 12px rgba($color-forest, 0.15);
-    transform: translateX(4px);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.2);
+    border-color: $color-forest;
   }
 }
 
 .progress-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 .progress-user {
@@ -1552,6 +2195,14 @@ $pastel-orange: #ffe0b2;
     grid-template-columns: 1fr;
   }
 
+  .expenses-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-grid {
+    grid-template-columns: 1fr;
+  }
+
   .radar-container {
     overflow-x: auto;
   }
@@ -1571,6 +2222,13 @@ $pastel-orange: #ffe0b2;
   }
 }
 
+// ===== RESPONSIVO TABLET =====
+@media (max-width: 1200px) and (min-width: 769px) {
+  .progress-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 // ===== MODO OSCURO =====
 :deep(.body--dark) {
   .profile-page {
@@ -1580,7 +2238,8 @@ $pastel-orange: #ffe0b2;
   .info-card,
   .evaluations-card,
   .payments-card,
-  .progress-card {
+  .progress-card,
+  .expenses-card {
     background: #2a2a2a;
     color: #e0e0e0;
   }
@@ -1599,7 +2258,9 @@ $pastel-orange: #ffe0b2;
   }
 
   .evaluation-card,
+  .inscription-card-item,
   .payment-card-item,
+  .expense-card-item,
   .progress-item {
     background: #333;
     border-color: rgba($color-forest, 0.3);

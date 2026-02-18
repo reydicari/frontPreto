@@ -7,10 +7,9 @@
         <div class="row items-center justify-between q-col-gutter-md">
           <div class="col-12 col-sm-auto">
             <div class="header-title">
-              <q-icon name="sports" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Gestión de Entrenadores</h2>
+              <q-icon name="sports" color="primary" size="42px" class="q-mr-sm" />
+              <h2 class="page-title">Entrenadores</h2>
             </div>
-            <p class="header-subtitle">Administra el equipo de entrenadores y su carga de trabajo</p>
           </div>
           <div class="col-12 col-sm-auto">
             <q-btn class="btn-add-header" icon="person_add" label="Agregar Entrenador" @click="showPersonaDialog"

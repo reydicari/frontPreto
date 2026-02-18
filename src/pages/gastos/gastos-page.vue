@@ -1,69 +1,55 @@
 <template>
   <q-page class="expenses-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con título y botón -->
+    <!-- Header con título, botón y estadísticas -->
     <div class="page-header">
       <div class="header-content">
-        <div class="header-title-section">
-          <div class="row items-center justify-between">
-            <div class="col-auto">
+        <div class="row items-center q-col-gutter-md">
+          <!-- Título e icono -->
+          <div class="col-12 col-md-auto">
+            <div class="header-title-group">
               <q-icon name="receipt_long" size="48px" class="page-icon" />
-              <h1 class="page-title q-ma-none">Gestión de Gastos</h1>
-            </div>
-            <div class="col-auto">
-              <q-btn icon="add_circle" label="Nuevo Gasto" class="btn-add-header" @click="openDialog" />
+              <h1 class="page-title q-ma-none">Gastos</h1>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Estadísticas -->
-    <div class="statistics-section">
-      <div class="row q-col-gutter-md">
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-total">
-            <div class="stat-content">
-              <div class="stat-label">Total Gastado</div>
-              <div class="stat-value">Bs {{ totalGastado }}</div>
+          <!-- Estadísticas compactas -->
+          <div class="col-12 col-md q-mt-md q-mt-md-none">
+            <div class="row q-col-gutter-sm">
+              <div class="col-6 col-sm-4">
+                <div class="stat-card-compact stat-card-total">
+                  <div class="stat-compact-content">
+                    <q-icon name="account_balance_wallet" size="24px" class="stat-compact-icon" />
+                    <div>
+                      <div class="stat-compact-label">Total Gastado</div>
+                      <div class="stat-compact-value">Bs {{ totalGastado }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4">
+                <div class="stat-card-compact stat-card-count">
+                  <div class="stat-compact-content">
+                    <q-icon name="receipt" size="24px" class="stat-compact-icon" />
+                    <div>
+                      <div class="stat-compact-label">Nº Gastos</div>
+                      <div class="stat-compact-value">{{ cantidadGastos }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <q-icon name="account_balance_wallet" class="stat-icon" />
           </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-month">
-            <div class="stat-content">
-              <div class="stat-label">Este Mes</div>
-              <div class="stat-value">Bs {{ totalMesActual }}</div>
-            </div>
-            <q-icon name="calendar_today" class="stat-icon" />
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-count">
-            <div class="stat-content">
-              <div class="stat-label">Nº Gastos</div>
-              <div class="stat-value">{{ cantidadGastos }}</div>
-            </div>
-            <q-icon name="receipt" class="stat-icon" />
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <div class="stat-card stat-card-average">
-            <div class="stat-content">
-              <div class="stat-label">Promedio</div>
-              <div class="stat-value">Bs {{ promedioMonto }}</div>
-            </div>
-            <q-icon name="trending_up" class="stat-icon" />
+          <!-- Botón de nuevo -->
+          <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
+            <q-btn icon="add_circle" label="Nuevo Gasto" class="btn-add-header" @click="openDialog" />
           </div>
         </div>
       </div>
     </div>
 
     <!-- Barra de búsqueda -->
-    <div class="toolbar-section">
+    <!-- <div class="toolbar-section">
       <div class="row q-col-gutter-md items-center">
         <div class="col-12">
           <q-input v-model="searchTerm" outlined dense placeholder="Buscar por observación o categoría..."
@@ -71,10 +57,10 @@
             <template v-slot:prepend>
               <q-icon name="search" />
             </template>
-          </q-input>
-        </div>
-      </div>
-    </div>
+</q-input>
+</div>
+</div>
+</div> -->
 
     <!-- Filtros avanzados -->
     <div class="filters-section">
@@ -91,33 +77,7 @@
         <div v-show="showFilters" class="filters-content">
           <div class="row q-col-gutter-md">
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input dense outlined label="Desde" v-model="filterDesde" readonly class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
-                </template>
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="filterDesde" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-input>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-input dense outlined label="Hasta" v-model="filterHasta" readonly class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="event" color="green-7" />
-                </template>
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="filterHasta" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-input>
+              <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
@@ -130,8 +90,25 @@
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
-              <q-select dense outlined v-model="filterEstado" :options="estadoOptions" label="Estado" clearable
-                class="filter-input">
+              <q-select dense outlined v-model="filterUsuario" :options="usuarioOptions" option-label="usuario"
+                option-value="id" emit-value map-options label="Usuario" clearable use-input input-debounce="300"
+                @filter="filterUsuariosFn" class="filter-input">
+                <template v-slot:prepend>
+                  <q-icon name="person" color="green-7" />
+                </template>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">
+                      No se encontraron usuarios
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-2">
+              <q-select dense outlined v-model="filterEstado" :options="estadoOptions" map-options emit-value
+                option-value="value" label="Estado" clearable class="filter-input">
                 <template v-slot:prepend>
                   <q-icon name="toggle_on" color="green-7" />
                 </template>
@@ -146,48 +123,81 @@
     <div class="expenses-list">
       <q-infinite-scroll @load="onLoad" :offset="250">
         <div class="row q-col-gutter-md">
-          <div v-for="gasto in displayedGastos" :key="gasto.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <div class="expense-card" :class="{ 'expense-card-anulado': !gasto.estado }" @click="verGasto(gasto)">
-              <div class="expense-header">
-                <div class="expense-date">
-                  <q-icon name="event" size="18px" />
-                  {{ formatDate(gasto.fecha) }}
-                </div>
-                <q-badge :color="gasto.estado ? 'green-7' : 'red-7'" :label="gasto.estado ? 'Activo' : 'Anulado'" />
-              </div>
+          <div v-for="gasto in gastos" :key="gasto.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <q-card class="expense-card" :class="{ 'expense-card-anulado': !gasto.estado }">
+              <!-- Chip de estado flotante -->
+              <q-badge :color="gasto.estado ? 'green-7' : 'red-7'" :label="gasto.estado ? 'Activo' : 'Anulado'"
+                class="status-badge" />
 
-              <div class="expense-body">
-                <div class="expense-category" v-if="gasto.categorium">
-                  <q-icon name="category" size="20px" />
-                  <span>{{ gasto.categorium.nombre }}</span>
+              <!-- Header con categoría -->
+              <q-card-section class="expense-card-header">
+                <div class="category-section" v-if="gasto.categorium">
+                  <q-avatar size="40px" :color="gasto.estado ? 'green-1' : 'red-1'" text-color="white">
+                    <q-icon name="category" :color="gasto.estado ? 'green-7' : 'red-7'" size="24px" />
+                  </q-avatar>
+                  <div class="category-info">
+                    <div class="category-label">Categoría</div>
+                    <div class="category-name">{{ gasto.categorium.nombre }}</div>
+                  </div>
+                </div>
+              </q-card-section>
+
+              <q-separator />
+
+              <!-- Body con información -->
+              <q-card-section class="expense-card-body">
+                <!-- Fecha -->
+                <div class="info-row">
+                  <q-icon name="event" size="18px" color="grey-7" />
+                  <span class="info-text">{{ formatDate(gasto.fecha) }}</span>
                 </div>
 
-                <div class="expense-user" v-if="gasto.usuario">
-                  <q-icon name="person" size="18px" />
-                  <span>{{ gasto.usuario.usuario }}</span>
+                <!-- Usuario -->
+                <div class="info-row" v-if="gasto.usuario">
+                  <q-icon name="person" size="18px" color="grey-7" />
+                  <span class="info-text">{{ gasto.usuario.usuario }}</span>
                 </div>
 
-                <div class="expense-observation" v-if="gasto.observacion">
-                  <q-icon name="notes" size="18px" />
-                  <span>{{ gasto.observacion }}</span>
+                <!-- Observación -->
+                <div class="info-row observation-row" v-if="gasto.observacion">
+                  <q-icon name="notes" size="18px" color="grey-7" />
+                  <span class="info-text observation-text">{{ gasto.observacion }}</span>
                 </div>
 
-                <div class="expense-amount">
-                  <div class="amount-label">Monto</div>
-                  <div class="amount-value">Bs {{ parseFloat(gasto.monto).toFixed(2) }}</div>
+                <!-- Monto destacado -->
+                <div class="amount-section">
+                  <div class="amount-container">
+                    <q-icon name="attach_money" size="20px" :color="gasto.estado ? 'green-7' : 'red-7'" />
+                    <div class="amount-info">
+                      <div class="amount-label">Monto Total</div>
+                      <div class="amount-value" :class="gasto.estado ? 'text-green-7' : 'text-red-7'">
+                        Bs {{ parseFloat(gasto.monto).toFixed(2) }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </q-card-section>
 
-              <div class="expense-footer">
-                <q-btn v-if="gasto.estado" flat dense icon="cancel" color="negative" @click.stop="anularGasto(gasto)">
-                  <q-tooltip>Anular gasto</q-tooltip>
+              <q-separator />
+
+              <!-- Footer con acciones -->
+              <q-card-actions class="expense-card-actions">
+                <q-btn flat dense icon="visibility" color="primary" @click="verGasto(gasto)">
+                  <q-tooltip class="bg-primary">Ver detalles</q-tooltip>
                 </q-btn>
-                <q-btn v-if="gasto.comprobante" flat dense icon="image" color="primary"
+
+                <q-btn v-if="gasto.comprobante" flat dense icon="image" color="blue-7"
                   @click.stop="verComprobante(gasto)">
-                  <q-tooltip>Ver comprobante</q-tooltip>
+                  <q-tooltip class="bg-blue-7">Ver comprobante</q-tooltip>
                 </q-btn>
-              </div>
-            </div>
+
+                <q-space />
+
+                <q-btn v-if="gasto.estado" flat dense icon="cancel" color="negative" @click.stop="anularGasto(gasto)">
+                  <q-tooltip class="bg-negative">Anular gasto</q-tooltip>
+                </q-btn>
+              </q-card-actions>
+            </q-card>
           </div>
         </div>
 
@@ -198,7 +208,7 @@
         </template>
       </q-infinite-scroll>
 
-      <div v-if="displayedGastos.length === 0 && !loading" class="no-results">
+      <div v-if="gastos.length === 0 && !loading" class="no-results">
         <q-icon name="receipt_long" size="64px" color="grey-5" />
         <p>No se encontraron gastos</p>
       </div>
@@ -322,23 +332,34 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { listarGastos } from 'stores/gasto-store'
 import { listarCategorias } from 'stores/categoria-store'
+import { listarUsuarios } from 'stores/usuario-store'
 import NuevoGastoDialog from './NuevoGastoDialog.vue'
 import AnularGastoDialog from './AnularGastoDialog.vue'
+import FiltroFechas from 'components/FiltroFechas.vue'
 
 const loading = ref(false)
 const gastos = ref([])
-const displayedGastos = ref([])
 const searchTerm = ref('')
 const showFilters = ref(false)
 const filterDesde = ref('')
 const filterHasta = ref('')
 const filterCategoria = ref(null)
 const filterEstado = ref(null)
+const filterUsuario = ref(null)
 const categoriaOptions = ref([])
+const usuarioOptions = ref([])
 const estadoOptions = ref([
+  { label: 'Todos', value: null },
   { label: 'Activo', value: true },
   { label: 'Anulado', value: false }
 ])
+
+// Paginación
+const currentPage = ref(1)
+const totalGastos = ref(0)
+const cantidadGastos = ref(0)
+const hasMoreData = ref(true)
+const limit = 12
 
 const dialogNuevo = ref(false)
 const dialogAnular = ref(false)
@@ -352,37 +373,10 @@ const BACKEND_URL = process.env.API_URL || 'http://localhost:3001'
 
 // Estadísticas computadas
 const totalGastado = computed(() => {
-  const total = gastosActivos.value.reduce((sum, g) => sum + parseFloat(g.monto || 0), 0)
-  return total.toFixed(2)
-})
-
-const gastosActivos = computed(() => {
-  return gastos.value.filter(g => g.estado)
-})
-
-const totalMesActual = computed(() => {
-  const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
-
-  const total = gastosActivos.value
-    .filter(g => {
-      const gastoDate = new Date(g.fecha)
-      return gastoDate.getMonth() === currentMonth && gastoDate.getFullYear() === currentYear
-    })
+  const total = gastos.value
+    .filter(g => g.estado)
     .reduce((sum, g) => sum + parseFloat(g.monto || 0), 0)
-
   return total.toFixed(2)
-})
-
-const cantidadGastos = computed(() => {
-  return gastosActivos.value.length
-})
-
-const promedioMonto = computed(() => {
-  if (cantidadGastos.value === 0) return '0.00'
-  const promedio = parseFloat(totalGastado.value) / cantidadGastos.value
-  return promedio.toFixed(2)
 })
 
 const activeFiltersCount = computed(() => {
@@ -391,52 +385,20 @@ const activeFiltersCount = computed(() => {
   if (filterHasta.value) count++
   if (filterCategoria.value) count++
   if (filterEstado.value !== null) count++
+  if (filterUsuario.value) count++
   return count
-})
-
-const gastosFiltrados = computed(() => {
-  let filtered = [...gastos.value]
-
-  // Búsqueda por texto
-  if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(g =>
-      (g.observacion && g.observacion.toLowerCase().includes(term)) ||
-      (g.categorium && g.categorium.nombre && g.categorium.nombre.toLowerCase().includes(term))
-    )
-  }
-
-  // Filtro por fecha desde
-  if (filterDesde.value) {
-    filtered = filtered.filter(g => g.fecha >= filterDesde.value)
-  }
-
-  // Filtro por fecha hasta
-  if (filterHasta.value) {
-    filtered = filtered.filter(g => g.fecha <= filterHasta.value)
-  }
-
-  // Filtro por categoría
-  if (filterCategoria.value) {
-    filtered = filtered.filter(g => g.id_categoria === filterCategoria.value)
-  }
-
-  // Filtro por estado
-  if (filterEstado.value !== null) {
-    filtered = filtered.filter(g => g.estado === filterEstado.value)
-  }
-
-  return filtered
 })
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
-  return date.toLocaleDateString('es-BO', {
+  const formattedDate = date.toLocaleDateString('es-BO', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
   })
+  const timeStr = dateStr.split(' ')[1] || dateStr.substring(11, 19)
+  return `${formattedDate}, ${timeStr}`
 }
 
 function formatDateFull(dateStr) {
@@ -476,14 +438,41 @@ function verComprobante(gasto) {
   comprobanteDialog.value = true
 }
 
-async function cargarGastos() {
+async function cargarGastos(reset = false) {
+  if (reset) {
+    currentPage.value = 1
+    gastos.value = []
+    hasMoreData.value = true
+  }
+
+  if (!hasMoreData.value) return
+
   loading.value = true
   try {
-    const response = await listarGastos()
-    console.log('lista de gas gastos: ', response.lista);
+    const params = {
+      page: currentPage.value,
+      limit: limit,
+      estado: filterEstado.value,
+      id_categoria: filterCategoria.value,
+      id_usuario_gasta: filterUsuario.value,
+      desde: filterDesde.value,
+      hasta: filterHasta.value,
+      busqueda: searchTerm.value
+    }
 
-    gastos.value = Array.isArray(response.lista) ? response.lista : (response.data.lista || [])
-    displayedGastos.value = gastosFiltrados.value.slice(0, 20)
+    const response = await listarGastos(params)
+
+    const nuevosGastos = Array.isArray(response.lista) ? response.lista : (response.data?.lista || [])
+
+    if (reset) {
+      gastos.value = nuevosGastos
+    } else {
+      gastos.value = [...gastos.value, ...nuevosGastos]
+    }
+
+    totalGastos.value = response.totalGastos || gastos.value.length
+    cantidadGastos.value = response.cantidadGastos || gastos.value.length
+    hasMoreData.value = nuevosGastos.length === limit
 
   } catch (error) {
     console.error('Error cargando gastos:', error)
@@ -501,25 +490,53 @@ async function cargarCategorias() {
   }
 }
 
-function onLoad(index, done) {
-  setTimeout(() => {
-    const nextBatch = gastosFiltrados.value.slice(
-      displayedGastos.value.length,
-      displayedGastos.value.length + 20
-    )
-    displayedGastos.value.push(...nextBatch)
-    done()
-  }, 500)
+async function cargarUsuarios(search = '') {
+  try {
+    const params = {
+      search: search,
+      page: 1,
+      limit: 5
+    }
+    const res = await listarUsuarios(params)
+    usuarioOptions.value = res.lista || res || []
+  } catch (error) {
+    console.error('Error cargando usuarios:', error)
+  }
 }
 
-// Watch para actualizar displayedGastos cuando cambien los filtros
-watch(gastosFiltrados, (newVal) => {
-  displayedGastos.value = newVal.slice(0, 20)
-})
+function filterUsuariosFn(val, update) {
+  if (val === '') {
+    update(() => {
+      cargarUsuarios('')
+    })
+    return
+  }
+
+  update(() => {
+    cargarUsuarios(val)
+  })
+}
+
+async function onLoad(index, done) {
+  if (!hasMoreData.value || loading.value) {
+    done()
+    return
+  }
+
+  currentPage.value++
+  await cargarGastos(false)
+  done()
+}
+
+// Watch para recargar cuando cambien los filtros
+watch([filterEstado, filterCategoria, filterUsuario, filterDesde, filterHasta, searchTerm], () => {
+  cargarGastos(true)
+}, { deep: true })
 
 onMounted(() => {
-  cargarGastos()
+  cargarGastos(true)
   cargarCategorias()
+  cargarUsuarios()
 })
 </script>
 
@@ -536,123 +553,99 @@ onMounted(() => {
 .header-content {
   background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 4px 20px rgba(46, 125, 50, 0.3);
 }
 
-.header-title-section {
-  color: white;
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .page-icon {
   color: rgba(255, 255, 255, 0.9);
-  margin-right: 16px;
 }
 
 .page-title {
   font-size: 32px;
   font-weight: 700;
   color: white;
-  display: inline-block;
-  vertical-align: middle;
+}
+
+/* Estadísticas compactas dentro del header */
+.stat-card-compact {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.stat-card-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card-compact.stat-card-total {
+  border-left: 4px solid #2e7d32;
+}
+
+.stat-card-compact.stat-card-count {
+  border-left: 4px solid #66bb6a;
+}
+
+.stat-compact-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-compact-icon {
+  color: #2e7d32;
+  opacity: 0.8;
+}
+
+.stat-card-compact.stat-card-count .stat-compact-icon {
+  color: #66bb6a;
+}
+
+.stat-compact-label {
+  font-size: 11px;
+  color: #757575;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.stat-compact-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2e7d32;
+  line-height: 1.2;
+}
+
+.stat-card-compact.stat-card-count .stat-compact-value {
+  color: #66bb6a;
 }
 
 .btn-add-header {
   background: white;
   color: #2e7d32;
   font-weight: 600;
-  padding: 8px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  width: 100%;
 }
 
 .btn-add-header:hover {
   background: #f1f8f4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Estadísticas */
-.statistics-section {
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: currentColor;
-}
-
-.stat-card-total {
-  color: #2e7d32;
-}
-
-.stat-card-month {
-  color: #388e3c;
-}
-
-.stat-card-count {
-  color: #66bb6a;
-}
-
-.stat-card-average {
-  color: #81c784;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #757575;
-  font-weight: 500;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: currentColor;
-}
-
-.stat-icon {
-  font-size: 48px;
-  opacity: 0.2;
-}
-
-/* Toolbar */
-.toolbar-section {
-  margin-bottom: 16px;
-}
-
-.search-input {
-  background: white;
-  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Filtros */
@@ -701,102 +694,168 @@ onMounted(() => {
 }
 
 .expense-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  cursor: pointer;
   height: 100%;
   display: flex;
   flex-direction: column;
-  border-left: 4px solid #2e7d32;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .expense-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.2);
 }
 
 .expense-card-anulado {
-  opacity: 0.6;
-  border-left-color: #d32f2f;
+  opacity: 0.7;
 }
 
-.expense-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f5f5f5;
+.expense-card-anulado:hover {
+  box-shadow: 0 8px 24px rgba(211, 47, 47, 0.2);
 }
 
-.expense-date {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #757575;
-}
-
-.expense-body {
-  flex: 1;
-}
-
-.expense-category,
-.expense-user,
-.expense-observation {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #424242;
-}
-
-.expense-category {
+.status-badge {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  z-index: 1;
   font-weight: 600;
-  color: #2e7d32;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.expense-observation {
-  font-size: 13px;
-  color: #757575;
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.expense-card-header {
+  padding: 20px 16px 16px;
+  background: linear-gradient(135deg, #f8fdf9 0%, #ffffff 100%);
 }
 
-.expense-amount {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #f5f5f5;
+.expense-card-anulado .expense-card-header {
+  background: linear-gradient(135deg, #fef5f5 0%, #ffffff 100%);
 }
 
-.amount-label {
-  font-size: 12px;
+.category-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-label {
+  font-size: 11px;
   color: #757575;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.category-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2e7d32;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-card-anulado .category-name {
+  color: #d32f2f;
+}
+
+.expense-card-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #424242;
+}
+
+.info-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.observation-row {
+  align-items: flex-start;
+}
+
+.observation-text {
+  font-style: italic;
+  color: #757575;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.amount-section {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.amount-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+  border-radius: 8px;
+  border-left: 3px solid #2e7d32;
+}
+
+.expense-card-anulado .amount-container {
+  background: linear-gradient(135deg, #fef5f5 0%, #ffebee 100%);
+  border-left-color: #d32f2f;
+}
+
+.amount-info {
+  flex: 1;
+}
+
+.amount-label {
+  font-size: 11px;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  margin-bottom: 2px;
 }
 
 .amount-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #2e7d32;
+  line-height: 1;
 }
 
-.expense-footer {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f5f5f5;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+.expense-card-actions {
+  padding: 8px 12px;
+  background: #fafafa;
+}
+
+.expense-card-anulado .expense-card-actions {
+  background: #f5f5f5;
 }
 
 /* Dialog detalle */
@@ -879,6 +938,10 @@ onMounted(() => {
     padding: 16px;
   }
 
+  .header-title-group {
+    margin-bottom: 12px;
+  }
+
   .page-title {
     font-size: 24px;
   }
@@ -887,18 +950,28 @@ onMounted(() => {
     font-size: 36px;
   }
 
-  .stat-value {
-    font-size: 20px;
+  .stat-compact-label {
+    font-size: 10px;
   }
 
-  .stat-icon {
-    font-size: 36px;
+  .stat-compact-value {
+    font-size: 16px;
+  }
+
+  .btn-add-header {
+    width: 100%;
   }
 
   .detail-dialog {
     max-width: 100%;
     margin: 0;
     border-radius: 0;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .btn-add-header {
+    width: auto;
   }
 }
 </style>

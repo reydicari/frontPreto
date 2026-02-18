@@ -31,7 +31,7 @@ export const agregarPago = async (formData) => {
     });
     Notify.create({
       type: "info",
-      message: "Pago creado con éxito",
+      message: response.data.mensaje || "Pago creado con éxito",
       position: "bottom",
     });
     return response.data;

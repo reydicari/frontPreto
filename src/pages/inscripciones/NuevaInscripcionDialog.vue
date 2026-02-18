@@ -76,7 +76,7 @@
                   <div class="packages-scroll" data-driver="packages-scroll" ref="packagesContainer">
                     <div v-for="(pkg, i) in visiblePaquetes" :key="pkg.id" class="package-item" :data-pkg-id="pkg.id"
                       :style="{ animationDelay: (i * 60) + 'ms' }"
-                      :class="{ recommended: recommendationReason(pkg) !== null, selected: localInscripcion.id_paquete === pkg.id, taken: studentPackageIds.includes(pkg.id), overlap: hasHorarioOverlap(pkg) }">
+                      :class="{ recommended: recommendationReason(pkg) !== null, selected: localInscripcion.id_paquete === pkg.id, taken: studentPackageIds.includes(pkg.id), overlap: hasHorarioOverlap(pkg), 'sin-cupo': pkg.disponible != null && pkg.disponible <= 0 }">
                       <q-card class="q-mb-sm" clickable @click.stop.prevent="selectPackage(pkg)"
                         :bordered="localInscripcion.id_paquete === pkg.id">
                         <q-card-section>
@@ -108,7 +108,7 @@
                               </q-badge>
                               <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                              }} disponibles</span>
+                                }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>
@@ -145,9 +145,13 @@
                 </div>
               </div>
               <div class="col-12 col-sm-4">
-                <q-input v-if="!inscripcionIndefinida" v-model="localInscripcion.meses_duracion"
-                  label="Duración en meses *" type="number" outlined dense min="1"
-                  :rules="[val => !!val || 'Campo requerido']" />
+                <q-input v-if="!inscripcionIndefinida" v-model.number="localInscripcion.meses_duracion"
+                  label="Duración en meses *" type="number" outlined dense min="1" max="36" :rules="[
+                    val => !!val || 'Campo requerido',
+                    val => val > 0 || 'Debe ser mayor a 0',
+                    val => val <= 36 || 'No puede superar 36 meses',
+                    val => Number.isInteger(Number(val)) || 'Debe ser un número entero'
+                  ]" />
               </div>
             </div>
           </div>
@@ -168,16 +172,20 @@
 
           <div class="q-mt-md dialog-content">
             <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-4">
-                <q-input v-model="nuevoPago.monto" label="Monto total" type="number" prefix="$" outlined dense readonly
+              <div class="col-12 col-sm-3">
+                <q-input v-model.number="nuevoPago.monto" label="Monto total" type="number" prefix="$" outlined dense
                   :rules="[val => val > 0 || 'Monto debe ser positivo']" />
               </div>
-              <div class="col-12 col-sm-4" v-if="localInscripcion.fecha_fin">
-                <q-input v-model="nuevoPago.meses_cubiertos" label="Meses cubiertos" type="number" outlined dense
-                  readonly :rules="[val => val > 0 || 'Debe cubrir al menos 1 mes']" />
+              <div class="col-12 col-sm-3">
+                <q-input v-model.number="nuevoPago.descuento" label="Descuento" type="number" prefix="$" outlined dense
+                  :rules="[val => val >= 0 || 'Descuento no puede ser negativo']" />
               </div>
-              <div class="col-12 col-sm-4">
-                <q-select v-model="nuevoPago.metodo_pago" :options="metodosPago" label="Método de pago *" outlined dense
+              <div class="col-12 col-sm-3">
+                <q-input v-model="fechaHasta" label="Hasta" type="date" outlined dense readonly />
+              </div>
+              <div class="col-12 col-sm-3">
+                <q-select v-model="nuevoPago.id_metodo" :options="metodosPagoOptions" option-label="nombre"
+                  option-value="id" emit-value map-options label="Método de pago *" outlined dense
                   :rules="[val => !!val || 'Seleccione método']" />
               </div>
               <div class="col-12">
@@ -206,13 +214,16 @@
 import { ref, computed, watch, onMounted, reactive, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 
-import { listar } from 'src/stores/persona-store.js'
+import { agregar, listar } from 'src/stores/persona-store.js'
 import { listarPaquetes } from 'src/stores/paquete-store'
 import { listarNiveles } from 'src/stores/nivel'
 import { listar as listarInscripciones } from 'src/stores/inscripcion-store'
+import { listarMetodos as listarMetodosPago } from 'src/stores/metodo-pago-store'
 import useDrive from 'src/composables/useDrive'
 import PersonaDialog from "pages/estudiantes/PersonaDialog.vue";
 import { agregarIscripcionPersona } from 'src/stores/inscripcion-store';
+import { agregarPago } from 'src/stores/pago_store'
+import { currentUser } from 'src/composables/auxiliares'
 
 const $q = useQuasar()
 
@@ -276,15 +287,19 @@ const localInscripcion = reactive({
 })
 
 const nuevoPago = ref({
-  monto: 90,
-  meses_cubiertos: 1,
-  metodo_pago: 'Efectivo',
+  monto: 100,
+  descuento: 0,
+  id_metodo: 1,
   detalle: '',
   estado: 1,
-  fecha: new Date().toISOString().split('T')[0],
-  usuario_cobrador: 'angel1',
+  fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
+  id_usuario_recibe: currentUser()?.id || null,
   id_categoria: 1,
-  id_inscripcion: null
+})
+
+const fechaHasta = computed(() => {
+  if (!localInscripcion.fecha_inicio || !localInscripcion.meses_duracion) return ''
+  return sumarMesesFecha(localInscripcion.fecha_inicio, localInscripcion.meses_duracion)
 })
 
 const nuevoEstudiante = ref({
@@ -305,7 +320,12 @@ const nuevoEstudiante = ref({
 
 const stepPago = () => {
   // Validar que haya un estudiante seleccionado y una fecha de inicio
-  const estudianteOk = selectedEstudiante.value && (selectedEstudiante.value.id || selectedEstudiante.value.id_persona)
+  const estudianteOk = selectedEstudiante.value && (
+    selectedEstudiante.value.id ||
+    selectedEstudiante.value.id_persona ||
+    selectedEstudiante.value.ci ||
+    selectedEstudiante.value.nombres
+  )
   const fechaOk = !!localInscripcion.fecha_inicio
   const nivelOk = !!localInscripcion.id_nivel
   const paqueteOk = !!localInscripcion.id_paquete
@@ -373,7 +393,7 @@ const sumarMesesFecha = (fechaI, meses) => {
   return `${anio}-${mes}-${dia}`;
 }
 // Opciones para selects
-const metodosPago = ['Efectivo', 'Transferencia', 'Tarjeta', 'Depósito', 'Otro']
+const metodosPagoOptions = ref([])
 const estudiantesOptions = ref([])
 const allEstudiantes = ref([])
 const paquetesAvailable = ref([])
@@ -537,8 +557,7 @@ watch(selectedEstudiante, (newVal) => {
 // Calcular monto total automáticamente
 watch(() => localInscripcion.meses_duracion, (newVal) => {
   if (newVal && !inscripcionIndefinida.value) {
-    nuevoPago.value.meses_cubiertos = newVal
-    nuevoPago.value.monto = 90 * newVal
+    nuevoPago.value.monto = 100 * newVal
   }
 })
 
@@ -555,9 +574,21 @@ async function loadNiveles() {
   }
 }
 
+// Cargar métodos de pago
+async function loadMetodosPago() {
+  try {
+    const metodos = await listarMetodosPago()
+    metodosPagoOptions.value = Array.isArray(metodos) ? metodos : (metodos?.data || [])
+  } catch (err) {
+    console.error('Error cargando métodos de pago', err)
+    metodosPagoOptions.value = []
+  }
+}
+
 onMounted(async () => {
   await loadOptions()
   await loadPaquetes()
+  await loadMetodosPago()
   // attach the tour icon listener if available
   try {
     const { attachToIconInscripcion } = useDrive()
@@ -679,11 +710,13 @@ function hasHorarioOverlap(pkg) {
   return false
 }
 
-// Si un paquete puede seleccionarse: no está ya tomado y no tiene solapamiento
+// Si un paquete puede seleccionarse: no está ya tomado, no tiene solapamiento y tiene cupo disponible
 function isPackageSelectable(pkg) {
   if (!pkg) return false
   if (studentPackageIds.value && studentPackageIds.value.includes(pkg.id)) return false
   if (hasHorarioOverlap(pkg)) return false
+  // Verificar que tenga cupo disponible
+  if (pkg.disponible != null && pkg.disponible <= 0) return false
   return true
 }
 
@@ -702,7 +735,12 @@ function selectPackage(pkg) {
     return
   }
   // No permitir seleccionar paquetes antes de tener un estudiante (seleccionado o creado)
-  const estudianteOk = selectedEstudiante.value && (selectedEstudiante.value.id || selectedEstudiante.value.id_persona)
+  const estudianteOk = selectedEstudiante.value && (
+    selectedEstudiante.value.id ||
+    selectedEstudiante.value.id_persona ||
+    selectedEstudiante.value.ci ||
+    selectedEstudiante.value.nombres
+  )
   if (!estudianteOk) {
     $q.notify({ type: 'negative', message: 'Seleccione o cree un estudiante antes de elegir un paquete.' })
     try {
@@ -712,10 +750,12 @@ function selectPackage(pkg) {
     }
     return
   }
-  // impedir selección si no es selectable (ya inscrito o solapamiento)
+  // impedir selección si no es selectable (ya inscrito, solapamiento o sin cupo)
   if (!isPackageSelectable(pkg)) {
     if (studentPackageIds.value && studentPackageIds.value.includes(pkg.id)) {
       $q.notify({ type: 'negative', message: 'El estudiante seleccionado ya está inscrito en este paquete.' })
+    } else if (pkg.disponible != null && pkg.disponible <= 0) {
+      $q.notify({ type: 'negative', message: 'No se puede seleccionar este paquete porque no tiene cupo disponible.' })
     } else {
       const overlapping = hasHorarioOverlap(pkg)
       if (overlapping) {
@@ -991,9 +1031,9 @@ async function saveInscripcion() {
   try {
     const inscripcionData = {
       ...localInscripcion,
-      fecha_fin: inscripcionIndefinida.value ? null : calculateEndDate(),
-      pago: registrarPago.value ? { ...nuevoPago.value } : null
+      fecha_fin: inscripcionIndefinida.value ? null : calculateEndDate()
     }
+
     // Calcular estado: si la fecha de inicio es posterior a hoy => 2 (sin comenzar), sino 1 (en marcha)
     try {
       const today = new Date()
@@ -1019,14 +1059,31 @@ async function saveInscripcion() {
       }
       resp = await agregarIscripcionPersona(inscripcionData)
     } else {
-      StudentToCreate.value.append('inscripcion', JSON.stringify(inscripcionData))
+      // StudentToCreate.value.append('inscripcion', JSON.stringify(inscripcionData))
       inscripcionData.persona = selectedEstudiante.value
-      // await agregarIscripcionNormal(inscripcionData) StudentToCreate.value.get('persona')
-      console.log('INSCRIPCION CON ESTUDIANTE CREADO: ', inscripcionData);
+      console.log('INSCRIPCION CREADO: ', inscripcionData);
+
+      const respPersona = await agregar(StudentToCreate.value);
+      console.log('RESPUESTA CREAR PERSONA: ', respPersona);
+      inscripcionData.id_persona = respPersona.nuevaPersona.id
+      resp = await agregarIscripcionPersona(inscripcionData)
+      console.log('resultado de nueva inscripcion');
+
     }
 
     // Verificar que la respuesta sea exitosa antes de continuar
     if (resp && resp.ok) {
+      // Solo agregar pago si inscripcionIndefinida está DESACTIVADO (false)
+      if (!inscripcionIndefinida.value && registrarPago.value) {
+        const fd = new FormData()
+        fd.append('pagoObj', JSON.stringify({
+          id_categoria: 1,
+          id_persona: inscripcionData.id_persona,
+          id_inscripcion: resp.id_inscripcion,
+          ...nuevoPago.value
+        }))
+        await agregarPago(fd)
+      }
       // refrescar lista de inscripciones del estudiante para actualizar badges
       try {
         const pid = localInscripcion.id_persona || (selectedEstudiante.value && selectedEstudiante.value.id)
@@ -1079,10 +1136,14 @@ function resetForm() {
     estado: 1
   })
   nuevoPago.value = {
-    monto: 0,
-    meses_cubiertos: 1,
-    metodo_pago: 'Efectivo',
-    detalle: ''
+    monto: 100,
+    descuento: 0,
+    id_metodo: 1,
+    detalle: '',
+    estado: 1,
+    fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    id_usuario_recibe: currentUser()?.id,
+    id_categoria: 1,
   }
   // Resetear estudiante seleccionado
   selectedEstudiante.value = {}
@@ -1556,8 +1617,14 @@ function calculateMonthsDuration(startDate, endDate) {
   pointer-events: auto;
 }
 
-.package-item.taken {
-  /* permitir scroll en el contenedor; la card mostrará visualmente que está tomada */
+/* Paquetes sin cupo disponible: apariencia deshabilitada */
+.package-item.sin-cupo .q-card {
+  opacity: 0.5;
+  filter: grayscale(0.9) brightness(0.95);
+  border-color: #bdbdbd !important;
+  /* permitir click para que el usuario reciba el notify explicando por qué no puede seleccionar */
+  pointer-events: auto;
+  cursor: not-allowed;
 }
 
 /* Estilo para paquetes con solapamiento: borde naranja para indicar conflicto */

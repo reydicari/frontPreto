@@ -42,7 +42,7 @@ export const agregar = async (formData) => {
     const response = await api.post(URL_PART + "/agregar", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.log("error en el store", error.response.data.error);
     return error.response;
