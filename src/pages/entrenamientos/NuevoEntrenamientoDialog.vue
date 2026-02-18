@@ -36,41 +36,48 @@
               </template>
             </q-input>
 
-            <q-select v-model="local.id_ubicacion" :options="ubicacionesFormateadas" option-label="label"
-              option-value="value" label="Ubicación" outlined class="col-12 col-md-6" emit-value map-options
-              :rules="[v => !!v || 'Ubicación requerida']" ref="ubicacionRef">
-              <template v-slot:prepend>
-                <q-icon name="place" color="green-8" />
-              </template>
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>{{ scope.opt.nombre }}</q-item-label>
-                    <q-item-label caption>
-                      Capacidad: {{ scope.opt.capacidad }} • {{ scope.opt.equipado ? 'Equipado' : 'No equipado' }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+            <div class="col-12 col-md-6">
+              <q-select v-model="local.id_ubicacion" :options="ubicacionesFormateadas" option-label="label"
+                option-value="value" label="Ubicación" outlined emit-value map-options
+                :rules="[v => !!v || 'Ubicación requerida']" ref="ubicacionRef">
+                <template v-slot:prepend>
+                  <q-icon name="place" color="green-8" />
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.nombre }}</q-item-label>
+                      <q-item-label caption>
+                        Capacidad: {{ scope.opt.capacidad }} • {{ scope.opt.equipado ? 'Equipado' : 'No equipado' }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
 
-            <q-input v-model="local.fecha_fin" label="Fecha de Fin (Opcional)" type="date" outlined
-              class="col-12 col-md-6" :rules="[validarFechaFin]" ref="fechaFinRef"
-              :hint="local.fecha_fin ? 'Fecha de fin configurada' : 'Sin fecha fin: entrenamiento indefinido'">
-              <template v-slot:prepend>
-                <q-icon name="event_available" color="orange-7" />
-              </template>
-            </q-input>
-
-            <div class="col-12">
               <q-input v-model="local.observacion" label="Observaciones" type="textarea" outlined
-                :rules="[validarObservacion]" counter maxlength="100" hint="Máximo 100 palabras" rows="3">
+                :rules="[validarObservacion]" counter maxlength="100" hint="Máximo 100 palabras" rows="3"
+                class="q-mt-md">
                 <template v-slot:prepend>
                   <q-icon name="description" color="green-8" />
                 </template>
               </q-input>
             </div>
 
+            <div class="col-12 col-md-6">
+              <div class="duracion-field">
+                <div class="duracion-label">
+                  <q-icon name="schedule" color="green-8" size="20px" class="q-mr-xs" />
+                  <span>Duración</span>
+                </div>
+                <div class="duracion-buttons">
+                  <q-btn v-for="opcion in opcionesDuracion" :key="opcion.value"
+                    :outline="duracionSeleccionada !== opcion.value" :unelevated="duracionSeleccionada === opcion.value"
+                    :color="duracionSeleccionada === opcion.value ? 'orange-7' : 'grey-6'" :label="opcion.label"
+                    @click="seleccionarDuracion(opcion.value)" size="sm" class="duracion-btn" />
+                </div>
+              </div>
+            </div>
 
             <!-- usuario_cancela es gestionado automáticamente al cancelar; no se muestra aquí -->
 
@@ -272,7 +279,6 @@ const packagesContainer = ref(null)
 const formRef = ref(null)
 const nombreRef = ref(null)
 const fechaInicioRef = ref(null)
-const fechaFinRef = ref(null)
 const ubicacionRef = ref(null)
 const mostrarErrorPaquete = ref(false)
 // Stepper
@@ -302,18 +308,29 @@ const ubicacionesFormateadas = computed(() => {
 })
 
 const defaultStart = new Date().toISOString().split('T')[0]
-function addMonthsStr(dateStr, months) { const d = new Date(dateStr); d.setMonth(d.getMonth() + months); return d.toISOString().split('T')[0] }
 
 const local = ref({
   id: null,
   nombre: '',
   estado: 1,
   fecha_inicio: defaultStart,
-  fecha_fin: '', // Iniciar vacío para permitir entrenamientos indefinidos
+  fecha_fin: null, // null para indefinido por defecto
   observacion: '',
   id_paquete: null,
   id_ubicacion: null
 })
+
+// Opciones de duración
+const opcionesDuracion = [
+  { label: '1 mes', value: 1 },
+  { label: '2 meses', value: 2 },
+  { label: '6 meses', value: 6 },
+  { label: '1 año', value: 12 },
+  { label: 'Indefinido', value: null }
+]
+
+// Duración seleccionada (null = indefinido por defecto)
+const duracionSeleccionada = ref(null)
 
 const isEdit = ref(!!props.training && !!props.training.id)
 
@@ -346,24 +363,28 @@ watch(() => props.training, (t) => {
       id: t.id ?? null,
       nombre: t.nombre || '',
       fecha_inicio: t.fecha_inicio || defaultStart,
-      fecha_fin: t.fecha_fin || addMonthsStr(t.fecha_inicio || defaultStart, 6),
+      fecha_fin: t.fecha_fin || null,
       observacion: t.observacion || '',
       id_paquete: (t.id_paquete && (t.id_paquete.id ?? t.id_paquete)) || null,
       id_ubicacion: (t.id_ubicacion && (t.id_ubicacion.id ?? t.id_ubicacion)) || (ubicacionesList.value.find(u => u.nombre === 'PETROAMBIENTAL')?.id ?? null),
-      estado: t.estado ?? 1 // Usar el estado existente o 1 por defecto
+      estado: t.estado ?? 1
     }
+    // Detectar duración en modo edición
+    duracionSeleccionada.value = detectarDuracionDesdeEntrenamiento(t.fecha_inicio, t.fecha_fin)
   } else {
     // nuevo
     local.value = {
       id: null,
       nombre: '',
       fecha_inicio: defaultStart,
-      fecha_fin: '', // Iniciar vacío para permitir entrenamientos indefinidos
+      fecha_fin: null,
       observacion: '',
       id_paquete: null,
       id_ubicacion: (ubicacionesList.value.find(u => u.nombre === 'PETROAMBIENTAL')?.id ?? null),
-      estado: 1 // Estado por defecto: Activo
+      estado: 1
     }
+    // Por defecto: indefinido
+    duracionSeleccionada.value = null
   }
 }, { immediate: true })
 
@@ -581,26 +602,68 @@ function validarObservacion(val) {
   return true
 }
 
-function validarFechaFin(val) {
-  if (!val) return true // Fecha fin es opcional
+// Función para seleccionar duración y calcular fecha_fin
+function seleccionarDuracion(meses) {
+  duracionSeleccionada.value = meses
 
-  if (!local.value.fecha_inicio) {
-    return 'Debe establecer primero la fecha de inicio'
+  if (meses === null) {
+    // Indefinido
+    local.value.fecha_fin = null
+  } else {
+    // Calcular fecha_fin sumando los meses
+    if (local.value.fecha_inicio) {
+      const fechaInicio = new Date(local.value.fecha_inicio)
+      const fechaFin = new Date(fechaInicio)
+      fechaFin.setMonth(fechaFin.getMonth() + meses)
+      local.value.fecha_fin = fechaFin.toISOString().split('T')[0]
+    }
   }
-
-  const fechaInicio = new Date(local.value.fecha_inicio)
-  const fechaFin = new Date(val)
-
-  // Calcular fecha mínima (1 mes después de fecha inicio)
-  const fechaMinima = new Date(fechaInicio)
-  fechaMinima.setMonth(fechaMinima.getMonth() + 1)
-
-  if (fechaFin < fechaMinima) {
-    return 'La fecha fin debe ser al menos 1 mes después de la fecha de inicio'
-  }
-
-  return true
 }
+
+// Función para detectar duración en modo edición
+function detectarDuracionDesdeEntrenamiento(fechaInicio, fechaFin) {
+  if (!fechaFin) {
+    return null // Indefinido
+  }
+
+  if (!fechaInicio) {
+    return null
+  }
+
+  const inicio = new Date(fechaInicio)
+  const fin = new Date(fechaFin)
+
+  // Calcular diferencia en meses
+  const diffYears = fin.getFullYear() - inicio.getFullYear()
+  const diffMonths = fin.getMonth() - inicio.getMonth()
+  const totalMeses = diffYears * 12 + diffMonths
+
+  // Buscar la opción más cercana
+  const opcionesConValor = opcionesDuracion.filter(op => op.value !== null)
+  let mejorOpcion = null
+  let menorDiferencia = Infinity
+
+  for (const opcion of opcionesConValor) {
+    const diferencia = Math.abs(opcion.value - totalMeses)
+    if (diferencia < menorDiferencia) {
+      menorDiferencia = diferencia
+      mejorOpcion = opcion.value
+    }
+  }
+
+  return mejorOpcion
+}
+
+// Watch para recalcular fecha_fin cuando cambia fecha_inicio
+watch(() => local.value.fecha_inicio, (nuevaFecha) => {
+  if (duracionSeleccionada.value !== null && nuevaFecha) {
+    // Recalcular fecha_fin si hay una duración seleccionada
+    const fechaInicio = new Date(nuevaFecha)
+    const fechaFin = new Date(fechaInicio)
+    fechaFin.setMonth(fechaFin.getMonth() + duracionSeleccionada.value)
+    local.value.fecha_fin = fechaFin.toISOString().split('T')[0]
+  }
+})
 
 function copiarFechasPaquete() {
   const paquete = selectedPaquete.value
@@ -1163,6 +1226,78 @@ $pastel-clay: #d7ccc8;
   }
 }
 
+/* Estilos para la sección de duración */
+.duracion-field {
+  border: 2px solid rgba($color-forest, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, $pastel-sage 0%, white 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.duracion-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: $color-forest;
+  margin-bottom: 12px;
+
+  span {
+    margin-left: 4px;
+  }
+}
+
+.duracion-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.duracion-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 70px;
+  font-weight: 600;
+  text-transform: none;
+  transition: all 0.3s ease;
+  border-width: 2px;
+  font-size: 0.8rem;
+  padding: 8px 10px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba($color-forest, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  // Botón de Indefinido con color naranja
+  &.q-btn--outline {
+    &:last-child {
+      border-color: $color-orange;
+      color: $color-orange-dark;
+
+      &:hover {
+        background: rgba($color-orange, 0.05);
+      }
+    }
+  }
+
+  // Botón seleccionado de Indefinido
+  &.q-btn--unelevated {
+    &:last-child {
+      background: linear-gradient(135deg, $color-orange 0%, $color-orange-dark 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba($color-orange, 0.3);
+    }
+  }
+}
+
 /* Responsivo */
 @media (max-width: 768px) {
   .dialog-header {
@@ -1212,6 +1347,17 @@ $pastel-clay: #d7ccc8;
   .pkg-sub {
     font-size: 0.8rem;
   }
+
+  .duracion-buttons {
+    gap: 6px;
+
+    .duracion-btn {
+      flex: 1 1 calc(50% - 3px);
+      min-width: 70px;
+      font-size: 0.75rem;
+      padding: 6px 8px;
+    }
+  }
 }
 
 @media (max-width: 599px) {
@@ -1225,6 +1371,17 @@ $pastel-clay: #d7ccc8;
     padding: 16px;
     flex: 1;
     overflow-y: auto;
+  }
+
+  .duracion-buttons {
+    gap: 4px;
+
+    .duracion-btn {
+      flex: 1 1 calc(50% - 2px);
+      min-width: 60px;
+      font-size: 0.7rem;
+      padding: 6px 4px;
+    }
   }
 
   .section-title {

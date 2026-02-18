@@ -80,7 +80,14 @@
                       <q-card class="q-mb-sm" clickable @click.stop.prevent="selectPackage(pkg)"
                         :bordered="localInscripcion.id_paquete === pkg.id">
                         <q-card-section>
-                          <div class="text-subtitle1">{{ pkg.nombre }}</div>
+                          <div class="text-subtitle1">
+                            {{ pkg.nombre }}
+                            <q-badge v-if="pkg.disciplina" color="green-7" text-color="white" class="q-ml-sm">
+                              <q-icon v-if="pkg.disciplina.icono" :name="pkg.disciplina.icono" size="14px"
+                                class="q-mr-xs" />
+                              {{ pkg.disciplina.nombre }}
+                            </q-badge>
+                          </div>
                           <div class="row items-center q-mt-xs">
                             <div class="col-auto text-caption">Inicio: {{ formatDate(pkg.fecha_inicio) || '—' }} · Fin:
                               {{

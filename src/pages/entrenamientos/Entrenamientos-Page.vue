@@ -193,7 +193,7 @@
             <q-icon name="location_on" size="18px" class="info-icon text-orange-7" />
             <span class="info-label">Ubicación:</span>
             <q-btn v-if="training.ubicacion" size="sm" dense rounded outline color="orange" class="ubicacion-btn"
-              :label="training.ubicacion.nombre" @click.stop="goToUbicacion(training.ubicacion.id)">
+              :label="training.ubicacion.nombre" @click.stop="abrirMapaUbicacion(training.ubicacion)">
               <q-tooltip>Ver en mapa</q-tooltip>
             </q-btn>
             <span v-else class="info-value">Sin ubicación</span>
@@ -230,8 +230,8 @@
             <q-tooltip>Reanudar</q-tooltip>
           </q-btn>
 
-          <q-btn class="btn-action btn-assign-coaches" round icon="person_add" @click.stop="assignCoaches(training)"
-            :disable="training.estado === -1">
+          <q-btn v-if="puedeAsignarEntrenadores(training)" class="btn-action btn-assign-coaches" round icon="person_add"
+            @click.stop="assignCoaches(training)">
             <q-tooltip>Asignar Entrenadores</q-tooltip>
           </q-btn>
 
@@ -280,6 +280,9 @@
     <!-- Diálogo para asignar entrenadores -->
     <AsignarEntrenadoresDialog v-model="assignCoachesDialog" :entrenamiento="selectedTrainingForAssign"
       :entrenamientoId="selectedTrainingForAssign?.id" @assigned="handleCoachesAssigned" />
+
+    <!-- Diálogo de mapa de ubicación -->
+    <MapaUbicacionDialog v-if="ubicacionSeleccionada" v-model="mapaDialog" :ubicacion="ubicacionSeleccionada" />
 
     <!-- Diálogo de entrenadores -->
     <q-dialog v-model="coachesDialog" :maximized="$q.screen.lt.sm">
@@ -352,10 +355,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRouter } from 'vue-router'
 import DetalleEntrenamiento from './Detalle-entrenamiento.vue'
 import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import AsignarEntrenadoresDialog from './AsignarEntrenadoresDialog.vue'
+import MapaUbicacionDialog from './MapaUbicacionDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
 import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento } from "stores/entrenamientos-store.js";
 import { listar, listarTodosEstudiantes } from 'stores/persona-store.js'
@@ -368,13 +371,56 @@ import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 const mockCoaches = ref([])
 const coachesList = ref([])
 const $q = useQuasar()
-const router = useRouter()
 const host = 'http://localhost:3001/uploads/'
 
-// Función para navegar a ubicaciones con focus
-const goToUbicacion = (id) => {
-  if (!id) return
-  router.push({ path: '/ubicaciones', query: { focus: id } })
+// Estado para el diálogo de mapa
+const mapaDialog = ref(false)
+const ubicacionSeleccionada = ref(null)
+
+// Función para abrir el mapa de ubicación
+const abrirMapaUbicacion = (ubicacion) => {
+  if (!ubicacion) {
+    console.warn('No hay ubicación para mostrar')
+    return
+  }
+
+  // Validar que la ubicacion tenga coordenadas
+  if (!ubicacion.latitud || !ubicacion.longitud) {
+    $q.notify({
+      type: 'warning',
+      message: 'Esta ubicación no tiene coordenadas configuradas',
+      position: 'top'
+    })
+    return
+  }
+
+  ubicacionSeleccionada.value = ubicacion
+  mapaDialog.value = true
+}
+
+// Limpiar ubicación seleccionada cuando se cierra el diálogo
+watch(mapaDialog, (newVal) => {
+  if (!newVal) {
+    ubicacionSeleccionada.value = null
+  }
+})
+
+// Función para verificar si se pueden asignar entrenadores
+const puedeAsignarEntrenadores = (training) => {
+  // No permitir si está suspendido (estado === 0)
+  if (training.estado === 0) return false
+
+  // No permitir si la fecha_fin es menor que hoy
+  if (training.fecha_fin) {
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    const fechaFin = new Date(training.fecha_fin)
+    fechaFin.setHours(0, 0, 0, 0)
+
+    if (fechaFin < hoy) return false
+  }
+
+  return true
 }
 
 // Paquetes / ubicaciones demo (en la app real vendrían de la API)

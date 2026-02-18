@@ -232,6 +232,12 @@
                 <span class="info-label">Grupos máx.:</span>
                 <span class="info-value">{{ persona.grupos_maximo }}</span>
               </div>
+
+              <div v-if="persona.nroEntrenamientos != null" class="info-row">
+                <q-icon name="fitness_center" size="18px" class="info-icon text-blue-7" />
+                <span class="info-label">Entrenamientos:</span>
+                <span class="info-value">{{ persona.nroEntrenamientos }}</span>
+              </div>
             </q-card-section>
 
             <q-separator />

@@ -119,7 +119,14 @@ function buildLabel(p) {
   const ap1 = (p.apellido_paterno || p.apellidos || '').trim()
   const ap2 = (p.apellido_materno || '').trim()
   const parts = [names, ap1, ap2].filter(Boolean)
-  return parts.join(' ') || (p.usuario || `#${p.id}`)
+  const fullName = parts.join(' ') || (p.usuario || `#${p.id}`)
+
+  // Agregar número de entrenamientos si existe
+  if (p.nroEntrenamientos != null && p.nroEntrenamientos !== undefined) {
+    return `${fullName} (${p.nroEntrenamientos} ${p.nroEntrenamientos === 1 ? 'entrenamiento' : 'entrenamientos'})`
+  }
+
+  return fullName
 }
 
 watch(() => props.modelValue, v => localVisible.value = v)
