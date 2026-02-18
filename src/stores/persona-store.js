@@ -3,6 +3,9 @@ const URL_PART = "/api/persona";
 import { Notify } from "quasar";
 export const listar = async (params = {}) => {
   try {
+    //fecha de hoy formato YYYY-MM-DD
+    const hoy = new Date().toISOString().split("T")[0];
+    params.hoy = hoy;
     const response = await api.get(URL_PART + `/personasTipo`, {
       params: params,
     });

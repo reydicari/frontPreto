@@ -246,11 +246,26 @@
         </q-card-actions>
       </q-card>
 
-      <div v-if="filteredTrainings.length === 0" class="col-12 text-center q-pa-xl">
+      <div v-if="filteredTrainings.length === 0 && !loading" class="col-12 text-center q-pa-xl">
         <q-icon name="fitness_center" size="64px" color="grey-5" />
         <p class="text-grey-7 q-mt-md">No se encontraron entrenamientos</p>
       </div>
     </div>
+
+    <!-- Infinite Scroll Loader -->
+    <div v-if="loadingMore" class="row justify-center q-my-md">
+      <q-spinner-dots color="primary" size="50px" />
+    </div>
+
+    <!-- No more data message -->
+    <div v-if="!hasMoreData && filteredTrainings.length > 0" class="row justify-center q-my-md">
+      <q-chip color="grey-5" text-color="white" icon="check_circle">
+        No hay más entrenamientos
+      </q-chip>
+    </div>
+
+    <!-- Scroll observer -->
+    <div ref="scrollObserver" style="height: 1px;"></div>
 
     <!-- Diálogo para crear/editar entrenamiento (componente separado) -->
     <NuevoEntrenamientoDialog v-model:modelValue="trainingDialog" :training="editMode ? currentTraining : {}"
@@ -369,6 +384,7 @@ const ubicacionesOptions = ref([])
 // Estado del componente
 const trainings = ref([])
 const loading = ref(false)
+const loadingMore = ref(false)
 const searchTerm = ref('')
 const filtersExpanded = ref(false)
 const filterDiscipline = ref(null)
@@ -384,6 +400,12 @@ const editMode = ref(false)
 const selectedTraining = ref(null)
 const selectedTrainingCoaches = ref(null)
 const selectedTrainingForAssign = ref(null)
+
+// Paginación para infinite scroll
+const page = ref(1)
+const limit = ref(12)
+const hasMoreData = ref(true)
+const scrollObserver = ref(null)
 
 // Estadísticas computadas
 // const estadisticas = computed(() => ({
@@ -428,7 +450,7 @@ const disciplineOptions = ref([])
 const statusOptions = [
   { label: 'Suspendidos', value: 0 },
   { label: 'Activos', value: 1 },
-  { label: 'Indefinidas', value: 2 },
+  { label: 'Indefinidas', value: 3 },
   // { label: 'En marcha', value: 3 },
   // { label: 'Sin comenzar', value: 4 }
 ]
@@ -439,8 +461,13 @@ const filterUbicacion = ref(null)
 // days options are handled inside the dialog component
 
 // Obtener entrenamientos desde el store
-const fetchTrainings = async () => {
-  loading.value = true
+const fetchTrainings = async (append = false) => {
+  if (append) {
+    loadingMore.value = true
+  } else {
+    loading.value = true
+  }
+
   try {
     const params = {
       search: searchTerm.value,
@@ -449,15 +476,29 @@ const fetchTrainings = async () => {
       id_ubicacion: filterUbicacion.value,
       estado: filterStatus.value,
       fecha_inicio: filterFechaInicio.value || undefined,
-      fecha_fin: filterFechaFin.value || undefined
+      fecha_fin: filterFechaFin.value || undefined,
+      page: page.value,
+      limit: limit.value
     }
 
     // Eliminar undefined
     Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
 
     const response = await listarEntrenamientos(params)
-    trainings.value = Array.isArray(response) ? response : (response?.data || [])
-    console.log("Entrenamientos ", trainings.value);
+    const newData = Array.isArray(response) ? response : (response?.data || [])
+    console.log("Entrenamientos ", newData);
+
+    // Si es append, hacer push, sino reemplazar
+    if (append) {
+      trainings.value = [...trainings.value, ...newData]
+    } else {
+      trainings.value = newData
+    }
+
+    // Verificar si hay más datos
+    if (newData.length < limit.value) {
+      hasMoreData.value = false
+    }
 
     // Normalizar entrenamientos (mapear ids a objetos de paquete/ubicacion si es necesario)
     normalizeTrainings()
@@ -470,6 +511,7 @@ const fetchTrainings = async () => {
     })
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
 }
 
@@ -584,7 +626,11 @@ const onDialogSave = async (payload) => {
     await crearEntrenamiento(trainingData)
   }
   trainingDialog.value = false
-  fetchTrainings()
+
+  // Resetear paginación y recargar
+  page.value = 1
+  hasMoreData.value = true
+  fetchTrainings(false)
 
 }
 
@@ -656,15 +702,13 @@ const assignCoaches = (training) => {
 const handleCoachesAssigned = async (asistencias) => {
   try {
     console.log('Guardando asistencias de entrenadores:', asistencias)
-    await guardarAsistencias(asistencias)
-    $q.notify({
-      type: 'positive',
-      message: 'Entrenadores asignados exitosamente',
-      icon: 'check_circle'
-    })
+    const result = await guardarAsistencias(asistencias)
+    console.log('Asistencias guardadas:', result)
     assignCoachesDialog.value = false
     // Recargar entrenamientos para reflejar los cambios
-    await fetchTrainings()
+    page.value = 1
+    hasMoreData.value = true
+    await fetchTrainings(false)
   } catch (error) {
     console.error('Error al asignar entrenadores:', error)
     $q.notify({
@@ -762,9 +806,19 @@ const getStatusLabel = (entrenamiento) => {
   return calcularEstadoReal(entrenamiento).label
 }
 
+// Cargar más entrenamientos
+const loadMore = () => {
+  if (!hasMoreData.value || loadingMore.value) return
+  page.value++
+  fetchTrainings(true)
+}
+
 // Watch filtros para recargar datos
 watch([searchTerm, filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterFechaInicio, filterFechaFin], () => {
-  fetchTrainings()
+  // Resetear paginación cuando cambian los filtros
+  page.value = 1
+  hasMoreData.value = true
+  fetchTrainings(false)
 })
 
 // Cargar datos iniciales
@@ -792,7 +846,7 @@ onMounted(async () => {
 
   // Cargar lista de entrenadores para normalizar entrenadores por id -> objeto
   try {
-    const entrenadoresResp = await listar({ tipo_persona: 'entrenador' })
+    const entrenadoresResp = await listar({ tipo_persona: 'Entrenador' })
     coachesList.value = Array.isArray(entrenadoresResp) ? entrenadoresResp : (entrenadoresResp?.data || [])
     console.log('entrensdores----------------------------', coachesList.value);
 
@@ -802,6 +856,19 @@ onMounted(async () => {
 
   // Cargar entrenamientos directamente en trainings
   fetchTrainings()
+
+  // Setup Intersection Observer para infinite scroll
+  if (scrollObserver.value) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreData.value && !loadingMore.value) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(scrollObserver.value)
+  }
 })
 
 

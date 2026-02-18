@@ -3,3 +3,8 @@ export const currentUser = () => {
   console.log("usuario actual: ", current);
   return current ? current : null;
 };
+
+export const isNotStudent = () => {
+  const savedRoleId = sessionStorage.getItem("selectedRoleId");
+  return savedRoleId !== "3";
+};

@@ -18,7 +18,7 @@
       <q-separator />
 
       <q-card-section v-if="currentStep === 1" class="dialog-content">
-        <q-form @submit.prevent="onSave" class="q-gutter-md" ref="formRef">
+        <q-form @submit.prevent="onSaveDirecto" class="q-gutter-md" ref="formRef">
           <div class="row q-col-gutter-md">
             <q-input v-model="local.nombre" label="Nombre del Entrenamiento" outlined class="col-12 col-md-6">
               <template v-slot:prepend>
@@ -145,8 +145,8 @@
         </q-form>
       </q-card-section>
 
-      <!-- Paso 2: selección de entrenadores -->
-      <q-card-section v-if="currentStep === 2" class="dialog-content">
+      <!-- Paso 2: selección de entrenadores (TEMPORALMENTE COMENTADO) -->
+      <!-- <q-card-section v-if="currentStep === 2" class="dialog-content">
         <div class="section-header q-mb-md">
           <div class="section-title">
             <q-icon name="group" size="28px" class="q-mr-sm" color="orange-7" />
@@ -163,7 +163,6 @@
             <q-td :props="props">{{ calcularEdad(props.row.fecha_nacimiento) }}</q-td>
           </template>
 
-          <!-- Vista grid para móviles -->
           <template v-slot:item="props">
             <div class="q-pa-xs col-12">
               <q-card flat bordered class="coach-mobile-card" @click="toggleCoachSelection(props.row)"
@@ -193,13 +192,19 @@
             </div>
           </template>
         </q-table>
-      </q-card-section>
+      </q-card-section> -->
 
       <q-separator />
 
       <!-- Stepper actions -->
       <q-card-actions align="right" class="dialog-actions">
         <q-btn flat label="Cancelar" color="brown-7" icon="close" @click="onCancel" class="btn-cancel" />
+
+        <!-- Botón de guardar directo (sin paso 2) -->
+        <q-btn unelevated label="Guardar Entrenamiento" color="primary" class="btn-save" icon="save"
+          @click="onSaveDirecto" />
+
+        <!-- TEMPORALMENTE COMENTADO: Navegación entre steps
         <q-btn v-if="currentStep === 1" unelevated label="Siguiente" color="primary" class="btn-next"
           icon-right="arrow_forward" @click="goToStep2">
           <q-icon name="sports_martial_arts" size="18px" class="q-mr-xs" />
@@ -209,6 +214,7 @@
           <q-btn unelevated label="Guardar Entrenamiento" color="primary" class="btn-save" icon="save"
             @click="onSave" />
         </div>
+        -->
       </q-card-actions>
     </q-card>
 
@@ -246,7 +252,8 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { listarPaquetes } from 'src/stores/paquete-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
-import { listar } from 'src/stores/persona-store'
+// TEMPORALMENTE COMENTADO: Import para el paso 2 de entrenadores
+// import { listar } from 'src/stores/persona-store'
 
 const $q = useQuasar()
 
@@ -271,17 +278,17 @@ const mostrarErrorPaquete = ref(false)
 // Stepper
 const currentStep = ref(1)
 
-// Entrenadores (paso 2)
-const entrenadoresList = ref([])
-const loadingCoaches = ref(false)
-const selectedCoaches = ref([])
-const coachColumns = [
-  { name: 'nombres', label: 'Nombres', field: row => `${row.nombres}` },
-  { name: 'apellido_paterno', label: 'Apellido Paterno', field: 'apellido_paterno' },
-  { name: 'apellido_materno', label: 'Apellido Materno', field: 'apellido_materno' },
-  { name: 'telefono', label: 'Teléfono', field: 'telefono' },
-  { name: 'edad', label: 'Edad', field: 'fecha_nacimiento' }
-]
+// TEMPORALMENTE COMENTADO: Variables del paso 2 de entrenadores
+// const entrenadoresList = ref([])
+// const loadingCoaches = ref(false)
+// const selectedCoaches = ref([])
+// const coachColumns = [
+//   { name: 'nombres', label: 'Nombres', field: row => `${row.nombres}` },
+//   { name: 'apellido_paterno', label: 'Apellido Paterno', field: 'apellido_paterno' },
+//   { name: 'apellido_materno', label: 'Apellido Materno', field: 'apellido_materno' },
+//   { name: 'telefono', label: 'Teléfono', field: 'telefono' },
+//   { name: 'edad', label: 'Edad', field: 'fecha_nacimiento' }
+// ]
 
 // Computed para formatear ubicaciones para el select
 const ubicacionesFormateadas = computed(() => {
@@ -343,7 +350,7 @@ watch(() => props.training, (t) => {
       observacion: t.observacion || '',
       id_paquete: (t.id_paquete && (t.id_paquete.id ?? t.id_paquete)) || null,
       id_ubicacion: (t.id_ubicacion && (t.id_ubicacion.id ?? t.id_ubicacion)) || (ubicacionesList.value.find(u => u.nombre === 'PETROAMBIENTAL')?.id ?? null),
-      estado: computeEstado(t.fecha_inicio || defaultStart, t.fecha_fin || addMonthsStr(t.fecha_inicio || defaultStart, 6))
+      estado: t.estado ?? 1 // Usar el estado existente o 1 por defecto
     }
   } else {
     // nuevo
@@ -355,35 +362,33 @@ watch(() => props.training, (t) => {
       observacion: '',
       id_paquete: null,
       id_ubicacion: (ubicacionesList.value.find(u => u.nombre === 'PETROAMBIENTAL')?.id ?? null),
-      estado: computeEstado(defaultStart, '')
+      estado: 1 // Estado por defecto: Activo
     }
   }
 }, { immediate: true })
 
-// Si vienen entrenadores en props.training, preseleccionarlos (acepta ids o objetos)
-watch(() => props.training, async (t) => {
-  if (t && Array.isArray(t.entrenadores) && t.entrenadores.length) {
-    // ensure coaches list is loaded
-    await loadEntrenadores()
-    const sel = []
-    for (const e of t.entrenadores) {
-      if (e && typeof e === 'object') {
-        const found = entrenadoresList.value.find(x => String(x.id) === String(e.id))
-        sel.push(found || e)
-      } else {
-        const found = entrenadoresList.value.find(x => String(x.id) === String(e))
-        if (found) sel.push(found)
-        else sel.push({ id: e })
-      }
-    }
-    selectedCoaches.value = sel
-    // also keep the local model in sync with full objects
-    local.value.entrenadores = sel
-  } else {
-    selectedCoaches.value = []
-    local.value.entrenadores = []
-  }
-}, { immediate: true })
+// Si vienen entrenadores en props.training, preseleccionarlos (TEMPORALMENTE COMENTADO)
+// watch(() => props.training, async (t) => {
+//   if (t && Array.isArray(t.entrenadores) && t.entrenadores.length) {
+//     await loadEntrenadores()
+//     const sel = []
+//     for (const e of t.entrenadores) {
+//       if (e && typeof e === 'object') {
+//         const found = entrenadoresList.value.find(x => String(x.id) === String(e.id))
+//         sel.push(found || e)
+//       } else {
+//         const found = entrenadoresList.value.find(x => String(x.id) === String(e))
+//         if (found) sel.push(found)
+//         else sel.push({ id: e })
+//       }
+//     }
+//     selectedCoaches.value = sel
+//     local.value.entrenadores = sel
+//   } else {
+//     selectedCoaches.value = []
+//     local.value.entrenadores = []
+//   }
+// }, { immediate: true })
 
 // Cargar paquetes desde el store y popular el carrusel
 async function loadPaquetes() {
@@ -418,80 +423,126 @@ async function loadUbicaciones() {
   }
 }
 
-// Helpers para selección de coaches en móvil
-function isCoachSelected(coach) {
-  return selectedCoaches.value.some(c => c.id === coach.id)
-}
-
-function toggleCoachSelection(coach) {
-  const index = selectedCoaches.value.findIndex(c => c.id === coach.id)
-  if (index > -1) {
-    selectedCoaches.value.splice(index, 1)
-  } else {
-    selectedCoaches.value.push(coach)
-  }
-}
-
 onMounted(() => {
   loadPaquetes()
   loadUbicaciones()
   // no cargamos entrenadores de inicio; se cargan al pasar al paso 2
 })
 
-// Cargar entrenadores
-async function loadEntrenadores() {
-  loadingCoaches.value = true
-  try {
-    // algunos lugares usan listar('entrenador') pasando un string
-    const res = await listar({ tipo_persona: 'entrenador' })
-    entrenadoresList.value = Array.isArray(res) ? res : (res?.data || [])
-  } catch (e) {
-    console.error('Error cargando entrenadores:', e)
-    entrenadoresList.value = []
-  } finally {
-    loadingCoaches.value = false
-  }
-}
+// TEMPORALMENTE COMENTADO: Funciones del paso 2 de entrenadores
+// async function loadEntrenadores() {
+//   loadingCoaches.value = true
+//   try {
+//     const res = await listar({ tipo_persona: 'entrenador' })
+//     entrenadoresList.value = Array.isArray(res) ? res : (res?.data || [])
+//   } catch (e) {
+//     console.error('Error cargando entrenadores:', e)
+//     entrenadoresList.value = []
+//   } finally {
+//     loadingCoaches.value = false
+//   }
+// }
 
-// Calcular edad desde fecha de nacimiento (YYYY-MM-DD o ISO)
-function calcularEdad(fechaNacimiento) {
-  if (!fechaNacimiento) return ''
-  const hoy = new Date()
-  const nacimiento = new Date(fechaNacimiento)
-  let edad = hoy.getFullYear() - nacimiento.getFullYear()
-  const m = hoy.getMonth() - nacimiento.getMonth()
-  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-    edad--
-  }
-  return edad
-}
+// function calcularEdad(fechaNacimiento) {
+//   if (!fechaNacimiento) return ''
+//   const hoy = new Date()
+//   const nacimiento = new Date(fechaNacimiento)
+//   let edad = hoy.getFullYear() - nacimiento.getFullYear()
+//   const m = hoy.getMonth() - nacimiento.getMonth()
+//   if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+//     edad--
+//   }
+//   return edad
+// }
 
-// Ir al paso 2 validando primero el paso 1
-async function goToStep2() {
+// function isCoachSelected(coach) {
+//   return selectedCoaches.value.some(c => c.id === coach.id)
+// }
+
+// function toggleCoachSelection(coach) {
+//   const index = selectedCoaches.value.findIndex(c => c.id === coach.id)
+//   if (index > -1) {
+//     selectedCoaches.value.splice(index, 1)
+//   } else {
+//     selectedCoaches.value.push(coach)
+//   }
+// }
+
+// TEMPORALMENTE COMENTADO: Ir al paso 2 validando primero el paso 1
+// async function goToStep2() {
+//   mostrarErrorPaquete.value = false
+
+//   // Validar nombre
+//   if (!local.value.nombre || local.value.nombre.trim() === '') {
+//     $q.notify({ type: 'negative', message: 'El nombre es requerido' })
+//     if (nombreRef.value) nombreRef.value.validate()
+//     return
+//   }
+
+//   const isFormValid = formRef.value?.validate()
+//   if (!isFormValid) {
+//     $q.notify({ type: 'negative', message: 'Por favor completa todos los campos requeridos' })
+//     return
+//   }
+
+//   if (!local.value.id_paquete) {
+//     mostrarErrorPaquete.value = true
+//     $q.notify({ type: 'negative', message: 'El paquete es requerido' })
+//     return
+//   }
+
+//   // cargar entrenadores y cambiar a paso 2
+//   await loadEntrenadores()
+//   currentStep.value = 2
+// }
+
+// Guardar directamente sin paso 2 (validando campos requeridos)
+function onSaveDirecto() {
   mostrarErrorPaquete.value = false
 
   // Validar nombre
   if (!local.value.nombre || local.value.nombre.trim() === '') {
-    $q.notify({ type: 'negative', message: 'El nombre es requerido' })
+    $q.notify({ type: 'negative', message: 'El nombre del entrenamiento es requerido' })
     if (nombreRef.value) nombreRef.value.validate()
     return
   }
 
-  const isFormValid = formRef.value?.validate()
-  if (!isFormValid) {
-    $q.notify({ type: 'negative', message: 'Por favor completa todos los campos requeridos' })
+  // Validar fecha de inicio
+  if (!local.value.fecha_inicio) {
+    $q.notify({ type: 'negative', message: 'La fecha de inicio es requerida' })
+    if (fechaInicioRef.value) fechaInicioRef.value.validate()
     return
   }
 
+  // Validar paquete
   if (!local.value.id_paquete) {
     mostrarErrorPaquete.value = true
-    $q.notify({ type: 'negative', message: 'El paquete es requerido' })
+    $q.notify({ type: 'negative', message: 'Debe seleccionar un paquete' })
     return
   }
 
-  // cargar entrenadores y cambiar a paso 2
-  await loadEntrenadores()
-  currentStep.value = 2
+  // Validar formulario completo
+  const isFormValid = formRef.value?.validate()
+  if (!isFormValid) {
+    $q.notify({ type: 'negative', message: 'Por favor completa todos los campos requeridos correctamente' })
+    return
+  }
+
+  // Calcular estado automáticamente
+  local.value.estado = computeEstado()
+
+  // Preparar payload sin entrenadores (se asignarán después si es necesario)
+  const payload = { ...local.value }
+  payload.entrenadores = [] // Sin entrenadores por ahora
+  payload.entrenadores_obj = []
+  delete payload.usuario_cancela
+
+  emit('save', payload)
+  modelValue.value = false
+
+  // Resetear estado interno
+  currentStep.value = 1
+  // selectedCoaches.value = [] // COMENTADO: relacionado con paso 2
 }
 
 
@@ -576,37 +627,38 @@ function computeEstado() {
   return 2
 }
 
-function onSave() {
-  // Si estamos en el paso 1 y llaman a guardar, llevar al paso 2
-  if (currentStep.value === 1) {
-    goToStep2()
-    return
-  }
+// TEMPORALMENTE COMENTADO: Función onSave original con paso 2
+// function onSave() {
+//   // Si estamos en el paso 1 y llaman a guardar, llevar al paso 2
+//   if (currentStep.value === 1) {
+//     goToStep2()
+//     return
+//   }
 
-  // --- Estamos en el paso 2: finalizar sin volver a validar el formulario del paso 1 ---
-  // Resetear errores visuales (por si acaso)
-  mostrarErrorPaquete.value = false
+//   // --- Estamos en el paso 2: finalizar sin volver a validar el formulario del paso 1 ---
+//   // Resetear errores visuales (por si acaso)
+//   mostrarErrorPaquete.value = false
 
-  // Calcular estado automáticamente antes de emitir
-  local.value.estado = computeEstado()
+//   // Calcular estado automáticamente antes de emitir
+//   local.value.estado = computeEstado()
 
-  // Preparar payload. Los entrenadores son opcionales — puede ser vacío.
-  // sincronizar local.entrenadores con la selección actual (objetos)
-  local.value.entrenadores = (selectedCoaches.value || []).map(c => ({ ...c }))
-  const payload = { ...local.value }
-  // ids para backend
-  payload.entrenadores = (selectedCoaches.value || []).map(c => c.id || c)
-  // incluir objetos completos para uso en la UI/lista local
-  payload.entrenadores_obj = (selectedCoaches.value || []).map(c => ({ ...c }))
-  delete payload.usuario_cancela
+//   // Preparar payload. Los entrenadores son opcionales — puede ser vacío.
+//   // sincronizar local.entrenadores con la selección actual (objetos)
+//   local.value.entrenadores = (selectedCoaches.value || []).map(c => ({ ...c }))
+//   const payload = { ...local.value }
+//   // ids para backend
+//   payload.entrenadores = (selectedCoaches.value || []).map(c => c.id || c)
+//   // incluir objetos completos para uso en la UI/lista local
+//   payload.entrenadores_obj = (selectedCoaches.value || []).map(c => ({ ...c }))
+//   delete payload.usuario_cancela
 
-  emit('save', payload)
-  modelValue.value = false
+//   emit('save', payload)
+//   modelValue.value = false
 
-  // resetear estado interno para la próxima apertura
-  currentStep.value = 1
-  selectedCoaches.value = []
-}
+//   // resetear estado interno para la próxima apertura
+//   currentStep.value = 1
+//   selectedCoaches.value = []
+// }
 
 function onCancel() {
   emit('cancel')

@@ -129,28 +129,28 @@
           </div>
         </div>
 
-        <!-- Acciones -->
-        <div class="side-actions">
-          <q-btn unelevated class="action-btn primary-action" :color="puedeTomarAsistencia ? 'green-8' : 'grey-6'"
-            icon="how_to_reg" label="Tomar asistencia" :disable="!puedeTomarAsistencia"
-            @click="intentarTomarAsistencia">
-            <q-tooltip v-if="!puedeTomarAsistencia" class="bg-negative">
-              {{ razonNoAsistencia }}
-            </q-tooltip>
-          </q-btn>
-          <q-btn flat class="action-btn secondary-action" color="white" icon="visibility" label="Ver asistencias"
-            @click="verAsistenciasDialog = true" />
-          <q-btn outlined class="action-btn tertiary-action" color="amber-9" icon="star" label="Evaluar entrenamiento"
-            @click="openEvaluateDialog" />
-          <q-btn flat class="action-btn quaternary-action" color="white" icon="list" label="Ver evaluaciones"
-            @click="verEvaluacionesDialog = true" />
-        </div>
       </aside>
     </q-card-section>
 
     <q-separator />
 
-    <q-card-actions align="right" class="footer-actions">
+    <q-card-actions class="footer-actions">
+      <div class="action-buttons-group">
+        <q-btn unelevated class="action-btn primary-action" :color="puedeTomarAsistencia ? 'green-8' : 'grey-6'"
+          icon="how_to_reg" :label="$q.screen.gt.xs ? 'Tomar asistencia' : ''" :disable="!puedeTomarAsistencia"
+          @click="intentarTomarAsistencia" size="md">
+          <q-tooltip v-if="!puedeTomarAsistencia" class="bg-negative">
+            {{ razonNoAsistencia }}
+          </q-tooltip>
+        </q-btn>
+        <q-btn flat class="action-btn secondary-action" color="brown-7" icon="visibility"
+          :label="$q.screen.gt.xs ? 'Ver asistencias' : ''" @click="verAsistenciasDialog = true" size="md" />
+        <q-btn outlined class="action-btn tertiary-action" color="amber-9" icon="star"
+          :label="$q.screen.gt.xs ? 'Evaluar' : ''" @click="openEvaluateDialog" size="md" />
+        <q-btn flat class="action-btn quaternary-action" color="amber-8" icon="list"
+          :label="$q.screen.gt.xs ? 'Ver evaluaciones' : ''" @click="verEvaluacionesDialog = true" size="md" />
+      </div>
+      <q-space />
       <q-btn flat label="Cerrar" color="brown-7" icon="close" v-close-popup />
     </q-card-actions>
 
@@ -713,105 +713,68 @@ $color-amber: #ffb300;
   }
 }
 
-.side-actions {
+.footer-actions {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba($color-forest, 0.03) 0%, rgba($color-leaf, 0.02) 100%);
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  .action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
   .action-btn {
-    width: 100%;
-    font-weight: 700;
-    padding: 14px 20px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: none;
-    font-size: 0.95rem;
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    &:hover::before {
-      width: 300px;
-      height: 300px;
-    }
+    border-radius: 8px;
 
     &.primary-action {
-      background: linear-gradient(135deg, #2e7d52 0%, #3d9970 100%);
-      box-shadow: 0 4px 15px rgba(46, 125, 82, 0.4);
-      border: none;
+      &:not(:disabled) {
+        box-shadow: 0 2px 8px rgba(46, 125, 82, 0.3);
 
-      &:hover {
-        box-shadow: 0 6px 25px rgba(46, 125, 82, 0.5);
-        transform: translateY(-3px) scale(1.02);
-      }
-
-      &:active {
-        transform: translateY(-1px) scale(0.98);
+        &:hover {
+          box-shadow: 0 4px 12px rgba(46, 125, 82, 0.4);
+          transform: translateY(-2px);
+        }
       }
     }
 
-    &.secondary-action {
-      background: linear-gradient(135deg, #6d4c41 0%, #8d6e63 100%);
-      color: white;
-      box-shadow: 0 3px 12px rgba(109, 76, 65, 0.3);
-
-      &:hover {
-        background: linear-gradient(135deg, #5d4037 0%, #6d4c41 100%);
-        box-shadow: 0 5px 20px rgba(109, 76, 65, 0.4);
-        transform: translateY(-3px) scale(1.02);
-      }
+    &.secondary-action:hover {
+      background: rgba($color-bark, 0.1);
     }
 
-    &.tertiary-action {
-      background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
-      color: white;
-      box-shadow: 0 3px 12px rgba(255, 167, 38, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-
-      &:hover {
-        background: linear-gradient(135deg, #ff9800 0%, #ffa726 100%);
-        box-shadow: 0 5px 20px rgba(255, 167, 38, 0.5);
-        transform: translateY(-3px) scale(1.02);
-      }
+    &.tertiary-action:hover {
+      background: rgba(#ff9800, 0.1);
     }
 
-    &.quaternary-action {
-      background: linear-gradient(135deg, #ffca28 0%, #ffd54f 100%);
-      color: white;
-      box-shadow: 0 3px 12px rgba(255, 202, 40, 0.3);
-
-      &:hover {
-        background: linear-gradient(135deg, #ffb300 0%, #ffca28 100%);
-        box-shadow: 0 5px 20px rgba(255, 202, 40, 0.5);
-        transform: translateY(-3px) scale(1.02);
-      }
-    }
-
-    .q-icon {
-      transition: transform 0.3s ease;
-    }
-
-    &:hover .q-icon {
-      transform: scale(1.1) rotate(-5deg);
+    &.quaternary-action:hover {
+      background: rgba(#ffb300, 0.1);
     }
   }
 }
 
-.footer-actions {
-  padding: 12px 16px;
-  background: rgba($color-forest, 0.02);
+@media (max-width: 600px) {
+  .footer-actions {
+    padding: 10px 12px;
+
+    .action-buttons-group {
+      gap: 6px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .action-btn {
+      min-width: 40px;
+      padding: 8px 12px;
+    }
+  }
 }
 
 // Responsive Breakpoints

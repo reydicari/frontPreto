@@ -101,9 +101,9 @@
       <q-separator />
 
       <q-card-actions align="right" class="footer-actions">
-        <q-btn flat label="Generar progresos" color="amber-8" icon="auto_awesome" @click="generateProgresos"
+        <q-btn label="Generar progresos" color="green-7" icon="auto_awesome" @click="generateProgresos"
           class="generate-btn" />
-        <q-btn unelevated label="Cerrar" color="green-7" icon="check" v-close-popup @click="closeDialog"
+        <q-btn unelevated label="Cerrar" flat color="amber-8" icon="close" v-close-popup @click="closeDialog"
           class="close-action-btn" />
       </q-card-actions>
     </q-card>
@@ -524,7 +524,7 @@ $color-amber: #ffa726;
     font-weight: 700;
     padding: 10px 24px;
     border-radius: 10px;
-    background: linear-gradient(135deg, $color-forest 0%, $color-leaf 100%);
+    // background: linear-gradient(135deg, $color-forest 0%, $color-leaf 100%);
     box-shadow: 0 4px 12px rgba($color-forest, 0.3);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
