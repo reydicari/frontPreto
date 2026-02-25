@@ -1,11 +1,27 @@
 import { api } from "boot/axios.js";
 const URL_PART = "/api/reportes";
 
+export const reportePagos = async () => {
+  try {
+    const response = await api.get(URL_PART + "/pagos", {
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+
+    return response.data;
+  } catch (error) {
+    console.log("error en el store reportePagos", error);
+    return error.response?.data;
+  }
+};
+
 export const reportePagosParams = async (params) => {
   try {
     console.log("params para reporte de pagos: ", params);
 
-    const response = await api.post(URL_PART + "/pagos",params, {
+    const response = await api.post(URL_PART + "/pagos", params, {
       responseType: "blob",
     });
     const blob = new Blob([response.data], { type: "application/pdf" });
