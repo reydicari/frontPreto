@@ -3,8 +3,16 @@ const URL_PART = "/api/persona";
 import { Notify } from "quasar";
 export const listar = async (params = {}) => {
   try {
-    //fecha de hoy formato YYYY-MM-DD
-    const hoy = new Date().toISOString().split("T")[0];
+    //fecha de hoy formato YYYY-MM-DD en hora de Bolivia (UTC-4)
+    const boliviaDate = new Date().toLocaleString("es-BO", {
+      timeZone: "America/La_Paz",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    // Convierte de DD/MM/YYYY a YYYY-MM-DD
+    const [day, month, year] = boliviaDate.split(/[/\s,]+/);
+    const hoy = `${year}-${month}-${day}`;
     params.hoy = hoy;
     const response = await api.get(URL_PART + `/personasTipo`, {
       params: params,

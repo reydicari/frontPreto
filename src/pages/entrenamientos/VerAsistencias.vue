@@ -21,9 +21,21 @@
       <q-separator />
 
       <q-card-section class="asistencias-section">
-        <div class="section-label">
-          <q-icon name="check_circle" size="20px" class="q-mr-xs" />
-          Listado de asistencias
+        <div class="section-header">
+          <div class="section-label">
+            <q-icon name="check_circle" size="20px" class="q-mr-xs" />
+            Listado de asistencias
+          </div>
+          <div class="section-controls">
+            <q-input v-model="searchText" dense outlined placeholder="Buscar por nombre o CI..." class="search-input"
+              @update:model-value="onSearchChange">
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+            <q-select v-model="limit" dense outlined :options="limitOptions" label="Registros" class="limit-select"
+              @update:model-value="onLimitChange" />
+          </div>
         </div>
         <q-list bordered class="asistencias-list">
           <q-item v-for="a in asistencias" :key="a.id || `${a.id_persona}-${a.fecha}`" class="asistencia-item">
@@ -155,7 +167,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { listarAsistenciasPorEntrenamiento } from 'stores/asistencia-store.js'
+import { listar as listarAsistencias } from 'stores/asistencia-store.js'
 import { listar as listarCualidades } from 'stores/cualidad-store.js'
 import { agregarProgresos } from 'stores/progreso-store.js'
 
@@ -180,14 +192,53 @@ const progresoValor = ref(3)
 const progresoComentario = ref('')
 const cualidades = ref([])
 
+// Nuevos campos para búsqueda y paginación
+const searchText = ref('')
+const limit = ref(5)
+const limitOptions = ref([
+  { label: '5', value: 5 },
+  { label: '10', value: 10 },
+  { label: '20', value: 20 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 },
+  { label: 'Todos', value: -1 }
+])
+
+const getBoliviaDateString = () => {
+  const boliviaDate = new Date().toLocaleString("es-BO", {
+    timeZone: "America/La_Paz",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  // Convierte de DD/MM/YYYY a YYYY-MM-DD
+  const [day, month, year] = boliviaDate.split(/[/\s,]+/);
+  return `${year}-${month}-${day}`;
+}
+
 const fetchAsistencias = async () => {
   try {
-    const resp = await listarAsistenciasPorEntrenamiento(props.entrenamientoId)
+    const params = {
+      id_entrenamiento: props.entrenamientoId,
+      page: 1,
+      limit: limit.value,
+      hoy: getBoliviaDateString(),
+      search: searchText.value || ''
+    }
+    const resp = await listarAsistencias(params)
     asistencias.value = Array.isArray(resp) ? resp : (resp?.data || [])
   } catch (e) {
     console.error('Error cargando asistencias:', e)
     asistencias.value = []
   }
+}
+
+const onSearchChange = () => {
+  fetchAsistencias()
+}
+
+const onLimitChange = () => {
+  fetchAsistencias()
 }
 
 const loadCualidades = async () => {
@@ -400,17 +451,40 @@ $color-amber: #ffa726;
 .progresos-section {
   padding: 20px 24px;
 
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
   .section-label {
     font-size: 1rem;
     font-weight: 700;
     color: $color-forest-dark;
-    margin-bottom: 14px;
     display: flex;
     align-items: center;
     padding-bottom: 8px;
     border-bottom: 3px solid transparent;
     border-image: linear-gradient(90deg, $color-forest 0%, $color-leaf 50%, transparent 100%);
     border-image-slice: 1;
+  }
+
+  .section-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .search-input {
+      min-width: 200px;
+      flex: 1;
+    }
+
+    .limit-select {
+      min-width: 120px;
+    }
   }
 
   .asistencias-list,

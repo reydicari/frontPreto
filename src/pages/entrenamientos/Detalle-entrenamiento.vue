@@ -226,7 +226,12 @@ const loadCualidades = async () => {
 
 const loadPersonas = async () => {
   try {
-    const resp = await listar()
+    const resp = await listar({
+      tipo_persona: 'entrenador',
+      estado: true,
+      page: 1,
+      limit: 10
+    })
     personas.value = Array.isArray(resp) ? resp : (resp?.data || [])
   } catch (e) {
     console.warn('No se pudieron cargar personas:', e)

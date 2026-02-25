@@ -155,7 +155,6 @@ const dialogVisible = ref(false);
 const editing = ref(false);
 const form = ref({ id: null, nombre: '', icono: '', estado: true });
 const formRef = ref(null);
-const inscripciones = ref([]);
 const disciplines = ref([]);
 
 // Configuración de tabla
@@ -177,7 +176,7 @@ const columns = [
   {
     name: 'estudiantes',
     label: 'Estudiantes',
-    field: row => countStudents(row),
+    field: row => row.nroEstudiantes || 0,
     align: 'center',
     sortable: true
   },
@@ -195,25 +194,6 @@ const columns = [
     style: 'width: 150px'
   }
 ];
-
-const countStudents = (discipline) => {
-  if (!discipline || !discipline.id) return 0;
-  const id = discipline.id;
-  return inscripciones.value.filter(ins => {
-    if (!ins) return false;
-    if (ins.id_disciplina && Number(ins.id_disciplina) === Number(id)) return true;
-    if (ins.id_diciplina && Number(ins.id_diciplina) === Number(id)) return true;
-    if (ins.paquete && ins.paquete.disciplina) {
-      const pd = ins.paquete.disciplina;
-      if ((pd.id && Number(pd.id) === Number(id)) || (pd === id)) return true;
-    }
-    if (ins.disciplina) {
-      const d = ins.disciplina;
-      if ((d.id && Number(d.id) === Number(id)) || (d === id)) return true;
-    }
-    return false;
-  }).length;
-};
 
 const iconOptions = [
   'sports_soccer', 'pool', 'fitness_center', 'self_improvement',
@@ -278,6 +258,8 @@ const onSubmit = async () => {
     }
 
     disciplines.value = await listarDisciplinas();
+    console.log('desciplinas: ', disciplines.value);
+
     closeDialog();
   } catch (error) {
     $q.notify({
@@ -320,6 +302,8 @@ onMounted(async () => {
   loading.value = true;
   try {
     disciplines.value = await listarDisciplinas();
+    console.log('desciplinas: ', disciplines.value);
+
   } catch (error) {
     console.error('Error al cargar disciplinas:', error);
   } finally {

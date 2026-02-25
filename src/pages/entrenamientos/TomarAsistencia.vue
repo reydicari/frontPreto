@@ -84,8 +84,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { listarTodosEstudiantes } from 'stores/persona-store.js'
+import { ref, computed } from 'vue'
+import { listar } from 'stores/persona-store.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -102,16 +102,7 @@ const singleSelect = ref(null)
 const pickedStudents = ref([]) // array of student objects
 
 const filteredStudents = computed(() => {
-  if (!search.value) return students.value.map(s => ({ ...s, label: formatLabel(s) }))
-  const term = String(search.value).toLowerCase()
-  return students.value
-    .filter(s => {
-      const nombre = (s.nombre || s.nombres || '').toString().toLowerCase()
-      const ci = (s.ci || s.cedula || '').toString().toLowerCase()
-      const tel = (s.telefono || s.telefono_celular || '').toString().toLowerCase()
-      return nombre.includes(term) || ci.includes(term) || tel.includes(term)
-    })
-    .map(s => ({ ...s, label: formatLabel(s) }))
+  return students.value.map(s => ({ ...s, label: formatLabel(s) }))
 })
 
 function formatLabel(s) {
@@ -124,23 +115,30 @@ function formatLabel(s) {
   return parts.join(' • ')
 }
 
-const filterMethod = (val, update) => {
-  update(() => {
-    search.value = val
-  })
+const filterMethod = async (val, update) => {
+  search.value = val
+
+  try {
+    const params = {
+      tipo_persona: 'estudiante',
+      estado: true,
+      limit: 5,
+      page: 1,
+      search: search.value || '',
+      esAsistencia: true,
+      id_entrenamiento: props.entrenamientoId
+    }
+    const resp = await listar(params)
+    students.value = Array.isArray(resp) ? resp : (resp?.data || [])
+  } catch (e) {
+    console.warn('Error al buscar estudiantes:', e)
+    students.value = []
+  }
+
+  update()
 }
 
 const canSave = computed(() => (pickedStudents.value && pickedStudents.value.length > 0))
-
-onMounted(async () => {
-  try {
-    const resp = await listarTodosEstudiantes()
-    students.value = Array.isArray(resp) ? resp : (resp?.data || [])
-  } catch (e) {
-    console.warn('No se pudieron cargar estudiantes:', e)
-    students.value = []
-  }
-})
 
 function getBoliviaDatetimeString() {
   // Compute Bolivia time (UTC-4) regardless of local timezone
