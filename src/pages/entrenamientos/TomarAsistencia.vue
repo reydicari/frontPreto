@@ -12,7 +12,7 @@
             <div class="header-subtitle">Registra quién asistió al entrenamiento</div>
           </div>
         </div>
-        <q-btn flat round dense icon="close" class="close-btn" @click="handleCancel" />
+        <q-btn flat round dense icon="close" class="close-btn" @click="handleClose" />
       </q-card-section>
 
       <q-separator />
@@ -37,47 +37,8 @@
 
       <q-separator />
 
-      <q-card-section class="list-section">
-        <div class="list-header">
-          <div class="list-title">
-            <q-icon name="people" size="20px" class="q-mr-xs" />
-            Estudiantes seleccionados
-          </div>
-          <q-badge :color="pickedStudents.length > 0 ? 'green-7' : 'grey-5'" :label="pickedStudents.length.toString()"
-            class="count-badge" />
-        </div>
-
-        <q-list bordered class="students-list">
-          <q-item v-for="p in pickedStudents" :key="p.id" class="student-item">
-            <q-item-section avatar>
-              <q-avatar color="green-7" text-color="white" size="40px">
-                <q-icon name="person" />
-              </q-avatar>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label class="student-name">{{ formatLabel(p) }}</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-btn round dense flat color="red-7" icon="close" @click="removeStudent(p.id)" class="remove-btn">
-                <q-tooltip>Quitar de la lista</q-tooltip>
-              </q-btn>
-            </q-item-section>
-          </q-item>
-          <q-item v-if="!pickedStudents.length" class="empty-item">
-            <q-item-section class="text-center">
-              <q-icon name="person_off" size="48px" color="grey-4" />
-              <q-item-label caption class="empty-text">No hay estudiantes seleccionados aún</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-
-      <q-separator />
-
       <q-card-actions align="right" class="footer-actions">
-        <q-btn flat label="Cancelar" color="brown-7" icon="close" @click="handleCancel" class="cancel-btn" />
-        <q-btn unelevated :disable="!canSave" label="Guardar asistencia" color="green-7" icon="check_circle"
-          @click="handleSave" class="save-btn" />
+        <q-btn unelevated label="Listo" color="green-7" icon="check" @click="handleClose" class="save-btn" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -86,20 +47,20 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { listar } from 'stores/persona-store.js'
+import { asistenciaEstudiante } from 'stores/asistencia-store.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   entrenamientoId: { type: [Number, String], required: true }
 })
 
-const emit = defineEmits(['update:modelValue', 'save', 'cancel'])
+const emit = defineEmits(['update:modelValue', 'save'])
 
 const show = computed({ get: () => props.modelValue, set: v => emit('update:modelValue', v) })
 
 const students = ref([])
 const search = ref('')
 const singleSelect = ref(null)
-const pickedStudents = ref([]) // array of student objects
 
 const filteredStudents = computed(() => {
   return students.value.map(s => ({ ...s, label: formatLabel(s) }))
@@ -138,8 +99,6 @@ const filterMethod = async (val, update) => {
   update()
 }
 
-const canSave = computed(() => (pickedStudents.value && pickedStudents.value.length > 0))
-
 function getBoliviaDatetimeString() {
   // Compute Bolivia time (UTC-4) regardless of local timezone
   const now = new Date()
@@ -157,40 +116,32 @@ function getBoliviaDatetimeString() {
   return `${Y}-${M}-${D} ${h}:${m}:${s}`
 }
 
-const onSelect = (val) => {
+const onSelect = async (val) => {
   if (!val) return
   // val is an id (emit-value)
   const s = students.value.find(x => String(x.id) === String(val))
   if (s) {
-    const exists = pickedStudents.value.some(p => String(p.id) === String(s.id))
-    if (!exists) pickedStudents.value.push(s)
+    const fecha = getBoliviaDatetimeString()
+    const asistencia = {
+      id_persona: s.id,
+      id_entrenamiento: Number(props.entrenamientoId),
+      es_entrenador: false,
+      fecha
+    }
+
+    try {
+      await asistenciaEstudiante(asistencia)
+      emit('save')
+    } catch (error) {
+      console.error('Error al registrar asistencia:', error)
+    }
   }
   // reset select and search to allow searching another
   singleSelect.value = null
   search.value = ''
 }
 
-const removeStudent = (id) => {
-  const idx = pickedStudents.value.findIndex(p => String(p.id) === String(id))
-  if (idx !== -1) pickedStudents.value.splice(idx, 1)
-}
-
-const handleSave = () => {
-  const fecha = getBoliviaDatetimeString()
-  const asistencias = (pickedStudents.value || []).map(p => ({
-    id_persona: p.id,
-    id_entrenamiento: Number(props.entrenamientoId),
-    es_entrenador: false,
-    fecha
-  }))
-  console.log('asistencias', asistencias)
-
-  emit('save', { asistencias })
-  show.value = false
-}
-
-const handleCancel = () => {
-  emit('cancel')
+const handleClose = () => {
   show.value = false
 }
 </script>
@@ -327,102 +278,10 @@ $color-lime: #4caf7d;
   }
 }
 
-.list-section {
-  padding: 20px 24px;
-
-  .list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-
-    .list-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: $color-forest-dark;
-      display: flex;
-      align-items: center;
-    }
-
-    .count-badge {
-      font-size: 0.85rem;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .students-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border-radius: 12px;
-    border: 2px solid rgba($color-forest, 0.12);
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: rgba($color-forest, 0.05);
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: rgba($color-forest, 0.2);
-      border-radius: 4px;
-
-      &:hover {
-        background: rgba($color-forest, 0.3);
-      }
-    }
-
-    .student-item {
-      transition: all 0.3s ease;
-      border-bottom: 1px solid rgba($color-forest, 0.08);
-
-      &:hover {
-        background: linear-gradient(90deg, rgba($color-forest, 0.04) 0%, transparent 100%);
-      }
-
-      .student-name {
-        font-weight: 600;
-        color: $color-forest-dark;
-      }
-
-      .remove-btn {
-        transition: all 0.3s ease;
-
-        &:hover {
-          transform: scale(1.2) rotate(90deg);
-        }
-      }
-    }
-
-    .empty-item {
-      padding: 48px 24px;
-
-      .empty-text {
-        margin-top: 12px;
-        font-size: 0.9rem;
-        color: #999;
-      }
-    }
-  }
-}
-
 .footer-actions {
   padding: 16px 24px;
   background: rgba($color-forest, 0.03);
   gap: 12px;
-
-  .cancel-btn {
-    font-weight: 600;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(#6d4c41, 0.1);
-    }
-  }
 
   .save-btn {
     font-weight: 700;
@@ -432,13 +291,9 @@ $color-lime: #4caf7d;
     box-shadow: 0 4px 12px rgba($color-forest, 0.3);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-    &:hover:not(:disabled) {
+    &:hover {
       box-shadow: 0 6px 20px rgba($color-forest, 0.4);
       transform: translateY(-2px);
-    }
-
-    &:disabled {
-      opacity: 0.5;
     }
   }
 }
@@ -478,33 +333,6 @@ $color-lime: #4caf7d;
 
     .search-hint {
       color: #b0b0b0;
-    }
-  }
-
-  .list-section {
-    .list-title {
-      color: $color-lime;
-    }
-
-    .students-list {
-      border-color: rgba($color-lime, 0.2);
-      background: #2a2a2a;
-
-      .student-item {
-        border-bottom-color: rgba($color-lime, 0.1);
-
-        &:hover {
-          background: linear-gradient(90deg, rgba($color-lime, 0.08) 0%, transparent 100%);
-        }
-
-        .student-name {
-          color: $color-lime;
-        }
-      }
-
-      .empty-text {
-        color: #808080;
-      }
     }
   }
 

@@ -34,6 +34,30 @@ export const listar = async (params = {}) => {
 //     });
 //   }
 // };
+export const asistenciaEstudiante = async (asistencia) => {
+  try {
+    const response = await api.post(
+      URL_PART + "/agregarAsistenciaEstudiante",
+      asistencia,
+    );
+    Notify.create({
+      type: "positive",
+      message: "Asistencia registrada con éxito",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error registrando asistencia", error);
+    Notify.create({
+      type: "negative",
+      message:
+        error?.response?.data?.mensaje || "Error al registrar asistencia",
+      position: "bottom",
+    });
+    throw error;
+  }
+};
+
 export const guardarAsistencias = async (asistencias = []) => {
   try {
     const response = await api.post(URL_PART + "/agregar", { asistencias });

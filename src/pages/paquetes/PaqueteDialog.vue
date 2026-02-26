@@ -274,11 +274,23 @@ watch(() => props.editingPackage, (newVal) => {
 }, { immediate: true })
 
 const addHorario = () => {
+  // Máximo 21 horarios por paquete
+  if (localForm.value.horarios.length >= 21) {
+    $q.notify({
+      type: 'warning',
+      message: 'No se pueden agregar más de 21 horarios por paquete',
+      icon: 'warning'
+    })
+    return
+  }
+
+  // Copiar horas del último horario agregado
+  const lastHorario = localForm.value.horarios[localForm.value.horarios.length - 1]
   const newH = {
     id: Date.now(),
     dia: 1,
-    hora_inicio: '07:00',
-    hora_fin: '09:00',
+    hora_inicio: lastHorario ? lastHorario.hora_inicio : '07:00',
+    hora_fin: lastHorario ? lastHorario.hora_fin : '09:00',
     estado: true,
     _invalidMessage: ''
   }
