@@ -140,12 +140,12 @@
               </div>
 
               <!-- Botón copiar fechas del paquete seleccionado -->
-              <div v-if="local.id_paquete && selectedPaquete" class="q-mt-md">
+              <!-- <div v-if="local.id_paquete && selectedPaquete" class="q-mt-md">
                 <q-btn flat icon="content_copy" label="Copiar fechas del paquete" color="white" class="btn-copy-dates"
                   @click="copiarFechasPaquete">
                   <q-tooltip>Aplicar las fechas del paquete seleccionado</q-tooltip>
                 </q-btn>
-              </div>
+              </div> -->
             </div>
 
           </div>
@@ -340,9 +340,9 @@ const pkgDetailsOpen = ref(false)
 const selectedPackage = ref(null)
 
 // Computed para encontrar el paquete seleccionado
-const selectedPaquete = computed(() => {
-  return paquetesList.value.find(p => p.id === local.value.id_paquete) || null
-})
+// const selectedPaquete = computed(() => {
+//   return paquetesList.value.find(p => p.id === local.value.id_paquete) || null
+// })
 
 // Watcher para actualizar ubicación por defecto cuando se cargan las ubicaciones
 watch(ubicacionesList, (newUbicaciones) => {
@@ -550,7 +550,8 @@ function onSaveDirecto() {
   }
 
   // Calcular estado automáticamente
-  local.value.estado = computeEstado()
+  // local.value.estado = computeEstado()//ya no se hara por estado ahora todo lo creado es 1
+  local.value.estado = 1
 
   // Preparar payload sin entrenadores (se asignarán después si es necesario)
   const payload = { ...local.value }
@@ -665,30 +666,30 @@ watch(() => local.value.fecha_inicio, (nuevaFecha) => {
   }
 })
 
-function copiarFechasPaquete() {
-  const paquete = selectedPaquete.value
-  if (paquete && paquete.fecha_inicio) {
-    local.value.fecha_inicio = paquete.fecha_inicio
-    // Para fecha_fin usar fecha_vencimiento del paquete si existe, sino limpiar
-    if (paquete.fecha_vencimiento) {
-      local.value.fecha_fin = paquete.fecha_vencimiento
-    } else {
-      local.value.fecha_fin = '' // Limpiar para entrenamiento indefinido
-    }
-  }
-}
+// function copiarFechasPaquete() {
+//   const paquete = selectedPaquete.value
+//   if (paquete && paquete.fecha_inicio) {
+//     local.value.fecha_inicio = paquete.fecha_inicio
+//     // Para fecha_fin usar fecha_vencimiento del paquete si existe, sino limpiar
+//     if (paquete.fecha_vencimiento) {
+//       local.value.fecha_fin = paquete.fecha_vencimiento
+//     } else {
+//       local.value.fecha_fin = '' // Limpiar para entrenamiento indefinido
+//     }
+//   }
+// }
 
-function computeEstado() {
-  const hoy = new Date()
-  const inicio = local.value.fecha_inicio ? new Date(local.value.fecha_inicio) : null
-  const fin = local.value.fecha_fin ? new Date(local.value.fecha_fin) : null
+// function computeEstado() {
+//   const hoy = new Date()
+//   const inicio = local.value.fecha_inicio ? new Date(local.value.fecha_inicio) : null
+//   const fin = local.value.fecha_fin ? new Date(local.value.fecha_fin) : null
 
-  // Si no hay fecha de fin, el entrenamiento puede estar en marcha indefinidamente
-  if (fin && fin < hoy) return 0 // Terminado
-  if (inicio && inicio <= hoy && (!fin || fin >= hoy)) return 1 // En marcha
-  if (inicio && inicio > hoy) return 2 // Sin comenzar
-  return 2
-}
+//   // Si no hay fecha de fin, el entrenamiento puede estar en marcha indefinidamente
+//   if (fin && fin < hoy) return 0 // Terminado
+//   if (inicio && inicio <= hoy && (!fin || fin >= hoy)) return 1 // En marcha
+//   if (inicio && inicio > hoy) return 2 // Sin comenzar
+//   return 2
+// }
 
 // TEMPORALMENTE COMENTADO: Función onSave original con paso 2
 // function onSave() {

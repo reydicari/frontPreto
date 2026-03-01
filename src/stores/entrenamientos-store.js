@@ -53,3 +53,23 @@ export const modificarEntrenamiento = async (data) => {
     return error.response.data;
   }
 };
+export const suspenderEntrenamiento = async (id) => {
+  try {
+    const response = await api.put(URL_PART + "/suspender/" + id);
+    Notify.create({
+      type: "info",
+      message: response.data.mensaje || "Entrenamiento suspendido con éxito",
+      position: "bottom",
+    });
+    return response.data;
+  } catch (error) {
+    console.log("error en el store", error);
+    Notify.create({
+      type: "negative",
+      message:
+        error.response.data.mensaje || "Error al suspender entrenamiento",
+      position: "bottom",
+    });
+    return error.response.data;
+  }
+};

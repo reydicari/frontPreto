@@ -201,8 +201,11 @@
           <div class="info-row">
             <q-icon name="place" class="info-icon" />
             <span class="info-label">Ubicación:</span>
-            <q-btn size="sm" dense rounded outline color="orange" class="ubicacion-btn"
-              @click.stop="goToUbicacion(torneo.ubicacion?.id)" :label="torneo.ubicacion?.nombre || '—'" />
+            <q-btn v-if="torneo.ubicacion" size="sm" dense rounded outline color="orange" class="ubicacion-btn"
+              @click.stop="goToUbicacion(torneo.ubicacion)" :label="torneo.ubicacion?.nombre">
+              <q-tooltip>Ver en mapa</q-tooltip>
+            </q-btn>
+            <span v-else class="info-value">—</span>
           </div>
 
           <div class="info-row">
@@ -294,8 +297,13 @@
       </q-card>
     </q-dialog>
 
-    <seguimiento-torneo-dialog v-model="showSeguimiento" :torneo="selectedTorneo" />
-    <!-- Descomentar componente arriba para usar dialog en vez de page -->
+    <!-- Diálogo de seguimiento del torneo -->
+    <SeguimientoTorneoDialog v-if="selectedTorneoForSeguimiento" :modelValue="showSeguimientoDialog"
+      @update:modelValue="v => showSeguimientoDialog = v" :torneoId="selectedTorneoForSeguimiento.id"
+      :torneo="selectedTorneoForSeguimiento" @partido-updated="loadTorneos" />
+
+    <!-- Diálogo de mapa de ubicación -->
+    <MapaUbicacionDialog v-if="ubicacionSeleccionada" v-model="mapaDialog" :ubicacion="ubicacionSeleccionada" />
 
     <!-- Drawer de detalles a la derecha -->
     <q-drawer v-model="drawer" side="right" overlay width="520">
@@ -357,7 +365,8 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
-// import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue' // Descomentar para usar dialog en vez de page
+import MapaUbicacionDialog from 'src/pages/entrenamientos/MapaUbicacionDialog.vue'
+import SeguimientoTorneoDialog from './SeguimientoTorneoDialog.vue'
 import { listarTorneos, listarTiposTorneo, crearTorneo, modificarTorneo, comenzarTorneo, suspenderTorneo } from 'src/stores/torneo-store'
 import { listarUbicaciones } from 'src/stores/ubicacion-store'
 import { listarNiveles } from 'src/stores/nivel'
@@ -375,12 +384,13 @@ const pagination = reactive({ page: 1, rowsPerPage: 10 })
 
 const selectedTorneo = ref(null)
 const drawer = ref(false)
-const showSeguimiento = ref(false)
 const showTorneoDialog = ref(false)
 const editingTorneo = ref(null)
 const isRescheduling = ref(false)
 const showBorradoresDialog = ref(false)
 const activeTorneoForBorradores = ref(null)
+const showSeguimientoDialog = ref(false)
+const selectedTorneoForSeguimiento = ref(null)
 
 const tipoOptions = computed(() => {
   return tiposTorneo.value.map(t => ({ label: t.nombre, value: t.id }))
@@ -616,6 +626,10 @@ const showStartConfirm = ref(false)
 const startResponseMessage = ref(null)
 // const showSeguimiento = ref(false) // Descomentar para usar dialog en vez de page
 
+// Estado para el diálogo de mapa
+const mapaDialog = ref(false)
+const ubicacionSeleccionada = ref(null)
+
 onMounted(() => {
   try {
     const current = JSON.parse(sessionStorage.getItem('user'))
@@ -675,6 +689,13 @@ async function doStartTournament() {
   }
 }
 
+function openSeguimiento() {
+  if (!suspendTarget.value) return
+  selectedTorneoForSeguimiento.value = suspendTarget.value
+  showSeguimientoDialog.value = true
+  showStartConfirm.value = false
+}
+
 async function openDetails(evtOrRow, maybeRow) {
   // q-table @row-click puede pasar (evt, row) o solo (row).
   let item = null
@@ -695,11 +716,10 @@ async function openDetails(evtOrRow, maybeRow) {
 
   selectedTorneo.value = item
 
-  // Si el estado es 2 (en marcha) o 3 (con ganador), navegar a la página de seguimiento
+  // Si el estado es 2 (en marcha) o 3 (con ganador), abrir diálogo de seguimiento
   if (typeof item.estado !== 'undefined' && (Number(item.estado) === 2 || Number(item.estado) === 3)) {
-    showSeguimiento.value = false// Asegurar que esté cerrado
-    router.push({ path: `/torneos/seguimiento/${item.id}` }) // Comentar para usar dialog
-    // showSeguimiento.value = true // Descomentar para usar dialog en vez de page
+    selectedTorneoForSeguimiento.value = item
+    showSeguimientoDialog.value = true
     return
   }
 
@@ -710,13 +730,24 @@ async function openDetails(evtOrRow, maybeRow) {
 
 
 
-function goToUbicacion(id) {
-  if (!id) {
+function goToUbicacion(ubicacion) {
+  if (!ubicacion) {
     $q.notify({ type: 'warning', message: 'Ubicación no disponible' })
     return
   }
-  // navegar al módulo de ubicaciones y pasar query param 'focus' para centrar
-  router.push({ path: '/ubicaciones', query: { focus: id } })
+
+  // Validar que la ubicacion tenga coordenadas
+  if (!ubicacion.latitud || !ubicacion.longitud) {
+    $q.notify({
+      type: 'warning',
+      message: 'Esta ubicación no tiene coordenadas configuradas',
+      position: 'top'
+    })
+    return
+  }
+
+  ubicacionSeleccionada.value = ubicacion
+  mapaDialog.value = true
 }
 
 function formatDate(dateStr) {

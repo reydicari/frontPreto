@@ -5,6 +5,7 @@ const URL_PART = "/api/asistencia";
 
 export const listar = async (params = {}) => {
   try {
+    params.hoy = null;
     const response = await api.get(URL_PART + "/listar", { params });
     return response.data;
   } catch (error) {

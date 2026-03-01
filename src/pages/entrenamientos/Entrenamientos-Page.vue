@@ -216,23 +216,21 @@
 
         <q-card-actions class="card-actions">
           <q-btn class="btn-action btn-edit" round icon="edit" @click.stop="editTraining(training)"
-            :disable="training.estado === -1">
-            <q-tooltip>Editar</q-tooltip>
+            :disable="!puedeEditar(training)">
+            <q-tooltip>{{ puedeEditar(training) ? 'Editar' : 'Solo se puede editar entrenamientos sin comenzar'
+              }}</q-tooltip>
           </q-btn>
 
-          <q-btn v-if="training.estado === 1" class="btn-action btn-suspend" round icon="pause"
+          <q-btn v-if="puedeSuspender(training)" class="btn-action btn-suspend" round icon="pause"
             @click.stop="suspendTraining(training)">
             <q-tooltip>Suspender</q-tooltip>
           </q-btn>
 
-          <q-btn v-if="training.estado === -1" class="btn-action btn-resume" round icon="play_arrow"
-            @click.stop="resumeTraining(training)">
-            <q-tooltip>Reanudar</q-tooltip>
-          </q-btn>
-
-          <q-btn v-if="puedeAsignarEntrenadores(training)" class="btn-action btn-assign-coaches" round icon="person_add"
-            @click.stop="assignCoaches(training)">
-            <q-tooltip>Asignar Entrenadores</q-tooltip>
+          <q-btn class="btn-action btn-assign-coaches" round icon="person_add"
+            :disable="!puedeAsignarEntrenadores(training)" @click.stop="assignCoaches(training)">
+            <q-tooltip>{{ puedeAsignarEntrenadores(training) ? 'Asignar Entrenadores' : 'Solo disponible en
+            entrenamientos
+              sin comenzar o en marcha' }}</q-tooltip>
           </q-btn>
 
           <!-- <q-btn class="btn-action btn-coaches" round icon="groups" @click.stop="viewCoaches(training)"
@@ -360,7 +358,7 @@ import NuevoEntrenamientoDialog from './NuevoEntrenamientoDialog.vue'
 import AsignarEntrenadoresDialog from './AsignarEntrenadoresDialog.vue'
 import MapaUbicacionDialog from './MapaUbicacionDialog.vue'
 import { listarDisciplinas } from "stores/disciplina-store.js";
-import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento } from "stores/entrenamientos-store.js";
+import { crearEntrenamiento, listarEntrenamientos, modificarEntrenamiento, suspenderEntrenamiento } from "stores/entrenamientos-store.js";
 import { listar, listarTodosEstudiantes } from 'stores/persona-store.js'
 import { listarPaquetes } from "stores/paquete-store.js";
 import { listarUbicaciones } from "stores/ubicacion-store.js";
@@ -405,22 +403,22 @@ watch(mapaDialog, (newVal) => {
   }
 })
 
+// Función para verificar si se puede editar
+const puedeEditar = (training) => {
+  const estadoReal = calcularEstadoReal(training).estado
+  return estadoReal === 'sin-comenzar'
+}
+
+// Función para verificar si se puede suspender
+const puedeSuspender = (training) => {
+  const estadoReal = calcularEstadoReal(training).estado
+  return estadoReal === 'sin-comenzar' || estadoReal === 'en-marcha'
+}
+
 // Función para verificar si se pueden asignar entrenadores
 const puedeAsignarEntrenadores = (training) => {
-  // No permitir si está suspendido (estado === 0)
-  if (training.estado === 0) return false
-
-  // No permitir si la fecha_fin es menor que hoy
-  if (training.fecha_fin) {
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
-    const fechaFin = new Date(training.fecha_fin)
-    fechaFin.setHours(0, 0, 0, 0)
-
-    if (fechaFin < hoy) return false
-  }
-
-  return true
+  const estadoReal = calcularEstadoReal(training).estado
+  return estadoReal === 'sin-comenzar' || estadoReal === 'en-marcha'
 }
 
 // Paquetes / ubicaciones demo (en la app real vendrían de la API)
@@ -434,7 +432,7 @@ const loadingMore = ref(false)
 const searchTerm = ref('')
 const filtersExpanded = ref(false)
 const filterDiscipline = ref(null)
-const filterStatus = ref(null)
+const filterStatus = ref(1)
 const filterFechaInicio = ref('vacio')
 const filterFechaFin = ref('vacio')
 const trainingDialog = ref(false)
@@ -689,37 +687,22 @@ const suspendTraining = (training) => {
     message: `¿Estás seguro de que quieres suspender el entrenamiento "${training.nombre}"?`,
     cancel: true,
     persistent: true
-  }).onOk(() => {
-    // Aquí harías la llamada a la API para suspender
-    const index = trainings.value.findIndex(t => t.id === training.id)
-    if (index !== -1) {
-      trainings.value[index].estado = -1
-      // Aquí también podrías agregar usuario_cancela si es necesario
+  }).onOk(async () => {
+    try {
+      await suspenderEntrenamiento(training.id)
+      $q.notify({
+        type: 'positive',
+        message: 'Entrenamiento suspendido correctamente'
+      })
+      page.value = 1
+      hasMoreData.value = true
+      fetchTrainings(false)
+    } catch {
+      $q.notify({
+        type: 'negative',
+        message: 'Error al suspender entrenamiento'
+      })
     }
-    $q.notify({
-      type: 'positive',
-      message: 'Entrenamiento suspendido correctamente'
-    })
-  })
-}
-
-// Reanudar entrenamiento
-const resumeTraining = (training) => {
-  $q.dialog({
-    title: 'Confirmar reanudación',
-    message: `¿Estás seguro de que quieres reanudar el entrenamiento "${training.nombre}"?`,
-    cancel: true,
-    persistent: true
-  }).onOk(() => {
-    // Aquí harías la llamada a la API para reanudar
-    const index = trainings.value.findIndex(t => t.id === training.id)
-    if (index !== -1) {
-      trainings.value[index].estado = 1
-    }
-    $q.notify({
-      type: 'positive',
-      message: 'Entrenamiento reanudado correctamente'
-    })
   })
 }
 
@@ -1345,15 +1328,6 @@ $pastel-clay: #d7ccc8; // Arcilla pastel
 
   &:hover {
     box-shadow: 0 4px 12px rgba(121, 85, 72, 0.3);
-  }
-}
-
-.btn-resume {
-  background: linear-gradient(135deg, $color-leaf 0%, $color-lime 100%);
-  color: white;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(124, 179, 66, 0.3);
   }
 }
 

@@ -143,12 +143,17 @@
             {{ razonNoAsistencia }}
           </q-tooltip>
         </q-btn>
-        <q-btn flat class="action-btn secondary-action" color="brown-7" icon="visibility"
-          :label="$q.screen.gt.xs ? 'Ver asistencias' : ''" @click="verAsistenciasDialog = true" size="md" />
-        <q-btn outlined class="action-btn tertiary-action" color="amber-9" icon="star"
-          :label="$q.screen.gt.xs ? 'Evaluar' : ''" @click="openEvaluateDialog" size="md" />
-        <q-btn flat class="action-btn quaternary-action" color="amber-8" icon="list"
-          :label="$q.screen.gt.xs ? 'Ver evaluaciones' : ''" @click="verEvaluacionesDialog = true" size="md" />
+        <q-btn flat class="action-btn secondary-action" :color="puedeVerAsistencias ? 'brown-7' : 'grey-6'"
+          icon="visibility" :label="$q.screen.gt.xs ? 'Ver asistencias' : ''" :disable="!puedeVerAsistencias"
+          @click="verAsistenciasDialog = true" size="md">
+          <q-tooltip v-if="!puedeVerAsistencias">Solo disponible en entrenamientos en marcha, suspendidos o
+            terminados</q-tooltip>
+        </q-btn>
+        <q-btn outlined class="action-btn tertiary-action" :color="puedeEvaluar ? 'amber-9' : 'grey-6'" icon="star"
+          :label="$q.screen.gt.xs ? 'Evaluar' : ''" :disable="!puedeEvaluar" @click="openEvaluateDialog" size="md" />
+        <q-btn flat class="action-btn quaternary-action" :color="puedeVerEvaluaciones ? 'amber-8' : 'grey-6'"
+          icon="list" :label="$q.screen.gt.xs ? 'Ver evaluaciones' : ''" :disable="!puedeVerEvaluaciones"
+          @click="verEvaluacionesDialog = true" size="md" />
       </div>
       <q-space />
       <q-btn flat label="Cerrar" color="brown-7" icon="close" v-close-popup />
@@ -163,7 +168,8 @@
       @cancel="() => asistenciaDialog = false" />
 
     <!-- Dialog para ver asistencias -->
-    <VerAsistencias v-model:modelValue="verAsistenciasDialog" :entrenamientoId="training.id" />
+    <VerAsistencias v-model:modelValue="verAsistenciasDialog" :entrenamientoId="training.id"
+      :entrenamiento="training" />
 
     <!-- Dialog para ver evaluaciones -->
     <VerEvaluaciones v-model:modelValue="verEvaluacionesDialog" :entrenamientoId="training.id" />
@@ -380,6 +386,22 @@ const puedeTomarAsistencia = computed(() => {
 // Obtener razón por la cual no se puede tomar asistencia
 const razonNoAsistencia = computed(() => {
   return calcularEstadoReal(training).razon
+})
+
+// Verificar si se puede ver asistencias
+const puedeVerAsistencias = computed(() => {
+  const estadoReal = calcularEstadoReal(training).estado
+  return estadoReal === 'en-marcha' || estadoReal === 'suspendido' || estadoReal === 'terminado'
+})
+
+// Verificar si se puede evaluar
+const puedeEvaluar = computed(() => {
+  return true // Disponible en todos los estados
+})
+
+// Verificar si se puede ver evaluaciones
+const puedeVerEvaluaciones = computed(() => {
+  return true // Disponible en todos los estados
 })
 
 // Manejar click en botón de asistencia cuando está deshabilitado

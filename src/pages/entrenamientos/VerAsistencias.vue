@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="show" persistent>
+  <q-dialog v-model="show" persistent :maximized="$q.screen.lt.md">
     <q-card class="ver-asistencias-card">
       <!-- Header mejorado con degradado verde -->
       <q-card-section class="ver-header">
@@ -11,7 +11,7 @@
             <div class="header-title">Asistencias del Entrenamiento</div>
             <div class="header-subtitle">
               <q-icon name="people" size="16px" class="q-mr-xs" />
-              Total: {{ asistencias.length }} registros
+              Total: {{ nroAsistencias }} asistencias
             </div>
           </div>
         </div>
@@ -20,101 +20,104 @@
 
       <q-separator />
 
-      <q-card-section class="asistencias-section">
-        <div class="section-header">
+      <div class="dialog-body-scroll">
+        <q-card-section class="asistencias-section">
+          <div class="section-header">
+            <div class="section-label">
+              <q-icon name="check_circle" size="20px" class="q-mr-xs" />
+              Listado de asistencias
+            </div>
+            <div class="section-controls">
+              <q-input v-model="searchText" dense outlined placeholder="Buscar por nombre o CI..." class="search-input"
+                @update:model-value="onSearchChange">
+                <template v-slot:prepend>
+                  <q-icon name="search" />
+                </template>
+              </q-input>
+              <q-select v-model="limit" dense outlined map-options emit-value option-value="value"
+                :options="limitOptions" label="Registros" class="limit-select" @update:model-value="onLimitChange" />
+            </div>
+          </div>
+          <q-list bordered class="asistencias-list">
+            <q-item v-for="a in asistencias" :key="a.id || `${a.id_persona}-${a.fecha}`" class="asistencia-item">
+              <q-item-section avatar>
+                <q-avatar :color="a.es_entrenador ? 'amber-7' : 'green-7'" text-color="white" size="42px">
+                  <q-icon :name="a.es_entrenador ? 'sports' : 'person'" />
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="persona-name">{{ personaLabel(a) }}</q-item-label>
+                <q-item-label caption class="persona-info">
+                  <q-icon name="event" size="14px" class="q-mr-xs" />{{ formatFecha(a.fecha) }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-btn unelevated dense color="amber-8" icon="trending_up" @click="openProgressDialog(a)"
+                  class="progreso-btn">
+                  <span class="progreso-btn-label">Progreso</span>
+                  <q-tooltip>Ver progreso</q-tooltip>
+                </q-btn>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="!asistencias.length" class="empty-item">
+              <q-item-section class="text-center">
+                <q-icon name="event_busy" size="48px" color="grey-4" />
+                <q-item-label caption class="empty-text">No hay registros de asistencia para este
+                  entrenamiento</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-separator />
+
+        <!-- Lista de progresos locales -->
+        <q-card-section class="progresos-section">
           <div class="section-label">
-            <q-icon name="check_circle" size="20px" class="q-mr-xs" />
-            Listado de asistencias
+            <q-icon name="bar_chart" size="20px" class="q-mr-xs" />
+            Progresos agregados
           </div>
-          <div class="section-controls">
-            <q-input v-model="searchText" dense outlined placeholder="Buscar por nombre o CI..." class="search-input"
-              @update:model-value="onSearchChange">
-              <template v-slot:prepend>
-                <q-icon name="search" />
-              </template>
-            </q-input>
-            <q-select v-model="limit" dense outlined :options="limitOptions" label="Registros" class="limit-select"
-              @update:model-value="onLimitChange" />
-          </div>
-        </div>
-        <q-list bordered class="asistencias-list">
-          <q-item v-for="a in asistencias" :key="a.id || `${a.id_persona}-${a.fecha}`" class="asistencia-item">
-            <q-item-section avatar>
-              <q-avatar :color="a.es_entrenador ? 'amber-7' : 'green-7'" text-color="white" size="42px">
-                <q-icon :name="a.es_entrenador ? 'sports' : 'person'" />
-              </q-avatar>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label class="persona-name">{{ personaLabel(a) }}</q-item-label>
-              <q-item-label caption class="persona-info">
-                <q-icon name="event" size="14px" class="q-mr-xs" />{{ a.fecha }} •
-                <q-badge :color="a.es_entrenador ? 'amber-7' : 'green-7'"
-                  :label="a.es_entrenador ? 'Entrenador' : 'Estudiante'" class="q-ml-xs" />
-              </q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-btn unelevated dense color="amber-8" icon="trending_up" @click="openProgressDialog(a)"
-                class="progreso-btn">
-                <span class="progreso-btn-label">Progreso</span>
-                <q-tooltip>Ver progreso</q-tooltip>
-              </q-btn>
-            </q-item-section>
-          </q-item>
-          <q-item v-if="!asistencias.length" class="empty-item">
-            <q-item-section class="text-center">
-              <q-icon name="event_busy" size="48px" color="grey-4" />
-              <q-item-label caption class="empty-text">No hay registros de asistencia para este
-                entrenamiento</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-
-      <q-separator />
-
-      <!-- Lista de progresos locales -->
-      <q-card-section class="progresos-section">
-        <div class="section-label">
-          <q-icon name="bar_chart" size="20px" class="q-mr-xs" />
-          Progresos agregados
-        </div>
-        <q-list bordered class="progresos-list">
-          <q-item v-for="p in progresos" :key="p.id_persona + '-' + p.id_cualidad + '-' + p.fecha"
-            class="progreso-item">
-            <q-item-section avatar>
-              <q-avatar color="amber-7" text-color="white" size="38px">
-                <q-icon name="stars" />
-              </q-avatar>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label class="progreso-name">{{ personaNameById(p.id_persona) }}</q-item-label>
-              <q-item-label caption class="progreso-details">
-                <q-badge color="green-7" :label="cualidadNameById(p.id_cualidad)" class="q-mr-xs" />
-                <q-rating :model-value="p.valor" readonly max="5" size="14px" color="amber-7" />
-                <span class="q-ml-xs">• {{ p.fecha }}</span>
-              </q-item-label>
-              <q-item-label caption v-if="p.comentario" class="progreso-comment">{{ p.comentario }}</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-btn round dense flat color="red-7" icon="close" @click="removeProgreso(p)" class="remove-btn">
-                <q-tooltip>Eliminar progreso</q-tooltip>
-              </q-btn>
-            </q-item-section>
-          </q-item>
-          <q-item v-if="!progresos.length" class="empty-item">
-            <q-item-section class="text-center">
-              <q-icon name="insights" size="42px" color="grey-4" />
-              <q-item-label caption class="empty-text">No hay progresos agregados aún</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
+          <q-list bordered class="progresos-list">
+            <q-item v-for="p in progresos" :key="p.id_persona + '-' + p.id_cualidad + '-' + p.fecha"
+              class="progreso-item">
+              <q-item-section avatar>
+                <q-avatar color="amber-7" text-color="white" size="38px">
+                  <q-icon name="stars" />
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="progreso-name">{{ personaNameById(p.id_persona) }}</q-item-label>
+                <q-item-label caption class="progreso-details">
+                  <q-badge color="green-7" :label="cualidadNameById(p.id_cualidad)" class="q-mr-xs" />
+                  <q-rating :model-value="p.valor" readonly max="5" size="14px" color="amber-7" />
+                  <span class="q-ml-xs">• {{ p.fecha }}</span>
+                </q-item-label>
+                <q-item-label caption v-if="p.comentario" class="progreso-comment">{{ p.comentario }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-btn round dense flat color="red-7" icon="close" @click="removeProgreso(p)" class="remove-btn">
+                  <q-tooltip>Eliminar progreso</q-tooltip>
+                </q-btn>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="!progresos.length" class="empty-item">
+              <q-item-section class="text-center">
+                <q-icon name="insights" size="42px" color="grey-4" />
+                <q-item-label caption class="empty-text">No hay progresos agregados aún</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+      </div>
 
       <q-separator />
 
       <q-card-actions align="right" class="footer-actions">
-        <q-btn label="Generar progresos" color="green-7" icon="auto_awesome" @click="generateProgresos"
-          class="generate-btn" />
+        <q-btn :label="$q.screen.gt.xs ? 'Guardar progresos' : 'Guardar'"
+          :color="puedeRegistrarProgreso ? 'green-7' : 'grey-6'" icon="auto_awesome" @click="generateProgresos"
+          :disable="!puedeRegistrarProgreso" class="generate-btn">
+          <q-tooltip v-if="!puedeRegistrarProgreso">Solo disponible en entrenamientos en marcha o terminados</q-tooltip>
+        </q-btn>
         <q-btn unelevated label="Cerrar" flat color="amber-8" icon="close" v-close-popup @click="closeDialog"
           class="close-action-btn" />
       </q-card-actions>
@@ -173,7 +176,8 @@ import { agregarProgresos } from 'stores/progreso-store.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  entrenamientoId: { type: [Number, String], required: true }
+  entrenamientoId: { type: [Number, String], required: true },
+  entrenamiento: { type: Object, required: true }
 })
 const emit = defineEmits(['update:modelValue'])
 const $q = useQuasar()
@@ -191,6 +195,7 @@ const selectedCualidad = ref(null)
 const progresoValor = ref(3)
 const progresoComentario = ref('')
 const cualidades = ref([])
+const nroAsistencias = ref(0)
 
 // Nuevos campos para búsqueda y paginación
 const searchText = ref('')
@@ -201,7 +206,7 @@ const limitOptions = ref([
   { label: '20', value: 20 },
   { label: '50', value: 50 },
   { label: '100', value: 100 },
-  { label: 'Todos', value: -1 }
+  { label: 'Todos', value: null }
 ])
 
 const getBoliviaDateString = () => {
@@ -226,10 +231,12 @@ const fetchAsistencias = async () => {
       search: searchText.value || ''
     }
     const resp = await listarAsistencias(params)
-    asistencias.value = Array.isArray(resp) ? resp : (resp?.data || [])
+    asistencias.value = resp.lista
+    nroAsistencias.value = resp.total
   } catch (e) {
     console.error('Error cargando asistencias:', e)
     asistencias.value = []
+    nroAsistencias.value = 0
   }
 }
 
@@ -252,6 +259,21 @@ const loadCualidades = async () => {
 }
 
 watch(() => show.value, (v) => { if (v) { fetchAsistencias(); loadCualidades() } })
+
+const formatFecha = (fecha) => {
+  if (!fecha) return ''
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+  // Parsear la fecha YYYY-MM-DD hh:mm:ss
+  const partes = fecha.split(' ')
+  const fechaParte = partes[0] // YYYY-MM-DD
+  const horaParte = partes[1] || '00:00:00' // hh:mm:ss
+
+  const [year, month, day] = fechaParte.split('-')
+  const mesNombre = meses[parseInt(month) - 1] || ''
+
+  return `${day} ${mesNombre} ${year}, ${horaParte}`
+}
 
 const personaLabel = (a) => {
   if (!a) return ''
@@ -331,6 +353,65 @@ const removeProgreso = (p) => {
   if (idx !== -1) progresos.value.splice(idx, 1)
 }
 
+// Obtener fecha en zona horaria de Bolivia (UTC-4)
+const obtenerFechaBolivia = (fechaString) => {
+  if (!fechaString) return null
+  const fecha = new Date(fechaString + 'T00:00:00-04:00')
+  return fecha
+}
+
+// Obtener fecha actual en Bolivia
+const obtenerHoyBolivia = () => {
+  const ahora = new Date()
+  const utc = ahora.getTime() + (ahora.getTimezoneOffset() * 60000)
+  const boliviaTime = new Date(utc + (3600000 * -4)) // UTC-4
+  boliviaTime.setHours(0, 0, 0, 0)
+  return boliviaTime
+}
+
+// Calcular estado real basado en fechas
+const calcularEstadoReal = (entrenamiento) => {
+  if (!entrenamiento) return { estado: 'desconocido', color: 'grey', label: 'Desconocido' }
+
+  // Si estado es 0, está suspendido
+  if (entrenamiento.estado === 0) {
+    return { estado: 'suspendido', color: 'negative', label: 'Suspendido' }
+  }
+
+  // Si estado es 1, revisar fechas
+  if (entrenamiento.estado === 1) {
+    const hoy = obtenerHoyBolivia()
+    const fechaInicio = obtenerFechaBolivia(entrenamiento.fecha_inicio)
+    const fechaFin = obtenerFechaBolivia(entrenamiento.fecha_fin)
+
+    if (!fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar' }
+    }
+
+    // Sin comenzar: hoy < fecha_inicio
+    if (hoy < fechaInicio) {
+      return { estado: 'sin-comenzar', color: 'warning', label: 'Sin comenzar' }
+    }
+
+    // Terminado: hoy > fecha_fin
+    if (fechaFin && hoy > fechaFin) {
+      return { estado: 'terminado', color: 'grey', label: 'Terminado' }
+    }
+
+    // En marcha: hoy >= fecha_inicio && hoy <= fecha_fin
+    return { estado: 'en-marcha', color: 'positive', label: 'En marcha' }
+  }
+
+  // Otros estados (por compatibilidad)
+  return { estado: 'desconocido', color: 'grey', label: 'Desconocido' }
+}
+
+// Verificar si se puede registrar progreso
+const puedeRegistrarProgreso = computed(() => {
+  const estadoReal = calcularEstadoReal(props.entrenamiento).estado
+  return estadoReal === 'en-marcha' || estadoReal === 'terminado'
+})
+
 const generateProgresos = async () => {
   if (!progresos.value.length) {
     $q.notify({ type: 'warning', message: 'No hay progresos para enviar' })
@@ -366,6 +447,29 @@ $color-amber: #ffa726;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-body-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba($color-forest, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-forest, 0.3);
+    border-radius: 5px;
+
+    &:hover {
+      background: rgba($color-forest, 0.4);
+    }
+  }
 }
 
 .ver-header {
@@ -489,8 +593,8 @@ $color-amber: #ffa726;
 
   .asistencias-list,
   .progresos-list {
-    max-height: 350px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
     border-radius: 12px;
     border: 2px solid rgba($color-forest, 0.12);
 
