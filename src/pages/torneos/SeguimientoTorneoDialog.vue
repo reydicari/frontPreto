@@ -2486,7 +2486,7 @@ $pastel-clay: #d7ccc8;
 
 // Responsive
 @media (max-width: 959px) {
-  .page-container {
+  .torneo-dialog {
     .torneo-card {
       margin: 12px;
       max-width: calc(100vw - 24px);
@@ -2552,7 +2552,7 @@ $pastel-clay: #d7ccc8;
 }
 
 @media (max-width: 599px) {
-  .page-container {
+  .torneo-dialog {
     padding: 2px !important;
 
     .torneo-card {

@@ -228,9 +228,7 @@
 
           <q-btn class="btn-action btn-assign-coaches" round icon="person_add"
             :disable="!puedeAsignarEntrenadores(training)" @click.stop="assignCoaches(training)">
-            <q-tooltip>{{ puedeAsignarEntrenadores(training) ? 'Asignar Entrenadores' : 'Solo disponible en
-            entrenamientos
-              sin comenzar o en marcha' }}</q-tooltip>
+            <q-tooltip>{{ puedeAsignarEntrenadores(training) ? asignarEntrenadores : soloDisponible }}</q-tooltip>
           </q-btn>
 
           <!-- <q-btn class="btn-action btn-coaches" round icon="groups" @click.stop="viewCoaches(training)"
@@ -425,6 +423,9 @@ const puedeAsignarEntrenadores = (training) => {
 const paqueteOptions = ref([])
 const ubicacionesOptions = ref([])
 
+//labels para tooltip
+const asignarEntrenadores = 'Asignar entrenadores'
+const soloDisponible = 'Solo disponible para entrenamientos sin comenzar o en marcha'
 // Estado del componente
 const trainings = ref([])
 const loading = ref(false)
