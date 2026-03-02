@@ -228,13 +228,13 @@
         </q-card-section>
 
         <q-card-actions align="right" class="card-actions">
-          <q-btn flat dense icon="visibility" label="Ver" class="action-btn" />
+          <!-- <q-btn flat dense icon="visibility" label="Ver" class="action-btn" /> -->
           <q-btn v-if="torneo.estado != 2 && torneo.estado != 3 && torneo.estado != 0" flat dense icon="edit"
             color="brown-7" @click.stop="onEdit(torneo)" title="Editar" />
           <q-btn v-if="torneo.estado != 0 && torneo.estado != 3" flat dense icon="pause_circle" color="negative"
             @click.stop="onDelete(torneo)" title="Suspender" />
-          <q-btn v-if="torneo.estado == 0 || torneo.estado == 3" flat dense icon="event_repeat" color="purple-7"
-            @click.stop="onReschedule(torneo)" title="Reprogramar">
+          <q-btn v-if="(torneo.estado == 0 || torneo.estado == 3) && false" flat dense icon="event_repeat"
+            color="purple-7" @click.stop="onReschedule(torneo)" title="Reprogramar">
             <q-tooltip>Reprogramar torneo</q-tooltip>
           </q-btn>
           <q-btn flat dense icon="groups" color="orange" @click.stop="openBorradores(torneo)" title="Borradores" />
@@ -362,7 +362,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import TorneoDialog from './TorneoDialog.vue'
 import BorradoresDialog from './BorradoresDialog.vue'
 import MapaUbicacionDialog from 'src/pages/entrenamientos/MapaUbicacionDialog.vue'
@@ -373,7 +373,7 @@ import { listarNiveles } from 'src/stores/nivel'
 import { actualizarBorradores } from 'src/stores/borrador-store'
 
 const $q = useQuasar()
-const router = useRouter()
+// const router = useRouter()
 
 const torneos = ref([])
 const tiposTorneo = ref([])
@@ -413,7 +413,7 @@ const estadoOptions = [
 ]
 
 // por defecto mostrar estados activos (Comenzado)
-filters.estados = [2]
+filters.estados = [1, 2, 3]
 
 // Expansión de filtros
 const filtersExpanded = ref(false)
@@ -609,11 +609,14 @@ async function onBorradoresStarted(evt) {
   if (id) {
     // intentar encontrar en la lista recargada
     const found = torneos.value.find(t => String(t.id) === String(id))
-    if (found) selectedTorneo.value = found
+    if (found) {
+      selectedTorneo.value = found
+      selectedTorneoForSeguimiento.value = found
+    }
   }
 
-  router.push({ path: `/torneos/seguimiento/${id}` }) // Comentar para usar dialog
-  // showSeguimiento.value = true // Descomentar para usar dialog en vez de page
+  // router.push({ path: `/torneos/seguimiento/${id}` }) // Comentar para usar dialog
+  showSeguimientoDialog.value = true // Usar dialog en vez de page
   $q.notify({ type: 'positive', message: 'Torneo iniciado — mostrando seguimiento' })
 }
 

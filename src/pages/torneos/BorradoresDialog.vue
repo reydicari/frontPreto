@@ -5,7 +5,7 @@
         <q-icon name="groups" size="36px" />
         <div class="col">
           <div class="text-h5 text-weight-medium">Gestionar Equipos</div>
-          <div class="text-body2 q-mt-xs" style="opacity: 0.9;">Administre los equipos participantes del torneo</div>
+          <div class="text-body2 q-mt-xs" style="opacity: 0.9;">{{ torneoNombre }}</div>
         </div>
         <q-btn flat round dense icon="close" color="white" @click="onCancel" />
       </div>
@@ -14,20 +14,20 @@
     <q-separator />
 
     <!-- Banner de torneo suspendido -->
-    <q-banner v-if="isTorneoSuspended" class="bg-red-1 text-red-9 q-pa-md" dense>
+    <!-- <q-banner v-if="isTorneoSuspended" class="bg-red-1 text-red-9 q-pa-md" dense>
       <template v-slot:avatar>
         <q-icon name="block" color="red" size="32px" />
       </template>
-      <div class="text-h6 text-weight-bold">Torneo Suspendido</div>
-      <div v-if="suspendedByUser" class="text-body2 q-mt-xs">
-        Suspendido por: <span class="text-weight-bold">{{ suspendedByUser }}</span>
-      </div>
-      <div class="text-body2 q-mt-xs">
-        No se pueden agregar equipos ni iniciar el torneo mientras esté suspendido.
-      </div>
-    </q-banner>
+<div class="text-h6 text-weight-bold">Torneo Suspendido</div>
+<div v-if="suspendedByUser" class="text-body2 q-mt-xs">
+  Suspendido por: <span class="text-weight-bold">{{ suspendedByUser }}</span>
+</div>
+<div class="text-body2 q-mt-xs">
+  No se pueden agregar equipos ni iniciar el torneo mientras esté suspendido.
+</div>
+</q-banner>
 
-    <q-separator v-if="isTorneoSuspended" />
+<q-separator v-if="isTorneoSuspended" /> -->
 
     <q-card-section class="q-pa-lg">
       <div v-if="loading" class="row items-center justify-center q-pa-xl">
@@ -76,7 +76,7 @@
             <q-icon name="add_circle" color="green-7" size="24px" class="q-mr-sm" />
             <div class="text-h6 text-weight-medium">Agregar Nuevos Equipos</div>
           </div>
-          <q-banner rounded class="bg-blue-1 text-blue-9 q-mb-md">
+          <q-banner v-if="modificationBlockReason == ''" rounded class="bg-blue-1 text-blue-9 q-mb-md">
             <template v-slot:avatar>
               <q-icon name="info" color="blue" />
             </template>
@@ -155,7 +155,7 @@
             color="green-7" @click="showSeguimiento = true" class="text-body2" />
           <q-btn v-else-if="!isTorneoFinished && !isTorneoSuspended" unelevated label="Comenzar" icon="flag"
             color="deep-orange-6" @click="openStartFlow" class="text-body2" />
-          <q-btn v-if="!isTorneoFinished && !isTorneoSuspended" unelevated label="Guardar Equipos" icon="save"
+          <q-btn v-if="!isTorneoFinished && !isTorneoSuspended" unelevated label="Guardar cambios" icon="save"
             color="green-7" @click="onSave" class="text-body2" />
         </div>
       </div>
@@ -284,13 +284,13 @@ const modificationBlockReason = computed(() => {
 })
 
 // Computed para obtener el nombre del usuario que suspendió el torneo
-const suspendedByUser = computed(() => {
-  if (!isTorneoSuspended.value) return null
-  if (torneoData.value?.id_usuario_suspende && torneoData.value?.usuario?.usuario) {
-    return torneoData.value.usuario.usuario
-  }
-  return null
-})
+// const suspendedByUser = computed(() => {
+//   if (!isTorneoSuspended.value) return null
+//   if (torneoData.value?.id_usuario_suspende && torneoData.value?.usuario?.usuario) {
+//     return torneoData.value.usuario.usuario
+//   }
+//   return null
+// })
 
 const loading = ref(false)
 const originals = ref([]) // borradores que vienen del backend
@@ -496,6 +496,7 @@ async function registerNew(idx) {
     Notify.create({ type: 'negative', message: `No se pueden agregar equipos: ${modificationBlockReason.value}` })
     return
   }
+
   const card = newCards.value[idx]
   if (!card) return
   if (!card.nombre || !card.nombre.trim()) {

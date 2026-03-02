@@ -1632,7 +1632,7 @@ $pastel-clay: #d7ccc8;
 
 .torneo-dialog {
   .torneo-card {
-    max-width: 1600px;
+    max-width: 800px !important;
     width: 100%;
     margin: 0 auto;
     border-radius: 16px;
