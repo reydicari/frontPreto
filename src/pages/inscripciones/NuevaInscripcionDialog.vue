@@ -115,7 +115,7 @@
                               </q-badge>
                               <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                                }} disponibles</span>
+                              }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>
@@ -572,7 +572,7 @@ watch(() => localInscripcion.meses_duracion, (newVal) => {
 // Cargar opciones iniciales
 async function loadNiveles() {
   try {
-    const niveles = await listarNiveles()
+    const niveles = await listarNiveles({ estado: true })
     // formatear a { label, value } para usar con map-options + emit-value
     nivelOptions.value = (niveles || []).map(n => ({ value: n.id, label: n.nombre_nivel || n.nombre || n.label }))
   } catch (err) {

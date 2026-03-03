@@ -7,7 +7,7 @@
           <div class="col-12 col-sm-auto">
             <div class="header-title">
               <q-icon name="place" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Gestión de Ubicaciones</h2>
+              <h2 class="page-title">Ubicaciones</h2>
             </div>
             <p class="header-subtitle">Administra las ubicaciones deportivas del sistema</p>
           </div>
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Estadísticas -->
-      <div class="stats-container row q-gutter-md q-mt-md">
+      <!-- <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="place" size="36px" />
@@ -45,7 +45,7 @@
             <div class="stat-label">Equipadas</div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Ayuda con botón -->
       <div class="help-banner q-mt-md">

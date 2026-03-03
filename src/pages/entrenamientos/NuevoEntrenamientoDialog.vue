@@ -431,7 +431,7 @@ async function loadPaquetes() {
 // Cargar ubicaciones desde el store
 async function loadUbicaciones() {
   try {
-    const res = await listarUbicaciones()
+    const res = await listarUbicaciones({ estado: true })
     ubicacionesList.value = Array.isArray(res) ? res : (res && res.data ? res.data : [])
 
     // Seleccionar por defecto la ubicación 'PETROAMBIENTAL' si existe

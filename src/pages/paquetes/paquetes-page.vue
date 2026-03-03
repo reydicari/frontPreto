@@ -272,7 +272,7 @@ const diasOptions = ref([
 onMounted(async () => {
   // paquetes.value = await listarPaquetes()
   disciplineOptions.value = await listarDisciplinas()
-  const niveles = await listarNiveles()
+  const niveles = await listarNiveles({ estado: true })
   nivelOptions.value = niveles.map(n => ({ label: n.nombre_nivel, value: n.id }))
   listar()
 })

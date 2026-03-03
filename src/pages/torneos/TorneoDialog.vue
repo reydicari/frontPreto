@@ -169,7 +169,7 @@ const niveles = ref([])
 
 onMounted(async () => {
   try {
-    const [tList, uList, nivelesList] = await Promise.all([listarTiposTorneo().catch(() => []), listarUbicaciones().catch(() => []), listarNiveles().catch(() => [])])
+    const [tList, uList, nivelesList] = await Promise.all([listarTiposTorneo().catch(() => []), listarUbicaciones({ estado: true }).catch(() => []), listarNiveles({ estado: true }).catch(() => [])])
     tipos.value = Array.isArray(tList) ? tList : (tList?.data || [])
     ubicaciones.value = Array.isArray(uList) ? uList : (uList?.data || [])
     niveles.value = Array.isArray(nivelesList) ? nivelesList : (nivelesList?.data || [])

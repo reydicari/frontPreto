@@ -9,7 +9,6 @@
               <q-icon name="signal_cellular_alt" size="42px" class="q-mr-sm" />
               <h2 class="page-title">Gestión de Niveles</h2>
             </div>
-            <p class="header-subtitle">Administra los niveles deportivos del sistema</p>
           </div>
         </div>
       </div>
@@ -47,22 +46,6 @@
         </div>
       </div> -->
     </div>
-
-    <!-- Filtro de estado -->
-    <q-card class="q-mb-md filter-card">
-      <q-card-section>
-        <div class="row items-center q-gutter-md">
-          <q-icon name="tune" size="24px" class="text-brown-7" />
-          <span class="text-weight-medium">Filtrar por estado:</span>
-          <q-select v-model="filterStatus" :options="statusOptions" outlined dense emit-value map-options
-            option-label="label" option-value="value" style="min-width:170px">
-            <template v-slot:prepend>
-              <q-icon name="filter_list" />
-            </template>
-          </q-select>
-        </div>
-      </q-card-section>
-    </q-card>
 
     <div class="row q-col-gutter-md">
       <!-- Formulario estático (izquierda) -->
@@ -103,7 +86,7 @@
               <span class="text-h6">Niveles Registrados</span>
               <q-space />
               <q-badge color="orange" class="count-badge">
-                {{ filteredNiveles.length }}
+                {{ niveles.length }}
               </q-badge>
             </div>
           </q-card-section>
@@ -116,8 +99,8 @@
           </q-inner-loading>
 
           <!-- Lista de niveles -->
-          <q-list v-if="!cargando && filteredNiveles.length > 0" class="niveles-list">
-            <q-item v-for="(nivel, index) in filteredNiveles" :key="nivel.id" class="nivel-item">
+          <q-list v-if="!cargando && niveles.length > 0" class="niveles-list">
+            <q-item v-for="(nivel, index) in niveles" :key="nivel.id" class="nivel-item">
               <q-item-section avatar>
                 <q-avatar size="42px" :class="nivel.estado ? 'avatar-active' : 'avatar-inactive'">
                   <span class="avatar-number">{{ index + 1 }}</span>
@@ -128,10 +111,14 @@
                 <q-item-label class="item-title">
                   {{ nivel.nombre_nivel }}
                 </q-item-label>
-                <q-item-label caption class="q-mt-xs">
+                <q-item-label caption class="q-mt-xs row q-gutter-xs">
                   <q-badge :color="nivel.estado ? 'positive' : 'grey'" text-color="white" class="status-badge">
                     <q-icon :name="nivel.estado ? 'check_circle' : 'block'" size="12px" class="q-mr-xs" />
                     {{ nivel.estado ? 'Activo' : 'Inactivo' }}
+                  </q-badge>
+                  <q-badge color="orange" text-color="white" class="students-badge">
+                    <q-icon name="people" size="12px" class="q-mr-xs" />
+                    {{ nivel.nroInscripciones || 0 }} estudiantes
                   </q-badge>
                 </q-item-label>
               </q-item-section>
@@ -186,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useQuasar } from 'quasar'
 import { agregarNivel, cambiarEstado, listarNiveles, modificarNivel } from 'src/stores/nivel'
 
@@ -231,6 +218,8 @@ const cargarNiveles = async () => {
   try {
     // Reemplaza esto con tu llamada real a la API
     const response = await listarNiveles()
+    console.log('lista de niveles: ', response);
+
     niveles.value = response
   } catch (error) {
     console.error('Error cargando niveles:', error)
@@ -238,25 +227,6 @@ const cargarNiveles = async () => {
     cargando.value = false
   }
 }
-
-// (opcional) cargar estudiantes para contar por nivel
-const estudiantes = ref([])
-
-
-
-// filtro de estado para niveles
-const filterStatus = ref(null)
-const statusOptions = [
-  { label: 'Todos', value: null },
-  { label: 'Activos', value: true },
-  { label: 'Inactivos', value: false }
-]
-
-const filteredNiveles = computed(() => {
-  if (!niveles.value) return []
-  if (filterStatus.value === null) return niveles.value
-  return niveles.value.filter(n => Boolean(n.estado) === filterStatus.value)
-})
 
 // Editar nivel
 const editarNivel = (nivel) => {
@@ -347,12 +317,6 @@ const confirmToggle = (nivel, nuevoVal) => {
       console.error('Error al cambiar estado:', err)
     }
   })
-}
-
-// contar estudiantes por nivel
-const countStudents = (nivel) => {
-  if (!nivel || !estudiantes.value) return 0
-  return estudiantes.value.filter(s => Number(s.nivel_id) === Number(nivel.id)).length
 }
 
 // Cargar datos al montar el componente

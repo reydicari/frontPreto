@@ -27,6 +27,9 @@
                 <div class="info-label">Coordenadas</div>
                 <div class="info-value">{{ coordenadasFormateadas }}</div>
               </div>
+              <q-btn flat round dense icon="map" color="orange-7" @click="abrirEnGoogleMaps" v-if="latitud && longitud">
+                <q-tooltip>Abrir en Google Maps</q-tooltip>
+              </q-btn>
             </div>
           </div>
           <div class="col-12 col-sm-6" v-if="ubicacion?.capacidad">

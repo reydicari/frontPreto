@@ -55,7 +55,7 @@
                           <q-badge color="green-7" :label="`#${idx + 1}`" />
                           <div class="row items-center" style="gap:4px;">
                             <q-chip dense size="sm" color="grey-3" text-color="grey-8" icon="category">
-                              {{ m._phaseName || phaseName || '-' }}
+                              {{ torneoType === 2 ? `Encuentro ${idx + 1}` : (m._phaseName || phaseName || '-') }}
                             </q-chip>
                             <q-btn dense round flat icon="swap_horiz" color="green-7" size="sm"
                               @click.stop="swapMatch(idx)">
@@ -349,7 +349,7 @@ const matches = ref([])
 const phaseName = ref('')
 const torneoNombre = ref('')
 const phaseId = ref(null)
-const tipoLabel = ref('Jornada')
+const tipoLabel = ref('Encuentro')
 const borradores = ref([])
 const manualMode = ref(false)
 const selectedTeam = ref(null)
@@ -413,7 +413,7 @@ async function prepareOrganization() {
     const tor = t || null
     torneoNombre.value = tor?.nombre || ''
     // etiqueta para las rondas: usar el nombre del tipo de torneo si está disponible
-    tipoLabel.value = (tor && tor.tipo_torneo && tor.tipo_torneo.nombre) ? tor.tipo_torneo.nombre : 'Jornada'
+    tipoLabel.value = (tor && tor.tipo_torneo && tor.tipo_torneo.nombre) ? tor.tipo_torneo.nombre : 'Encuentro'
     // cargar borradores. Si se pasaron equipos iniciales, úsalos como borradores
     if (props.initialTeams && Array.isArray(props.initialTeams) && props.initialTeams.length > 0) {
       borradores.value = props.initialTeams.map(t => ({ id: t.id, nombre: t.nombre || t.nombre_corto || '' }))
@@ -576,11 +576,13 @@ async function generateDirectedRoundRobin(teamsOrig, fases) {
     phaseId.value = first.id_fase ?? phaseId.value
   }
 
-  // Para tipo 2, sobreescribir/establecer campo 'ronda' agrupando partidos de a 2
+  // Para tipo 2, ajustar el label de 'ronda' usando el número de ronda real del round-robin
   if (torneoType.value === 2 && matches.value.length > 0) {
     for (let i = 0; i < matches.value.length; i++) {
-      const roundIndex = Math.floor(i / 2) + 1
-      const label = `${tipoLabel.value} ${roundIndex}`
+      const m = matches.value[i]
+      // usar el número de ronda que ya viene del algoritmo round-robin
+      const roundNumber = m.ronda || (i + 1)
+      const label = `Encuentro ${roundNumber}`
       matches.value[i].ronda = label
       // también ajustar _phaseName para mostrar coherente en la UI
       matches.value[i]._phaseName = label
@@ -652,17 +654,17 @@ function setRondaForMatches(arr) {
     const m = arr[i]
     if (!m) continue
     // no sobreescribimos si ya tiene ronda definida
-    if (m.ronda) continue
+    // if (m.ronda) continue
     if (torneoType.value === 2) {
-      const roundIndex = Math.floor(i / 2) + 1
-      // para tipo 2 recortamos el último caracter de la etiqueta (p.e. 'Jornadas' -> 'Jornada')
-      const baseLabelRaw = tipoLabel.value || ''
-      const baseLabel = baseLabelRaw && baseLabelRaw.length > 1 ? baseLabelRaw.slice(0, -1) : baseLabelRaw
-      const label = `${baseLabel} ${roundIndex}`
+      // para tipo 2 (liga), cada partido es una jornada secuencial
+      const roundIndex = i + 1
+      // recortamos el último caracter de la etiqueta si es plural (p.e. 'Jornadas' -> 'Jornada')
+      const baseLabelRaw = 'Encuentro'
+      const label = `${baseLabelRaw} ${roundIndex}`
       m.ronda = label
       m._phaseName = label
     } else if (torneoType.value === 1) {
-      // usar nombre de la fase tal cual
+      // usar nombre de la fase tal cual (para eliminatorias)
       m.ronda = phaseName.value || 'Fase'
       m._phaseName = phaseName.value || 'Fase'
     } else if (torneoType.value === 4) {
@@ -672,7 +674,7 @@ function setRondaForMatches(arr) {
       m._phaseName = label
     } else {
       // fallback genérico
-      const label = `${tipoLabel.value} ${Math.floor(i / 2) + 1}`
+      const label = `Encuentro ${i + 1}`
       m.ronda = label
       m._phaseName = label
     }
@@ -1117,9 +1119,8 @@ async function sortearAleatorio() {
       }
     }
 
-    // asignar fases/rondas agrupando partidos de a 2 por ronda. Usar label base recortado para tipo 2
-    const baseLabelRaw = tipoLabel.value || ''
-    const baseLabel = baseLabelRaw && baseLabelRaw.length > 1 ? baseLabelRaw.slice(0, -1) : baseLabelRaw
+    // asignar fases/rondas agrupando partidos de a 2 por ronda. Usar 'Encuentro' para tipo 2
+    const baseLabel = 'Encuentro'
     if (Array.isArray(fases) && fases.length > 0) {
       newMatches.forEach((m, idx) => {
         const roundIndex = Math.floor(idx / 2)
@@ -1139,7 +1140,7 @@ async function sortearAleatorio() {
     }
 
     matches.value = newMatches
-    Notify.create({ type: 'positive', message: `Generados ${newMatches.length} partidos (dirigidos)` })
+    Notify.create({ type: 'positive', message: `Generados ${newMatches.length} partidos` })
     return
   }
 

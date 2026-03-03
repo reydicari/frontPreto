@@ -2,7 +2,7 @@ import { api } from "boot/axios.js";
 const URL_PART = "/api/ubicacion";
 import { Notify } from "quasar";
 
-export const listarUbicaciones = async (params) => {
+export const listarUbicaciones = async (params = {}) => {
   try {
     const response = await api.get(URL_PART + "/listar", { params });
 
