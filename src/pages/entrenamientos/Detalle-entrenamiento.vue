@@ -136,7 +136,7 @@
 
     <q-card-actions class="footer-actions">
       <div class="action-buttons-group">
-        <!-- Botón Tomar Asistencia unificado en VerAsistencias -->
+        <!-- Botón Tomar Asistencia unificado en VerAsistencias si-->
         <q-btn flat class="action-btn secondary-action" :color="puedeVerAsistencias ? 'brown-7' : 'grey-6'"
           icon="visibility" :label="$q.screen.gt.xs ? 'Ver asistencias' : ''" :disable="!puedeVerAsistencias"
           @click="abrirVerAsistencias" size="md">
