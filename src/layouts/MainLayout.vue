@@ -86,7 +86,7 @@
                       <q-icon name="badge" size="18px" class="info-icon" />
                       <span class="info-label">CI:</span>
                       <span class="info-value">{{ userData?.persona?.ci }} {{ userData?.persona?.complemento || ''
-                      }}</span>
+                        }}</span>
                     </div>
 
                     <div class="info-row">
@@ -507,7 +507,7 @@
           </q-expansion-item>
 
           <!-- Configuraciones -->
-          <q-item v-if="tienePermiso(16)" clickable v-ripple @click="navegar('paisaje')" class="menu-item"
+          <!-- <q-item v-if="tienePermiso(16)" clickable v-ripple @click="navegar('paisaje')" class="menu-item"
             active-class="menu-item-active">
             <q-item-section avatar>
               <q-icon name="settings" class="menu-icon" />
@@ -515,7 +515,7 @@
             <q-item-section>
               <q-item-label class="menu-label">Configuraciones</q-item-label>
             </q-item-section>
-          </q-item>
+          </q-item> -->
         </q-list>
       </q-scroll-area>
     </q-drawer>

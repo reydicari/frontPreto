@@ -1,61 +1,27 @@
 <template>
-  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-3'">
-    <!-- Header modernizado -->
-    <div class="page-header q-mb-lg">
-      <div class="header-content">
-        <div class="row items-center justify-between q-col-gutter-md">
-          <div class="col-12 col-sm-auto">
-            <div class="header-title">
-              <q-icon name="place" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Ubicaciones</h2>
-            </div>
-            <p class="header-subtitle">Administra las ubicaciones deportivas del sistema</p>
-          </div>
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="place" size="38px" class="q-mr-sm" />
+            Ubicaciones
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra las ubicaciones deportivas del sistema</p>
         </div>
-      </div>
-
-      <!-- Estadísticas -->
-      <!-- <div class="stats-container row q-gutter-md q-mt-md">
-        <div class="stat-card stat-card-total">
-          <div class="stat-icon">
-            <q-icon name="place" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ ubicaciones.length }}</div>
-            <div class="stat-label">Total Ubicaciones</div>
-          </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Crear Ubicación" class="btn-header-nuevo"
+          :disable="!ubicacionSeleccionada" @click="mostrarDialogoNuevo">
+          <q-tooltip>Selecciona un punto en el mapa para habilitar</q-tooltip>
+        </q-btn>
+      </q-card-section>
+      <q-card-section class="q-pt-none">
+        <div class="help-banner">
+          <q-icon name="info" size="18px" class="q-mr-sm" />
+          <span class="help-text">💡 Haz clic en el mapa para seleccionar una ubicación y crear un nuevo registro</span>
         </div>
-
-        <div class="stat-card stat-card-active">
-          <div class="stat-icon">
-            <q-icon name="check_circle" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ubicaciones.filter(u => u.estado).length}}</div>
-            <div class="stat-label">Activas</div>
-          </div>
-        </div>
-
-        <div class="stat-card stat-card-equipped">
-          <div class="stat-icon">
-            <q-icon name="sports" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ubicaciones.filter(u => u.equipado).length}}</div>
-            <div class="stat-label">Equipadas</div>
-          </div>
-        </div>
-      </div> -->
-
-      <!-- Ayuda con botón -->
-      <div class="help-banner q-mt-md">
-        <q-icon name="info" size="20px" class="q-mr-sm" />
-        <span class="help-text">💡 Haz clic en el mapa para seleccionar una ubicación y crear un nuevo registro</span>
-        <q-space />
-        <q-btn class="btn-create-inline" icon="add_circle" label="Crear Ubicación" :disable="!ubicacionSeleccionada"
-          @click="mostrarDialogoNuevo" unelevated no-caps size="md" />
-      </div>
-    </div>
+      </q-card-section>
+    </q-card>
 
     <!-- Contenedor principal: Mapa + Lista -->
     <div class="row q-col-gutter-md">
@@ -153,7 +119,7 @@
         <q-card-section class="dialog-header">
           <div class="dialog-title">
             <q-icon :name="esEdicion ? 'edit_location' : 'add_location'" size="28px" class="q-mr-sm" />
-            <span class="text-h6">{{ esEdicion ? 'Editar Ubicación' : 'Crear Nueva Ubicación' }}</span>
+            <span class="text-h6">{{ esEdicion ? 'Modificar Ubicación' : 'Nueva Ubicación' }}</span>
           </div>
           <q-btn icon="close" flat round dense v-close-popup color="white" />
         </q-card-section>

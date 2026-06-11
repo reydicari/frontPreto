@@ -1,21 +1,20 @@
 <template>
-  <q-page class="roles-page" :class="$q.dark.isActive ? 'dark-mode' : 'light-mode'">
-    <!-- Header mejorado -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="page-title">
-            <q-icon name="admin_panel_settings" class="title-icon" />
+  <q-page class="roles-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="admin_panel_settings" size="38px" class="q-mr-sm" />
             Gestión de Roles y Permisos
-          </h1>
-          <p class="page-subtitle">Administra roles y controla el acceso a módulos del sistema</p>
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra roles y controla el acceso a módulos del sistema</p>
         </div>
-        <div class="header-actions">
-          <q-btn unelevated rounded class="add-role-btn" icon="add_circle" label="Nuevo Rol"
-            @click="openDialog(null)" />
-        </div>
-      </div>
-    </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Rol" class="btn-header-nuevo" @click="openDialog(null)">
+          <q-tooltip>Registrar nuevo rol</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
     <!-- Tabla de roles mejorada -->
     <q-card class="roles-table-card">
@@ -327,28 +326,13 @@ $color-amber: #ffa726;
 // ===== PÁGINA PRINCIPAL =====
 .roles-page {
   padding: 24px;
-  background: linear-gradient(135deg, #f5f5f5 0%, #e8f5e9 100%);
   min-height: 100vh;
   transition: all 0.3s ease;
-
-  &.dark-mode {
-    background: linear-gradient(135deg, #1a1a1a 0%, #0d1f13 100%);
-  }
 }
 
 // ===== HEADER =====
 .page-header {
-  background: linear-gradient(135deg, $color-forest-dark 0%, $color-forest 50%, $color-moss 100%);
-  border-radius: 16px;
-  padding: 32px;
   margin-bottom: 32px;
-  box-shadow: 0 8px 32px rgba(27, 94, 32, 0.25);
-  animation: slideInDown 0.6s ease;
-
-  @media (max-width: 768px) {
-    padding: 20px;
-    margin-bottom: 20px;
-  }
 }
 
 .header-content {

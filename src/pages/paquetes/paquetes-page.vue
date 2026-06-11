@@ -1,51 +1,60 @@
 <template>
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="row items-center justify-between q-mb-lg page-header">
-      <div class="header-content">
-        <div class="header-title">
-          <q-icon name="inventory_2" size="42px" class="q-mr-sm" />
-          <h4 class="page-title">Paquetes</h4>
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="inventory_2" size="38px" class="q-mr-sm" />
+            Paquetes
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Crea y gestiona paquetes educativos con horarios personalizados</p>
         </div>
-        <p class="header-subtitle">Crea y gestiona paquetes educativos con horarios personalizados</p>
-      </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Paquete" class="btn-header-nuevo" @click="openAddDialog">
+          <q-tooltip>Registrar nuevo paquete</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
-    </div>
-
-    <!-- Filtros y Botón -->
-    <div class="row items-center justify-between q-mb-md">
-      <div class="row q-gutter-sm items-center col-auto">
-        <q-select v-model="estadoFilter" :options="[
-          { label: 'Activos', value: true },
-          { label: 'Todos', value: null },
-          { label: 'Inactivos', value: false }
-        ]" option-label="label" option-value="value" emit-value map-options dense outlined style="min-width: 120px;"
-          label="Estado">
-          <template v-slot:prepend>
-            <q-icon name="filter_list" />
-          </template>
-        </q-select>
-
-        <q-input v-model="nameFilter" dense outlined placeholder="Buscar por nombre" debounce="300"
-          style="min-width: 200px;">
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-
-        <q-select v-model="orderOption" :options="[
-          { label: 'Por precio', value: 'precio' },
-          { label: 'Por horarios', value: 'horarios' }
-        ]" option-label="label" option-value="value" emit-value map-options dense outlined clearable label="Ordenar"
-          style="min-width: 150px;">
-          <template v-slot:prepend>
-            <q-icon name="sort" />
-          </template>
-        </q-select>
-      </div>
-
-      <q-btn unelevated rounded icon="add_circle" label="Nuevo Paquete" color="teal-8" size="md" @click="openAddDialog"
-        class="btn-add-package" />
-    </div>
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
+      <q-card-section>
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="estadoFilter" :options="[
+              { label: 'Activos', value: true },
+              { label: 'Todos', value: null },
+              { label: 'Inactivos', value: false }
+            ]" option-label="label" option-value="value" emit-value map-options dense outlined label="Estado">
+              <template v-slot:prepend>
+                <q-icon name="toggle_on" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-4">
+            <q-input v-model="nameFilter" dense outlined placeholder="Buscar por nombre" debounce="300">
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="orderOption" :options="[
+              { label: 'Por precio', value: 'precio' },
+              { label: 'Por horarios', value: 'horarios' }
+            ]" option-label="label" option-value="value" emit-value map-options dense outlined clearable label="Ordenar">
+              <template v-slot:prepend>
+                <q-icon name="sort" />
+              </template>
+            </q-select>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
 
     <!-- Grid de paquetes -->
     <div class="paquetes-grid">

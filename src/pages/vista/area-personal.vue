@@ -446,7 +446,8 @@
 
           <!-- Lista de pagos -->
           <div class="payments-grid">
-            <q-card v-for="pago in pagos" :key="pago.id" flat bordered class="payment-card-item">
+            <q-card v-for="pago in pagos" :key="pago.id" flat bordered class="payment-card-item" style="cursor:pointer"
+              @click="verPago(pago)">
               <q-card-section class="q-pa-md">
                 <div class="payment-header-row">
                   <div class="payment-date-info">
@@ -728,6 +729,154 @@
         </div>
       </q-card-section>
     </q-card>
+
+    <!-- Dialog detalle de pago -->
+    <q-dialog v-model="detalleDialog">
+      <q-card class="detail-dialog-ap">
+        <q-card-section class="detail-header-ap">
+          <div class="text-h6 text-weight-bold">
+            <q-icon name="receipt_long" class="q-mr-sm" />
+            Detalle del Pago #{{ selectedPago?.id }}
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="detail-body-ap">
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-6" v-if="selectedPago && selectedPago.comprobante">
+              <div style="background:#f3f4f6;border-radius:12px;padding:16px;text-align:center">
+                <img :src="comprobanteUrl(selectedPago.comprobante)"
+                  style="width:100%;max-height:400px;object-fit:contain;border-radius:8px" />
+              </div>
+            </div>
+
+            <div :class="selectedPago && selectedPago.comprobante ? 'col-12 col-md-6' : 'col-12'">
+              <q-list dense class="detail-list-ap">
+                <q-item>
+                  <q-item-section avatar><q-icon name="description" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Detalle</q-item-label>
+                    <q-item-label>{{ selectedPago?.detalle || '-' }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="event" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Fecha</q-item-label>
+                    <q-item-label>{{ formatDateTime(selectedPago?.fecha) }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="payments" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Monto</q-item-label>
+                    <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
+                      }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item v-if="selectedPago?.descuento && selectedPago.descuento > 0">
+                  <q-item-section avatar><q-icon name="discount" color="orange-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Descuento</q-item-label>
+                    <q-item-label class="text-weight-bold text-orange-7">Bs {{ selectedPago?.descuento }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="category" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Categoría</q-item-label>
+                    <q-item-label>{{ selectedPago?.categorium?.nombre || '-' }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="credit_card" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Método</q-item-label>
+                    <q-item-label>{{ selectedPago?.metodo?.nombre || '-' }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="account_circle" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Usuario cobrador</q-item-label>
+                    <q-item-label>{{ selectedPago?.usuario?.usuario || '-' }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="toggle_on" color="green-7" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Estado</q-item-label>
+                    <q-item-label>
+                      <q-badge :color="estadoColor(selectedPago?.estado)" :label="estadoLabel(selectedPago?.estado)" />
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </div>
+
+          <!-- Pagos derivados -->
+          <div v-if="selectedPago?.pagosDerivados && selectedPago.pagosDerivados.length > 0" class="q-mt-md">
+            <div class="subpagos-section-ap">
+              <div class="subpagos-header-ap">
+                <q-icon name="account_balance_wallet" size="20px" class="q-mr-sm" />
+                <span class="text-h6">Pagos Realizados</span>
+              </div>
+              <q-separator class="q-my-sm" />
+
+              <div class="subpagos-list-ap">
+                <div v-for="subPago in sortedPagosDerivados" :key="subPago.id" class="subpago-item-ap">
+                  <div class="subpago-content-ap">
+                    <div class="subpago-info-ap">
+                      <div class="subpago-row-ap">
+                        <q-icon name="event" size="16px" color="grey-7" />
+                        <span class="text-caption">{{ formatDateTime(subPago.fecha) }}</span>
+                      </div>
+                      <div class="subpago-row-ap">
+                        <q-icon name="credit_card" size="16px" color="green-7" />
+                        <span class="text-caption">{{ subPago.metodo?.nombre || '-' }}</span>
+                      </div>
+                      <div class="subpago-row-ap">
+                        <q-icon name="account_circle" size="16px" color="blue-7" />
+                        <span class="text-caption">{{ subPago.usuario?.usuario || '-' }}</span>
+                      </div>
+                      <div class="subpago-row-ap">
+                        <q-badge :color="estadoColor(subPago.estado)" :label="estadoLabel(subPago.estado)" />
+                      </div>
+                    </div>
+                    <div class="subpago-monto-ap">Bs {{ subPago.monto }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <q-separator class="q-my-sm" />
+              <div class="saldo-resumen-ap">
+                <div v-if="selectedPago.saldo <= 0" class="saldo-cubierto-ap">
+                  <q-icon name="check_circle" size="24px" color="positive" />
+                  <span class="text-weight-bold text-positive">Deuda Totalmente Pagada</span>
+                </div>
+                <div v-else class="saldo-pendiente-ap">
+                  <span class="text-weight-bold text-orange-8">Saldo Pendiente:</span>
+                  <span class="text-h6 text-weight-bold text-orange-8">Bs {{ selectedPago.saldo }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cerrar" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -842,6 +991,10 @@ const showGastosFilters = ref(false)
 const gastos = ref([])
 const totalGastos = ref(0)
 const loadingGastos = ref(false)
+
+// Dialog detalle pago
+const selectedPago = ref(null)
+const detalleDialog = ref(false)
 
 const estadoOptions = [
   { label: 'Todos', value: null },
@@ -1041,6 +1194,7 @@ const cargarPagos = async () => {
     totalPagos.value = res?.totalPagos || 0
     totalDeudas.value = res?.totalDeudas || 0
     pagos.value = res?.lista || []
+    console.log('Pagos cargados:', pagos.value)
   } catch (error) {
     console.error('Error cargando pagos:', error)
     $q.notify({ type: 'negative', message: 'Error al cargar pagos' })
@@ -1429,6 +1583,23 @@ const formatDateTime = (dateStr) => {
   const timePart = formatTime(dateStr)
   return timePart ? `${datePart} ${timePart}` : datePart
 }
+
+// Ver detalle de pago
+const verPago = (pago) => {
+  selectedPago.value = pago
+  detalleDialog.value = true
+}
+
+const comprobanteUrl = (name) => {
+  if (!name) return null
+  if (name.startsWith('http')) return name
+  return `http://localhost:3001/uploads/${name}`
+}
+
+const sortedPagosDerivados = computed(() => {
+  if (!selectedPago.value?.pagosDerivados) return []
+  return [...selectedPago.value.pagosDerivados].sort((a, b) => a.id - b.id)
+})
 </script>
 
 <style scoped lang="scss">
@@ -2226,6 +2397,126 @@ $pastel-orange: #ffe0b2;
 @media (max-width: 1200px) and (min-width: 769px) {
   .progress-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// ===== DIALOG DETALLE PAGO =====
+.detail-dialog-ap {
+  min-width: 560px;
+  max-width: 900px;
+  width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-header-ap {
+  background: rgba($color-forest, 0.12);
+  border-bottom: 3px solid $color-forest;
+  color: $color-forest;
+  flex-shrink: 0;
+}
+
+.detail-body-ap {
+  overflow-y: auto;
+  flex: 1;
+  padding: 20px;
+}
+
+.detail-list-ap {
+  .q-item {
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: rgba($color-forest, 0.06);
+  }
+}
+
+.subpagos-section-ap {
+  background: rgba($color-forest, 0.07);
+  border-radius: 12px;
+  padding: 16px;
+  border: 2px solid rgba($color-forest, 0.2);
+}
+
+.subpagos-header-ap {
+  display: flex;
+  align-items: center;
+  color: $color-forest;
+  font-weight: 700;
+}
+
+.subpagos-list-ap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subpago-item-ap {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba($color-forest, 0.2);
+}
+
+.subpago-content-ap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.subpago-info-ap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.subpago-row-ap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.subpago-monto-ap {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: $color-forest;
+}
+
+.saldo-resumen-ap {
+  background: white;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.saldo-cubierto-ap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.saldo-pendiente-ap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 599px) {
+  .detail-dialog-ap {
+    min-width: unset;
+    width: 95vw;
+  }
+
+  .subpago-content-ap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .subpago-monto-ap {
+    font-size: 1.1em;
   }
 }
 

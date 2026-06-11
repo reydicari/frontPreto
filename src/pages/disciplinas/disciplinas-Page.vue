@@ -1,19 +1,20 @@
 <template>
-  <q-page class="q-pa-md disciplines-page">
-    <!-- Header mejorado con animación -->
-    <div class="row items-center justify-between q-mb-lg header-section">
-      <div>
-        <h2 class="text-h4 q-ma-none page-title animated-title">
-          <q-icon name="sports" size="38px" class="q-mr-sm" />
-          Gestión de Disciplinas
-        </h2>
-        <p class="text-grey-7 q-mt-xs q-mb-none">Administra y monitorea todas las disciplinas deportivas</p>
-      </div>
-      <q-btn color="primary" icon="add_circle" label="Nueva Disciplina" size="md" unelevated
-        class="btn-nueva-disciplina" @click="openDialog()">
-        <q-tooltip>Registrar nueva disciplina</q-tooltip>
-      </q-btn>
-    </div>
+  <q-page class="q-pa-md disciplines-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="sports" size="38px" class="q-mr-sm" />
+            Gestión de Disciplinas
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra y monitorea todas las disciplinas deportivas</p>
+        </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nueva Disciplina" class="btn-header-nuevo" @click="openDialog()">
+          <q-tooltip>Registrar nueva disciplina</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
     <!-- Tabla de disciplinas -->
     <q-card class="table-card">
@@ -349,7 +350,6 @@ $color-orange-light: #f57c00;
 
 // Página principal
 .disciplines-page {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
 }
 

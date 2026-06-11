@@ -59,6 +59,28 @@ export const asistenciaEstudiante = async (asistencia) => {
   }
 };
 
+export const listarEstudiantesPorEntrenamiento = async (idEntrenamiento) => {
+  try {
+    const response = await api.get(
+      `/api/estudiante/entrenamiento/${idEntrenamiento}`,
+    );
+    return Array.isArray(response.data)
+      ? response.data
+      : response.data?.data || [];
+  } catch (error) {
+    console.error(
+      "Error listando estudiantes del entrenamiento",
+      error?.response || error,
+    );
+    Notify.create({
+      type: "negative",
+      message: "Error al obtener estudiantes del entrenamiento",
+      position: "bottom",
+    });
+    throw error;
+  }
+};
+
 export const guardarAsistencias = async (asistencias = []) => {
   try {
     const response = await api.post(URL_PART + "/agregar", { asistencias });

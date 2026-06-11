@@ -5,7 +5,7 @@
         <div class="header-title-payment">
           <q-icon name="add_card" size="32px" class="q-mr-sm" />
           <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (isEdit ? 'Editar Pago' : 'Nuevo Pago')
-          }}</div>
+            }}</div>
         </div>
       </q-card-section>
 
@@ -229,13 +229,8 @@ watch(() => props.pagoDeuda, (pd) => {
     local.detalle = `Pago de deuda - ${pd.detalle || 'Sin detalle'}`
     local.fecha = today()
     local.id_inscripcion = pd.id_inscripcion ?? null
-    // Calcular saldo real considerando subpagos ya realizados
-    const totalPago = (pd.monto || 0) - (pd.descuento || 0)
-    const pagosDerivados = pd.pagosDerivados || []
-    const totalSubPagos = pagosDerivados
-      .filter(sp => sp.estado !== 0)
-      .reduce((sum, sp) => sum + (sp.monto || 0), 0)
-    const saldoReal = totalPago - totalSubPagos
+    // Usar directamente el saldo que viene del servidor
+    const saldoReal = parseFloat(pd.saldo || 0)
     local.monto = saldoReal > 0 ? saldoReal : 0
     local.id_categoria = pd.id_categoria ?? (pd.categorium ? pd.categorium.id : null)
     local.id_usuario_recibe = getCurrentUserName()
@@ -331,16 +326,10 @@ const filteredMetodoOptions = computed(() => {
   })
 })
 
-// Computed para calcular el saldo máximo que se puede pagar cuando es pago de deuda
+// Saldo máximo a pagar: viene directamente del campo saldo del servidor
 const maxMontoDeuda = computed(() => {
   if (!props.pagoDeuda) return 0
-  const pd = props.pagoDeuda
-  const totalPago = (pd.monto || 0) - (pd.descuento || 0)
-  const pagosDerivados = pd.pagosDerivados || []
-  const totalSubPagos = pagosDerivados
-    .filter(sp => sp.estado !== 0)
-    .reduce((sum, sp) => sum + (sp.monto || 0), 0)
-  return totalPago - totalSubPagos
+  return parseFloat(props.pagoDeuda.saldo || 0)
 })
 
 // Reglas de validación para el monto

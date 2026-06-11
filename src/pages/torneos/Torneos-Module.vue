@@ -1,21 +1,20 @@
 <template>
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con estadísticas -->
-    <div class="page-header q-mb-lg">
-      <div class="header-content">
-        <div class="row items-center justify-between q-col-gutter-md">
-          <div class="col-12 col-sm-auto">
-            <div class="header-title">
-              <q-icon name="emoji_events" size="42px" class="q-mr-sm" />
-              <h2 class="page-title q-ma-none">Torneos</h2>
-            </div>
-            <!-- <p class="header-subtitle">Administra torneos y competiciones deportivas</p> -->
-          </div>
-          <div class="col-12 col-sm-auto">
-            <q-btn class="btn-add-header" icon="add_circle" label="Agregar Torneo" @click="onAdd" unelevated no-caps />
-          </div>
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="emoji_events" size="38px" class="q-mr-sm" />
+            Torneos
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra torneos y competiciones deportivas</p>
         </div>
-      </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Torneo" class="btn-header-nuevo" @click="onAdd">
+          <q-tooltip>Registrar nuevo torneo</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
       <!-- Tarjetas de estadísticas
       <div class="stats-container row q-gutter-md q-mt-md">
@@ -69,93 +68,73 @@
           </div>
         </div>
       </div> -->
-    </div>
 
-    <!-- Barra de herramientas -->
-    <q-card class="q-mb-md toolbar-card">
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
       <q-card-section>
-        <div class="row items-center q-col-gutter-sm">
-          <!-- Buscador -->
-          <q-input v-model="filters.search" clearable outlined dense placeholder="Buscar por nombre de torneo..."
-            class="col-12 search-input">
-            <template v-slot:prepend>
-              <q-icon name="search" class="text-brown-7" />
-            </template>
-          </q-input>
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+          <q-space />
+          <q-btn flat dense icon="refresh" color="primary" @click="clearFilters" size="sm">
+            <q-tooltip>Limpiar todos los filtros</q-tooltip>
+          </q-btn>
         </div>
-
-        <!-- Filtros avanzados -->
-        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
-          <template v-slot:header>
-            <div class="filters-header">
-              <q-icon name="tune" size="24px" class="q-mr-sm" />
-              <span class="filters-title">Filtros Avanzados</span>
-              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
-                {{ activeFiltersCount }}
-              </q-badge>
-            </div>
-          </template>
-
-          <div class="filters-body q-pt-md">
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-select v-model="filters.id_tipo_torneo" :options="tipoOptions" label="Tipo" emit-value map-options
-                  clearable outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="category" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-select v-model="filters.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
-                  map-options clearable outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="place" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-select v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
-                  clearable outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="signal_cellular_alt" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-select multiple use-chips chip-color="brown-7" v-model="filters.estados" :options="estadoOptions"
-                  label="Estado" emit-value map-options clearable outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="flag" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-input v-model="filters.fecha_inicio_desde" label="Desde (inicio)" type="date" outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="event" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-input v-model="filters.fecha_inicio_hasta" label="Hasta (inicio)" type="date" outlined dense>
-                  <template v-slot:prepend>
-                    <q-icon name="event" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-3 row items-center">
-                <q-btn flat icon="close" label="Limpiar Filtros" @click="clearFilters" class="clear-filters-btn" />
-              </div>
-            </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6 col-lg-4">
+            <q-input v-model="filters.search" clearable outlined dense placeholder="Buscar por nombre de torneo...">
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
           </div>
-        </q-expansion-item>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filters.id_tipo_torneo" :options="tipoOptions" label="Tipo" emit-value map-options
+              clearable outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="category" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filters.id_ubicacion" :options="ubicacionOptions" label="Ubicación" emit-value
+              map-options clearable outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="place" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
+              clearable outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="signal_cellular_alt" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select multiple use-chips chip-color="brown-7" v-model="filters.estados" :options="estadoOptions"
+              label="Estado" emit-value map-options clearable outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="flag" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-input v-model="filters.fecha_inicio_desde" label="Desde (inicio)" type="date" outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="event" />
+              </template>
+            </q-input>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-input v-model="filters.fecha_inicio_hasta" label="Hasta (inicio)" type="date" outlined dense>
+              <template v-slot:prepend>
+                <q-icon name="event" />
+              </template>
+            </q-input>
+          </div>
+        </div>
       </q-card-section>
     </q-card>
 
@@ -414,21 +393,6 @@ const estadoOptions = [
 
 // por defecto mostrar estados activos (Comenzado)
 filters.estados = [1, 2, 3]
-
-// Expansión de filtros
-const filtersExpanded = ref(false)
-
-// Contador de filtros activos
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filters.id_tipo_torneo) count++
-  if (filters.id_ubicacion) count++
-  if (filters.id_nivel) count++
-  if (filters.estados && filters.estados.length > 0) count++
-  if (filters.fecha_inicio_desde) count++
-  if (filters.fecha_inicio_hasta) count++
-  return count
-})
 
 // Estadísticas calculadas
 // const estadisticas = computed(() => {

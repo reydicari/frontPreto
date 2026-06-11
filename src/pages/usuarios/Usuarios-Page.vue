@@ -1,21 +1,20 @@
 <template>
-  <q-page class="q-pa-md page-container">
-    <!-- Header con estadísticas -->
-    <div class="page-header q-mb-lg">
-      <div class="header-content">
-        <div class="row items-center justify-between q-col-gutter-md">
-          <div class="col-12 col-sm-auto">
-            <div class="header-title">
-              <q-icon name="admin_panel_settings" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Usuarios</h2>
-            </div>
-          </div>
-          <!-- <div class="col-12 col-sm-auto">
-            <q-btn class="btn-add-header" icon="person_add" label="Nuevo Usuario" @click="showUserDialog(null)"
-              unelevated no-caps />
-          </div> -->
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="admin_panel_settings" size="38px" class="q-mr-sm" />
+            Usuarios
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Gestiona los usuarios y accesos del sistema</p>
         </div>
-      </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Usuario" class="btn-header-nuevo" @click="showUserDialog(null)">
+          <q-tooltip>Registrar nuevo usuario</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
       <!-- Tarjetas de estadísticas -->
       <!-- <div class="stats-container row q-gutter-md q-mt-md">
@@ -69,64 +68,50 @@
           </div>
         </div>
       </div> -->
-    </div>
 
-    <!-- Barra de herramientas -->
-    <q-card class="q-mb-md toolbar-card">
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
       <q-card-section>
-        <div class="row items-center q-col-gutter-sm">
-          <!-- Buscador -->
-          <q-input v-model="searchInput" clearable @update:model-value="handleSearchInput" outlined dense
-            placeholder="Buscar por usuario, nombre, teléfono..." class="col-12 search-input">
-            <template v-slot:prepend>
-              <q-icon name="search" class="text-brown-7" />
-            </template>
-          </q-input>
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+          <q-space />
+          <q-btn flat dense icon="refresh" color="primary" @click="clearFilters" size="sm">
+            <q-tooltip>Limpiar todos los filtros</q-tooltip>
+          </q-btn>
         </div>
-
-        <!-- Filtros avanzados -->
-        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
-          <template v-slot:header>
-            <div class="filters-header">
-              <q-icon name="tune" size="24px" class="q-mr-sm" />
-              <span class="filters-title">Filtros Avanzados</span>
-              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
-                {{ activeFiltersCount }}
-              </q-badge>
-            </div>
-          </template>
-
-          <div class="filters-body q-pt-md">
-            <div class="row q-col-gutter-md">
-              <q-select v-model="filtroRol" :options="roles" label="Roles" option-label="nombre" outlined multiple dense
-                clearable @update:model-value="applyFilters" class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="badge" class="text-green-8" />
-                </template>
-                <template v-slot:selected-item="scope">
-                  <q-chip dense class="q-mx-xs" color="brown-7" text-color="white" removable
-                    @remove="scope.removeAtIndex(scope.index)">
-                    {{ scope.opt.nombre }}
-                  </q-chip>
-                </template>
-              </q-select>
-
-              <q-select v-model="filterStatus" emit-value map-options :options="statusOptions" label="Estado" outlined
-                dense clearable @update:model-value="applyFilters" class="col-12 col-sm-6 col-md-4 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="toggle_on" class="text-brown-6" />
-                </template>
-              </q-select>
-
-
-            </div>
-
-            <!-- <div class="row justify-end q-mt-md q-gutter-sm">
-              <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
-              <q-btn label="Aplicar filtros" class="btn-apply-filters" icon="check" @click="applyFilters" unelevated />
-            </div> -->
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6 col-lg-4">
+            <q-input v-model="searchInput" clearable @update:model-value="handleSearchInput" outlined dense
+              placeholder="Buscar por usuario, nombre, teléfono...">
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
           </div>
-        </q-expansion-item>
+          <div class="col-12 col-sm-6 col-md-4">
+            <q-select v-model="filtroRol" :options="roles" label="Roles" option-label="nombre" outlined multiple dense
+              clearable @update:model-value="applyFilters">
+              <template v-slot:prepend>
+                <q-icon name="badge" />
+              </template>
+              <template v-slot:selected-item="scope">
+                <q-chip dense class="q-mx-xs" color="brown-7" text-color="white" removable
+                  @remove="scope.removeAtIndex(scope.index)">
+                  {{ scope.opt.nombre }}
+                </q-chip>
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filterStatus" emit-value map-options :options="statusOptions" label="Estado" outlined
+              dense clearable @update:model-value="applyFilters">
+              <template v-slot:prepend>
+                <q-icon name="toggle_on" />
+              </template>
+            </q-select>
+          </div>
+        </div>
       </q-card-section>
     </q-card>
 
@@ -597,6 +582,14 @@ const applyFilters = () => {
     infiniteScrollRef.value.reset()
   }
   loadUsers(1, false)
+}
+
+// Limpiar filtros
+const clearFilters = () => {
+  searchInput.value = ''
+  filtroRol.value = []
+  filterStatus.value = null
+  applyFilters()
 }
 
 // Mostrar diálogo para editar/crear usuario

@@ -1,19 +1,21 @@
 <template>
-  <q-page class="q-pa-md inscripciones-page" :class="$q.dark.isActive ? '' : 'bg-grey-3'">
+  <q-page class="q-pa-md inscripciones-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Encabezado mejorado con animación -->
-    <div class="row items-center justify-between q-mb-lg header-section">
-      <div>
-        <h2 class="text-h4 q-ma-none page-title animated-title">
-          <q-icon name="school" size="38px" class="q-mr-sm" />
-          Gestión de Inscripciones
-        </h2>
-        <p class="text-grey-7 q-mt-xs q-mb-none">Administra y monitorea todas las inscripciones de estudiantes</p>
-      </div>
-      <q-btn color="primary" icon="add_circle" label="Nueva Inscripción" size="md" unelevated
-        class="btn-nueva-inscripcion" @click="openDialog()">
-        <q-tooltip>Registrar nueva inscripción</q-tooltip>
-      </q-btn>
-    </div>
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="school" size="38px" class="q-mr-sm" />
+            Gestión de Inscripciones
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra y monitorea todas las inscripciones de estudiantes</p>
+        </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nueva Inscripción" class="btn-header-nuevo"
+          @click="openDialog()">
+          <q-tooltip>Registrar nueva inscripción</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
     <!-- Panel de estadísticas con diseño atractivo -->
     <div class="row q-col-gutter-md q-mb-lg stats-section">
@@ -1001,9 +1003,17 @@ function resetFilters() {
   min-height: 100vh;
 }
 
-// Encabezado
-.header-section {
+// Tarjeta de encabezado
+.header-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   animation: fadeInUp 0.6s ease-out;
+  border: none;
+}
+
+.header-subtitle {
+  color: #555;
+  font-size: 0.95rem;
 }
 
 .page-title {
@@ -1233,5 +1243,47 @@ function resetFilters() {
 // Utilidades
 .cursor-pointer {
   cursor: pointer;
+}
+</style>
+
+<!-- Estilos globales para soporte de modo oscuro -->
+<style lang="scss">
+.body--dark {
+  .inscripciones-page {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f1923 100%) !important;
+  }
+
+  .page-title {
+    background: linear-gradient(135deg, #81c784 0%, #a5d6a7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    .q-icon {
+      -webkit-text-fill-color: #81c784;
+    }
+  }
+
+  .header-subtitle {
+    color: #9e9e9e;
+  }
+
+  .inscripciones-table {
+    .q-table__top {
+      background: rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .q-table tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+    }
+  }
+
+  .row-number-simple {
+    color: #81c784;
+  }
+
+  .fecha-cell .q-icon {
+    opacity: 0.8;
+  }
 }
 </style>

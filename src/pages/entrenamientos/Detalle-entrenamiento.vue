@@ -136,16 +136,10 @@
 
     <q-card-actions class="footer-actions">
       <div class="action-buttons-group">
-        <q-btn unelevated class="action-btn primary-action" :color="puedeTomarAsistencia ? 'green-8' : 'grey-6'"
-          icon="how_to_reg" :label="$q.screen.gt.xs ? 'Tomar asistencia' : ''" :disable="!puedeTomarAsistencia"
-          @click="intentarTomarAsistencia" size="md">
-          <q-tooltip v-if="!puedeTomarAsistencia" class="bg-negative">
-            {{ razonNoAsistencia }}
-          </q-tooltip>
-        </q-btn>
+        <!-- Botón Tomar Asistencia unificado en VerAsistencias -->
         <q-btn flat class="action-btn secondary-action" :color="puedeVerAsistencias ? 'brown-7' : 'grey-6'"
           icon="visibility" :label="$q.screen.gt.xs ? 'Ver asistencias' : ''" :disable="!puedeVerAsistencias"
-          @click="verAsistenciasDialog = true" size="md">
+          @click="abrirVerAsistencias" size="md">
           <q-tooltip v-if="!puedeVerAsistencias">Solo disponible en entrenamientos en marcha, suspendidos o
             terminados</q-tooltip>
         </q-btn>
@@ -378,16 +372,6 @@ const getStatusLabel = (entrenamiento) => {
   return calcularEstadoReal(entrenamiento).label
 }
 
-// Verificar si se puede tomar asistencia
-const puedeTomarAsistencia = computed(() => {
-  return calcularEstadoReal(training).puedeTomarAsistencia
-})
-
-// Obtener razón por la cual no se puede tomar asistencia
-const razonNoAsistencia = computed(() => {
-  return calcularEstadoReal(training).razon
-})
-
 // Verificar si se puede ver asistencias
 const puedeVerAsistencias = computed(() => {
   const estadoReal = calcularEstadoReal(training).estado
@@ -404,18 +388,9 @@ const puedeVerEvaluaciones = computed(() => {
   return true // Disponible en todos los estados
 })
 
-// Manejar click en botón de asistencia cuando está deshabilitado
-const intentarTomarAsistencia = () => {
-  if (!puedeTomarAsistencia.value) {
-    $q.notify({
-      type: 'warning',
-      message: razonNoAsistencia.value,
-      icon: 'warning',
-      position: 'top'
-    })
-  } else {
-    asistenciaDialog.value = true
-  }
+// Ver asistencias: la carga de listaB y listaA se maneja dentro de VerAsistencias
+const abrirVerAsistencias = () => {
+  verAsistenciasDialog.value = true
 }
 
 // Calcular edad desde fecha de nacimiento

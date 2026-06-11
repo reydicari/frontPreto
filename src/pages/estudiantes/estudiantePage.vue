@@ -1,25 +1,23 @@
 <template>
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con estadísticas -->
-    <div class="page-header q-mb-lg">
-      <div class="header-content">
-        <div class="row items-center justify-between q-col-gutter-md">
-          <div class="col-12 col-sm-auto">
-            <div class="header-title">
-              <q-icon name="school" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Estudiantes</h2>
-            </div>
-            <!-- <p class="header-subtitle">Administra el registro y seguimiento de estudiantes</p> -->
-          </div>
-          <div class="col-12 col-sm-auto">
-            <q-btn class="btn-add-header" icon="person_add" label="Agregar Estudiante" @click="showPersonaDialog"
-              unelevated no-caps />
-          </div>
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="school" size="38px" class="q-mr-sm" />
+            Estudiantes
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra el registro y seguimiento de estudiantes</p>
         </div>
-      </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Estudiante" class="btn-header-nuevo" @click="showPersonaDialog">
+          <q-tooltip>Registrar nuevo estudiante</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
-      <!-- Tarjetas de estadísticas -->
-      <div class="stats-container row q-gutter-md q-mt-md">
+    <!-- Tarjetas de estadísticas -->
+    <div class="stats-container row q-gutter-md q-mb-lg">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="groups" size="36px" />
@@ -70,82 +68,74 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Barra de herramientas -->
-    <q-card class="q-mb-md toolbar-card">
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
       <q-card-section>
-        <div class="row items-center q-col-gutter-sm">
-          <!-- Buscador -->
-          <q-input v-model="searchInput" clearable @update:model-value="handleSearchInput" outlined dense
-            placeholder="Buscar por nombre, CI, teléfono..." class="col-12 search-input" :debounce="500">
-            <template v-slot:prepend>
-              <q-icon name="search" class="text-brown-7" />
-            </template>
-          </q-input>
-        </div> <!-- Filtros avanzados -->
-        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
-          <template v-slot:header>
-            <div class="filters-header">
-              <q-icon name="tune" size="24px" class="q-mr-sm" />
-              <span class="filters-title">Filtros Avanzados</span>
-              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
-                {{ activeFiltersCount }}
-              </q-badge>
-            </div>
-          </template>
-
-          <div class="filters-body q-pt-md">
-            <div class="row q-col-gutter-md">
-              <q-select v-model="filterCategory" :options="categoryOptions" label="Categoría" outlined dense clearable
-                emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="category" class="text-green-8" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterDisciplina" :options="disciplinaOptions" label="Disciplina" outlined dense
-                clearable emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="sports_martial_arts" class="text-green-7" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
-                emit-value map-options label="Estado" outlined dense clearable
-                class="col-12 col-sm-4 col-md-2 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="toggle_on" class="text-brown-6" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
-                emit-value map-options class="col-12 col-sm-4 col-md-2 filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="wc" class="text-green-6" />
-                </template>
-              </q-select>
-
-              <q-input v-model="filterEdadMin" type="number" label="Edad Mínima" outlined dense clearable
-                class="col-12 col-sm-4 col-md-2 filter-input" :min="0" :max="99">
-                <template v-slot:prepend>
-                  <q-icon name="child_care" class="text-light-green-8" />
-                </template>
-              </q-input>
-
-              <q-input v-model="filterEdadMax" type="number" label="Edad Máxima" outlined dense clearable
-                class="col-12 col-sm-4 col-md-2 filter-input" :min="0" :max="99">
-                <template v-slot:prepend>
-                  <q-icon name="elderly" class="text-brown-8" />
-                </template>
-              </q-input>
-            </div>
-            <!--
-            <div class="row justify-end q-mt-md q-gutter-sm">
-              <q-btn label="Limpiar filtros" outline class="btn-clear-filters" icon="clear_all" @click="clearFilters" />
-            </div> -->
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+          <q-space />
+          <q-btn flat dense icon="refresh" color="primary" @click="clearFilters" size="sm">
+            <q-tooltip>Limpiar todos los filtros</q-tooltip>
+          </q-btn>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6 col-lg-4">
+            <q-input v-model="searchInput" clearable @update:model-value="handleSearchInput" outlined dense
+              placeholder="Buscar por nombre, CI, teléfono..." :debounce="500">
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
           </div>
-        </q-expansion-item>
+          <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+            <q-select v-model="filterCategory" :options="categoryOptions" label="Categoría" outlined dense clearable
+              emit-value map-options>
+              <template v-slot:prepend>
+                <q-icon name="category" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+            <q-select v-model="filterDisciplina" :options="disciplinaOptions" label="Disciplina" outlined dense
+              clearable emit-value map-options>
+              <template v-slot:prepend>
+                <q-icon name="sports_martial_arts" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+            <q-select v-model="filterStatus" :options="statusOptions" option-label="label" option-value="value"
+              emit-value map-options label="Estado" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="toggle_on" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
+              emit-value map-options>
+              <template v-slot:prepend>
+                <q-icon name="wc" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-6 col-sm-4 col-md-2">
+            <q-input v-model="filterEdadMin" type="number" label="Edad Mínima" outlined dense clearable :min="0" :max="99">
+              <template v-slot:prepend>
+                <q-icon name="child_care" />
+              </template>
+            </q-input>
+          </div>
+          <div class="col-6 col-sm-4 col-md-2">
+            <q-input v-model="filterEdadMax" type="number" label="Edad Máxima" outlined dense clearable :min="0" :max="99">
+              <template v-slot:prepend>
+                <q-icon name="elderly" />
+              </template>
+            </q-input>
+          </div>
+        </div>
       </q-card-section>
     </q-card>
 
@@ -315,7 +305,6 @@ const filterEdadMin = ref(null)
 const filterEdadMax = ref(null)
 const filterDisciplina = ref(null)
 const filterGenero = ref(null)
-const filtersExpanded = ref(false)
 // nivel removed: backend no longer provides nivel object
 let searchTimeout = null
 let edadMinTimeout = null
@@ -327,18 +316,6 @@ const generoOptions = [
   { label: 'Femenino', value: 'F' },
   { label: 'Otro', value: 'O' }
 ]
-
-// Computed para contar filtros activos
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filterCategory.value) count++
-  if (filterStatus.value !== null && filterStatus.value !== true) count++
-  if (filterEdadMin.value) count++
-  if (filterEdadMax.value) count++
-  if (filterDisciplina.value) count++
-  if (filterGenero.value) count++
-  return count
-})
 
 // Estadísticas principales desde el backend
 const estadisticasPrincipales = ref({
@@ -533,17 +510,17 @@ function viewPersonaDetails(persona) {
 }
 
 // Limpiar filtros
-// function clearFilters() {
-//   searchTerm.value = ''
-//   searchInput.value = ''
-//   filterCategory.value = null
-//   filterStatus.value = true
-//   filterEdadMin.value = null
-//   filterEdadMax.value = null
-//   filterDisciplina.value = null
-//   filterGenero.value = null
-//   loadStudents(1, false)
-// }
+function clearFilters() {
+  searchTerm.value = ''
+  searchInput.value = ''
+  filterCategory.value = null
+  filterStatus.value = true
+  filterEdadMin.value = null
+  filterEdadMax.value = null
+  filterDisciplina.value = null
+  filterGenero.value = null
+  loadStudents(1, false)
+}
 
 const loadStudents = async (page = 1, append = false) => {
   try {

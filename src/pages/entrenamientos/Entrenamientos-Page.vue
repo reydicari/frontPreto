@@ -1,25 +1,24 @@
 <template>
   <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <!-- Header con estadísticas -->
-    <div class="page-header q-mb-lg">
-      <div class="header-content ">
-        <div class="row items-center justify-between  q-col-gutter-md">
-          <div class="col-12 col-sm-auto ">
-            <div class="header-title ">
-              <q-icon name="fitness_center" size="42px" class="q-mr-sm" />
-              <h2 class="page-title">Entrenamientos</h2>
-            </div>
-            <!-- <p class="header-subtitle">Administra programas y sesiones de entrenamiento</p> -->
-          </div>
-          <div class="col-12 col-sm-auto">
-            <q-btn class="btn-add-header" icon="add_circle" label="Nuevo Entrenamiento" @click="showTrainingDialog"
-              unelevated no-caps />
-          </div>
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="fitness_center" size="38px" class="q-mr-sm" />
+            Entrenamientos
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra programas y sesiones de entrenamiento</p>
         </div>
-      </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Entrenamiento" class="btn-header-nuevo"
+          @click="showTrainingDialog">
+          <q-tooltip>Registrar nuevo entrenamiento</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
-      <!-- Tarjetas de estadísticas -->
-      <!-- <div class="stats-container row q-gutter-md q-mt-md">
+    <!-- Tarjetas de estadísticas -->
+    <!-- <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="fitness_center" size="36px" />
@@ -70,79 +69,68 @@
           </div>
         </div>
       </div> -->
-    </div>
 
-    <!-- Barra de herramientas -->
-    <q-card class="q-mb-md toolbar-card">
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
       <q-card-section>
-        <!-- <div class="row items-center q-col-gutter-sm"> -->
-        <!-- Buscador -->
-        <!-- <q-input v-model="searchTerm" clearable outlined dense placeholder="Buscar por nombre de entrenamiento"
-            class="col-12 search-input">
-            <template v-slot:prepend>
-              <q-icon name="search" class="text-brown-7" />
-            </template>
-</q-input>
-</div> -->
-
-        <!-- Filtros avanzados -->
-        <q-expansion-item v-model="filtersExpanded" class="q-mt-md filters-expansion" icon="filter_list">
-          <template v-slot:header>
-            <div class="filters-header">
-              <q-icon name="tune" size="24px" class="q-mr-sm" />
-              <span class="filters-title">Filtros Avanzados</span>
-              <q-badge v-if="activeFiltersCount > 0" color="brown-7" class="q-ml-sm">
-                {{ activeFiltersCount }}
-              </q-badge>
-            </div>
-          </template>
-
-          <div class="filters-body q-pt-md">
-            <div class="row q-col-gutter-md">
-              <q-select v-model="filterDiscipline" emit-value map-options :options="disciplineOptions" option-value="id"
-                option-label="nombre" label="Disciplina" outlined dense clearable class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="sports" color="green-7" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterPaquete" emit-value map-options :options="paqueteOptions" option-value="id"
-                option-label="nombre" label="Paquete" outlined dense clearable class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="inventory_2" color="brown-7" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterUbicacion" emit-value map-options :options="ubicacionesOptions" option-value="id"
-                option-label="nombre" label="Ubicación" outlined dense clearable class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="location_on" color="orange-7" />
-                </template>
-              </q-select>
-
-              <q-select v-model="filterStatus" :options="statusOptions" map-options emit-value option-value="value"
-                option-label="label" label="Estado" outlined dense clearable class="col-12 col-sm-6 col-md-4">
-                <template v-slot:prepend>
-                  <q-icon name="assignment" color="blue-7" />
-                </template>
-              </q-select>
-
-              <!-- Vencimiento (Fecha Fin) -->
-              <div class="col-6 col-md-3 col-lg-2">
-                <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
-                  @update:model-value="filterFechaFin = $event" />
-              </div>
-
-              <!-- Fecha Inicio -->
-              <div class="col-6 col-md-3 col-lg-2">
-                <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
-              </div>
-            </div>
-            <!-- <div class="row justify-end q-mt-md">
-              <q-btn label="Limpiar filtros" flat icon="clear_all" @click="clearFilters" class="btn-clear-filters" />
-            </div> -->
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+          <q-space />
+          <q-btn flat dense icon="refresh" color="primary" @click="clearFilters" size="sm">
+            <q-tooltip>Limpiar todos los filtros</q-tooltip>
+          </q-btn>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6 col-lg-4">
+            <q-input v-model="searchTerm" label="Nombre de entrenamiento" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="search" color="teal-7" />
+              </template>
+            </q-input>
           </div>
-        </q-expansion-item>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filterDiscipline" emit-value map-options :options="disciplineOptions" option-value="id"
+              option-label="nombre" label="Disciplina" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="sports" color="green-7" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filterPaquete" emit-value map-options :options="paqueteOptions" option-value="id"
+              option-label="nombre" label="Paquete" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="inventory_2" color="brown-7" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filterUbicacion" emit-value map-options :options="ubicacionesOptions" option-value="id"
+              option-label="nombre" label="Ubicación" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="location_on" color="orange-7" />
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select v-model="filterStatus" :options="statusOptions" map-options emit-value option-value="value"
+              option-label="label" label="Estado" outlined dense clearable>
+              <template v-slot:prepend>
+                <q-icon name="assignment" color="blue-7" />
+              </template>
+            </q-select>
+          </div>
+          <!-- Vencimiento (Fecha Fin) -->
+          <div class="col-12 col-sm-6 col-md-3">
+            <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
+              @update:model-value="filterFechaFin = $event" />
+          </div>
+          <!-- Fecha Inicio -->
+          <div class="col-12 col-sm-6 col-md-3">
+            <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
+          </div>
+        </div>
       </q-card-section>
     </q-card>
 
@@ -218,7 +206,7 @@
           <q-btn class="btn-action btn-edit" round icon="edit" @click.stop="editTraining(training)"
             :disable="!puedeEditar(training)">
             <q-tooltip>{{ puedeEditar(training) ? 'Editar' : 'Solo se puede editar entrenamientos sin comenzar'
-              }}</q-tooltip>
+            }}</q-tooltip>
           </q-btn>
 
           <q-btn v-if="puedeSuspender(training)" class="btn-action btn-suspend" round icon="pause"
@@ -431,7 +419,6 @@ const trainings = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const searchTerm = ref('')
-const filtersExpanded = ref(false)
 const filterDiscipline = ref(null)
 const filterStatus = ref(1)
 const filterFechaInicio = ref('vacio')
@@ -459,18 +446,6 @@ const scrollObserver = ref(null)
 //   suspendidos: trainings.value.filter(t => calcularEstadoReal(t).estado === 'suspendido').length,
 //   terminados: trainings.value.filter(t => calcularEstadoReal(t).estado === 'terminado').length
 // }))
-
-// Contador de filtros activos
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filterDiscipline.value) count++
-  if (filterPaquete.value) count++
-  if (filterUbicacion.value) count++
-  if (filterStatus.value !== null && filterStatus.value !== undefined) count++
-  if (filterFechaInicio.value && filterFechaInicio.value !== 'vacio') count++
-  if (filterFechaFin.value && filterFechaFin.value !== 'vacio') count++
-  return count
-})
 
 // Datos del entrenamiento actual
 const currentTraining = ref({
@@ -763,15 +738,15 @@ const getInitials = (coach) => {
 }
 
 // Limpiar filtros
-// const clearFilters = () => {
-//   searchTerm.value = ''
-//   filterDiscipline.value = null
-//   filterPaquete.value = null
-//   filterUbicacion.value = null
-//   filterStatus.value = null
-//   filterFechaInicio.value = 'vacio'
-//   filterFechaFin.value = 'vacio'
-// }
+const clearFilters = () => {
+  searchTerm.value = ''
+  filterDiscipline.value = null
+  filterPaquete.value = null
+  filterUbicacion.value = null
+  filterStatus.value = null
+  filterFechaInicio.value = 'vacio'
+  filterFechaFin.value = 'vacio'
+}
 
 // formatDate is not used in this page; details component handles formatting
 
@@ -843,9 +818,19 @@ const loadMore = () => {
   fetchTrainings(true)
 }
 
-// Watch filtros para recargar datos
-watch([searchTerm, filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterFechaInicio, filterFechaFin], () => {
-  // Resetear paginación cuando cambian los filtros
+// Watch con debounce de 1s para el campo de nombre
+let searchDebounceTimer = null
+watch(searchTerm, () => {
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    page.value = 1
+    hasMoreData.value = true
+    fetchTrainings(false)
+  }, 1000)
+})
+
+// Watch inmediato para los demás filtros
+watch([filterDiscipline, filterPaquete, filterUbicacion, filterStatus, filterFechaInicio, filterFechaFin], () => {
   page.value = 1
   hasMoreData.value = true
   fetchTrainings(false)

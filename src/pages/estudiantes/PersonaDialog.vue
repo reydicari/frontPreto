@@ -261,6 +261,7 @@ const profilePhotoFile = ref(null)
 const formStep1 = ref(null)
 // nivel removed: no options required
 const generoOptions = ref([
+  // { label: 'Ingeniero', value: 'I' },
   { label: 'Masculino', value: 'M' },
   { label: 'Femenino', value: 'F' },
   { label: 'Otro', value: 'O' }

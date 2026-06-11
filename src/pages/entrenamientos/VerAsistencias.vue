@@ -11,7 +11,11 @@
             <div class="header-title">Asistencias del Entrenamiento</div>
             <div class="header-subtitle">
               <q-icon name="people" size="16px" class="q-mr-xs" />
-              Total: {{ nroAsistencias }} asistencias
+              Esperados: {{ listaB.length }} &nbsp;|&nbsp;
+              <q-icon name="check_circle" size="14px" class="q-mr-xs text-green-5" />
+              Ya asistieron: {{ asistencias.length }} &nbsp;|&nbsp;
+              <q-icon name="how_to_reg" size="14px" class="q-mr-xs text-amber-5" />
+              Seleccionados: {{ selectedIds.length }}
             </div>
           </div>
         </div>
@@ -24,46 +28,59 @@
         <q-card-section class="asistencias-section">
           <div class="section-header">
             <div class="section-label">
-              <q-icon name="check_circle" size="20px" class="q-mr-xs" />
-              Listado de asistencias
+              <q-icon name="groups" size="20px" class="q-mr-xs" />
+              Estudiantes del entrenamiento
             </div>
             <div class="section-controls">
-              <q-input v-model="searchText" dense outlined placeholder="Buscar por nombre o CI..." class="search-input"
-                @update:model-value="onSearchChange">
+              <q-input v-model="searchText" dense outlined placeholder="Buscar por nombre o CI..." class="search-input">
                 <template v-slot:prepend>
                   <q-icon name="search" />
                 </template>
               </q-input>
-              <q-select v-model="limit" dense outlined map-options emit-value option-value="value"
-                :options="limitOptions" label="Registros" class="limit-select" @update:model-value="onLimitChange" />
             </div>
           </div>
           <q-list bordered class="asistencias-list">
-            <q-item v-for="a in asistencias" :key="a.id || `${a.id_persona}-${a.fecha}`" class="asistencia-item">
+            <q-item v-for="estudiante in listaFiltrada" :key="estudiante.id" class="asistencia-item">
               <q-item-section avatar>
-                <q-avatar :color="a.es_entrenador ? 'amber-7' : 'green-7'" text-color="white" size="42px">
-                  <q-icon :name="a.es_entrenador ? 'sports' : 'person'" />
+                <q-avatar color="green-7" text-color="white" size="42px">
+                  <q-icon name="person" />
                 </q-avatar>
               </q-item-section>
               <q-item-section>
-                <q-item-label class="persona-name">{{ personaLabel(a) }}</q-item-label>
+                <q-item-label class="persona-name">{{ estudianteLabel(estudiante) }}</q-item-label>
                 <q-item-label caption class="persona-info">
-                  <q-icon name="event" size="14px" class="q-mr-xs" />{{ formatFecha(a.fecha) }}
+                  <q-icon name="badge" size="14px" class="q-mr-xs" />CI: {{ estudiante.ci }}
                 </q-item-label>
               </q-item-section>
-              <q-item-section side>
-                <q-btn unelevated dense color="amber-8" icon="trending_up" @click="openProgressDialog(a)"
-                  class="progreso-btn">
-                  <span class="progreso-btn-label">Progreso</span>
-                  <q-tooltip>Ver progreso</q-tooltip>
-                </q-btn>
+              <q-item-section side class="items-center">
+                <!-- Ya tiene asistencia registrada -->
+                <template v-if="yaAsistio(estudiante.id)">
+                  <q-badge color="green-7" label="Ya asistió">
+                    <q-icon name="check_circle" size="14px" class="q-ml-xs" />
+                  </q-badge>
+                  <q-btn unelevated dense color="amber-8" icon="trending_up" class="progreso-btn q-mt-xs"
+                    @click="openProgressDialogByEstudiante(estudiante)">
+                    <span class="progreso-btn-label">Progreso</span>
+                    <q-tooltip>Agregar progreso</q-tooltip>
+                  </q-btn>
+                </template>
+                <!-- Pendiente de asistencia -->
+                <q-checkbox v-else v-model="selectedIds" :val="estudiante.id" color="green-7" size="lg">
+                  <q-tooltip>Marcar asistencia</q-tooltip>
+                </q-checkbox>
               </q-item-section>
             </q-item>
-            <q-item v-if="!asistencias.length" class="empty-item">
+            <q-item v-if="listaB.length === 0" class="empty-item">
               <q-item-section class="text-center">
                 <q-icon name="event_busy" size="48px" color="grey-4" />
-                <q-item-label caption class="empty-text">No hay registros de asistencia para este
+                <q-item-label caption class="empty-text">No hay estudiantes registrados para este
                   entrenamiento</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-else-if="listaFiltrada.length === 0" class="empty-item">
+              <q-item-section class="text-center">
+                <q-icon name="search_off" size="48px" color="grey-4" />
+                <q-item-label caption class="empty-text">Sin resultados para "{{ searchText }}"</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -113,6 +130,11 @@
       <q-separator />
 
       <q-card-actions align="right" class="footer-actions">
+        <q-btn :label="$q.screen.gt.xs ? 'Guardar asistencias' : 'Asistencias'"
+          :color="selectedIds.length ? 'green-8' : 'grey-6'" icon="how_to_reg" @click="guardarAsistenciasSeleccionadas"
+          :disable="!selectedIds.length" class="generate-btn">
+          <q-tooltip v-if="!selectedIds.length">Selecciona al menos un estudiante</q-tooltip>
+        </q-btn>
         <q-btn :label="$q.screen.gt.xs ? 'Guardar progresos' : 'Guardar'"
           :color="puedeRegistrarProgreso ? 'green-7' : 'grey-6'" icon="auto_awesome" @click="generateProgresos"
           :disable="!puedeRegistrarProgreso" class="generate-btn">
@@ -170,7 +192,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { listar as listarAsistencias } from 'stores/asistencia-store.js'
+import { listar as listarAsistencias, listarEstudiantesPorEntrenamiento, guardarAsistencias } from 'stores/asistencia-store.js'
 import { listar as listarCualidades } from 'stores/cualidad-store.js'
 import { agregarProgresos } from 'stores/progreso-store.js'
 
@@ -185,6 +207,11 @@ const $q = useQuasar()
 const show = computed({ get: () => props.modelValue, set: v => emit('update:modelValue', v) })
 const asistencias = ref([])
 
+// ListaB: todos los estudiantes que deben asistir (desde API)
+const listaB = ref([])
+// IDs seleccionados para registrar nueva asistencia
+const selectedIds = ref([])
+
 // progresos locales antes de persistir en store
 const progresos = ref([])
 
@@ -197,17 +224,8 @@ const progresoComentario = ref('')
 const cualidades = ref([])
 const nroAsistencias = ref(0)
 
-// Nuevos campos para búsqueda y paginación
-const searchText = ref('')
-const limit = ref(5)
-const limitOptions = ref([
-  { label: '5', value: 5 },
-  { label: '10', value: 10 },
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
-  { label: 'Todos', value: null }
-])
+// Nuevos campos para búsqueda
+const searchText = ref()
 
 const getBoliviaDateString = () => {
   const boliviaDate = new Date().toLocaleString("es-BO", {
@@ -226,13 +244,14 @@ const fetchAsistencias = async () => {
     const params = {
       id_entrenamiento: props.entrenamientoId,
       page: 1,
-      limit: limit.value,
+      limit: null,
       hoy: getBoliviaDateString(),
-      search: searchText.value || ''
+      search: ''
     }
     const resp = await listarAsistencias(params)
     asistencias.value = resp.lista
     nroAsistencias.value = resp.total
+    console.log('listaA:', asistencias.value)
   } catch (e) {
     console.error('Error cargando asistencias:', e)
     asistencias.value = []
@@ -240,13 +259,40 @@ const fetchAsistencias = async () => {
   }
 }
 
-const onSearchChange = () => {
-  fetchAsistencias()
+// Obtener todos los estudiantes que deben asistir al entrenamiento
+const fetchListaB = async () => {
+  try {
+    listaB.value = await listarEstudiantesPorEntrenamiento(props.entrenamientoId)
+    console.log('ListaB (esperados):', listaB.value)
+  } catch (e) {
+    console.error('Error cargando estudiantes del entrenamiento:', e)
+    listaB.value = []
+  }
 }
 
-const onLimitChange = () => {
-  fetchAsistencias()
+// Verificar si un estudiante (listaB[n].id) ya asistió comparando con listaA[n].persona.id
+const yaAsistio = (idEstudiante) => {
+  return asistencias.value.some(a => a.persona?.id === idEstudiante)
 }
+
+// Label para mostrar nombre completo de un estudiante de listaB
+const estudianteLabel = (e) => {
+  const nombres = e.nombres || e.nombre || ''
+  const ap = e.apellido_paterno || ''
+  const am = e.apellido_materno || ''
+  return `${nombres} ${ap} ${am}`.trim()
+}
+
+// Lista filtrada por searchText
+const listaFiltrada = computed(() => {
+  if (!searchText.value) return listaB.value
+  const q = searchText.value.toLowerCase()
+  return listaB.value.filter(e => {
+    const nombre = estudianteLabel(e).toLowerCase()
+    const ci = String(e.ci || '').toLowerCase()
+    return nombre.includes(q) || ci.includes(q)
+  })
+})
 
 const loadCualidades = async () => {
   try {
@@ -258,22 +304,14 @@ const loadCualidades = async () => {
   }
 }
 
-watch(() => show.value, (v) => { if (v) { fetchAsistencias(); loadCualidades() } })
-
-const formatFecha = (fecha) => {
-  if (!fecha) return ''
-  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-
-  // Parsear la fecha YYYY-MM-DD hh:mm:ss
-  const partes = fecha.split(' ')
-  const fechaParte = partes[0] // YYYY-MM-DD
-  const horaParte = partes[1] || '00:00:00' // hh:mm:ss
-
-  const [year, month, day] = fechaParte.split('-')
-  const mesNombre = meses[parseInt(month) - 1] || ''
-
-  return `${day} ${mesNombre} ${year}, ${horaParte}`
-}
+watch(() => show.value, (v) => {
+  if (v) {
+    selectedIds.value = []
+    fetchAsistencias()
+    fetchListaB()
+    loadCualidades()
+  }
+})
 
 const personaLabel = (a) => {
   if (!a) return ''
@@ -338,9 +376,23 @@ const addProgreso = () => {
   $q.notify({ type: 'positive', message: 'Progreso agregado (local)' })
 }
 
+const openProgressDialogByEstudiante = (estudiante) => {
+  const asistencia = asistencias.value.find(a => a.persona?.id === estudiante.id)
+  if (asistencia) {
+    openProgressDialog(asistencia)
+  } else {
+    openProgressDialog({ id_persona: estudiante.id, persona: estudiante })
+  }
+}
+
 const personaNameById = (id) => {
+  // Buscar primero en listaA (asistencias)
   const a = asistencias.value.find(x => x.id_persona === id || (x.persona && (x.persona.id === id || x.persona.id_persona === id)))
-  return a ? personaLabel(a) : `Persona ${id}`
+  if (a) return personaLabel(a)
+  // Luego en listaB
+  const b = listaB.value.find(e => e.id === id)
+  if (b) return estudianteLabel(b)
+  return `Persona ${id}`
 }
 
 const cualidadNameById = (id) => {
@@ -427,6 +479,24 @@ const generateProgresos = async () => {
   } catch (e) {
     console.error('Error guardando progresos:', e)
     $q.notify({ type: 'negative', message: 'Error al guardar progresos', icon: 'error' })
+  }
+}
+
+const guardarAsistenciasSeleccionadas = async () => {
+  if (!selectedIds.value.length) return
+  const fecha = getBoliviaNowString()
+  const payload = selectedIds.value.map(id => ({
+    id_persona: id,
+    id_entrenamiento: Number(props.entrenamientoId),
+    es_entrenador: false,
+    fecha
+  }))
+  try {
+    await guardarAsistencias(payload)
+    selectedIds.value = []
+    await fetchAsistencias()
+  } catch {
+    // el store ya notifica el error
   }
 }
 

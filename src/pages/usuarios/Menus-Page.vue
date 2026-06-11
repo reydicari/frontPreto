@@ -1,21 +1,20 @@
 <template>
-  <q-page class="menus-page">
-    <!-- Header con gradiente verde -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h2 class="page-title">
-            <q-icon name="account_tree" class="title-icon" />
+  <q-page class="menus-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="account_tree" size="38px" class="q-mr-sm" />
             Gestión de Menús del Sistema
           </h2>
-          <div class="page-subtitle">Administración de la estructura de menús jerárquica recursiva</div>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administración de la estructura de menús jerárquica recursiva</p>
         </div>
-        <div class="header-actions">
-          <q-btn unelevated rounded class="add-menu-btn" icon="add_circle" label="Nuevo Menú"
-            @click="openDialog(null, 'menu')" />
-        </div>
-      </div>
-    </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Menú" class="btn-header-nuevo" @click="openDialog(null, 'menu')">
+          <q-tooltip>Registrar nuevo menú</q-tooltip>
+        </q-btn>
+      </q-card-section>
+    </q-card>
 
     <!-- Árbol de menús -->
     <div class="menus-tree-container">
@@ -649,19 +648,13 @@ $color-amber: #ffa726;
 // ===== PÁGINA =====
 .menus-page {
   padding: 24px;
-  background: linear-gradient(135deg, #f5f5f5 0%, #e8f5e9 100%);
   min-height: 100vh;
   animation: fadeIn 0.5s ease;
 }
 
 // ===== HEADER =====
 .page-header {
-  background: linear-gradient(135deg, $color-forest-dark 0%, $color-forest 50%, $color-moss 100%);
-  border-radius: 16px;
-  padding: 32px;
   margin-bottom: 32px;
-  box-shadow: 0 8px 32px rgba(27, 94, 32, 0.25);
-  animation: slideInUp 0.6s ease;
 }
 
 .header-content {

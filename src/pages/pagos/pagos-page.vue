@@ -1,52 +1,47 @@
 <template>
   <q-page class="payments-page" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
     <!-- Header con título, botón y estadísticas -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="row items-center q-col-gutter-md">
-          <!-- Título e icono -->
-          <div class="col-12 col-md-auto">
-            <div class="header-title-group">
-              <q-icon name="payments" size="48px" class="page-icon" />
-              <h1 class="page-title q-ma-none">Pagos</h1>
-            </div>
-          </div>
-
-          <!-- Estadísticas compactas -->
-          <div class="col-12 col-md q-mt-md q-mt-md-none">
-            <div class="row q-col-gutter-sm">
-              <div class="col-6 col-sm-4">
-                <div class="stat-card-compact stat-card-total">
-                  <div class="stat-compact-content">
-                    <q-icon name="account_balance_wallet" size="24px" class="stat-compact-icon" />
-                    <div>
-                      <div class="stat-compact-label">Total Pagos</div>
-                      <div class="stat-compact-value">Bs {{ totalPagos.toFixed(2) }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-6 col-sm-4">
-                <div class="stat-card-compact stat-card-count">
-                  <div class="stat-compact-content">
-                    <q-icon name="warning" size="24px" class="stat-compact-icon" />
-                    <div>
-                      <div class="stat-compact-label">Total Deudas</div>
-                      <div class="stat-compact-value">Bs {{ totalDeudas.toFixed(2) }}</div>
-                    </div>
-                  </div>
+    <q-card class="q-mb-lg header-card">
+      <q-card-section class="row items-center justify-between header-section">
+        <div>
+          <h2 class="text-h4 q-ma-none page-title animated-title">
+            <q-icon name="payments" size="38px" class="q-mr-sm" />
+            Pagos
+          </h2>
+          <p class="header-subtitle q-mt-xs q-mb-none">Administra y registra los pagos del sistema</p>
+        </div>
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Pago" class="btn-header-nuevo" @click="openDialog">
+          <q-tooltip>Registrar nuevo pago</q-tooltip>
+        </q-btn>
+      </q-card-section>
+      <!-- Estadísticas compactas -->
+      <q-card-section class="q-pt-none">
+        <div class="row q-col-gutter-sm">
+          <div class="col-6 col-sm-4">
+            <div class="stat-card-compact stat-card-total">
+              <div class="stat-compact-content">
+                <q-icon name="account_balance_wallet" size="24px" class="stat-compact-icon" />
+                <div>
+                  <div class="stat-compact-label">Total Pagos</div>
+                  <div class="stat-compact-value">Bs {{ totalPagos.toFixed(2) }}</div>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Botón de nuevo -->
-          <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
-            <q-btn icon="add_circle" label="Nuevo Pago" class="btn-add-header" @click="openDialog" />
+          <div class="col-6 col-sm-4">
+            <div class="stat-card-compact stat-card-count">
+              <div class="stat-compact-content">
+                <q-icon name="warning" size="24px" class="stat-compact-icon" />
+                <div>
+                  <div class="stat-compact-label">Total Deudas</div>
+                  <div class="stat-compact-value">Bs {{ totalDeudas.toFixed(2) }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </q-card-section>
+    </q-card>
 
     <!-- Barra de búsqueda -->
     <!-- <div class="toolbar-section">
@@ -62,86 +57,74 @@
 </div>
 </div> -->
 
-    <!-- Filtros avanzados -->
-    <div class="filters-section">
-      <div class="filters-header" @click="showFilters = !showFilters">
-        <div class="filters-title">
-          <q-icon name="filter_list" size="20px" />
-          <span>Filtros Avanzados</span>
-          <q-badge v-if="activeFiltersCount > 0" :label="activeFiltersCount" color="green-7" class="q-ml-sm" />
+    <!-- Filtros -->
+    <q-card class="q-mb-md filters-card">
+      <q-card-section>
+        <div class="row items-center q-mb-md">
+          <q-icon name="filter_list" size="24px" class="q-mr-sm text-primary" />
+          <span class="text-h6 text-weight-medium">Filtros de Búsqueda</span>
+          <q-space />
+          <q-btn flat dense icon="refresh" color="primary" @click="clearFilters" size="sm">
+            <q-tooltip>Limpiar todos los filtros</q-tooltip>
+          </q-btn>
         </div>
-        <q-icon :name="showFilters ? 'expand_less' : 'expand_more'" size="24px" />
-      </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6 col-md-3">
+            <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
+          </div>
 
-      <q-slide-transition>
-        <div v-show="showFilters" class="filters-content">
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-sm-6 col-md-3">
-              <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
-            </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select map-options emit-value option-value="value" dense outlined v-model="filterEstado"
+              :options="estadoOptions" label="Estado" clearable class="filter-input">
+              <template v-slot:prepend>
+                <q-icon name="toggle_on" color="green-7" />
+              </template>
+            </q-select>
+          </div>
 
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select map-options emit-value option-value="value" dense outlined v-model="filterEstado"
-                :options="estadoOptions" label="Estado" clearable class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="toggle_on" color="green-7" />
-                </template>
-              </q-select>
-            </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select dense outlined v-model="filterPersona" :options="personOptions" option-label="displayName"
+              option-value="id" use-input input-debounce="300" emit-value map-options label="Persona" clearable
+              @filter="onFilterPerson" class="filter-input">
+              <template v-slot:prepend>
+                <q-icon name="person_search" color="green-7" />
+              </template>
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">{{ searchPersonaFiltro.length < 3
+                    ? 'Escribe al menos 3 caracteres' : 'No se encontró' }}</q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </div>
 
-            <!-- <div class="col-12 col-sm-6 col-md-3">
-              <q-select dense outlined v-model="filterRol" :options="rolOptions" label="Tipo de Persona" clearable
-                class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="badge" color="green-7" />
-                </template>
-              </q-select>
-            </div> -->
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select dense outlined v-model="filterUsuario" :options="usuarioOptions" option-label="displayName"
+              option-value="id" use-input input-debounce="300" emit-value map-options label="Usuario que registró"
+              clearable @filter="onFilterUsuario" class="filter-input">
+              <template v-slot:prepend>
+                <q-icon name="account_circle" color="green-7" />
+              </template>
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">{{ searchUsuario.length < 3 ? 'Escribe al menos 3 caracteres'
+                    : 'No se encontró' }}</q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </div>
 
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select dense outlined v-model="filterPersona" :options="personOptions" option-label="displayName"
-                option-value="id" use-input input-debounce="300" emit-value map-options label="Persona" clearable
-                @filter="onFilterPerson" class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="person_search" color="green-7" />
-                </template>
-                <template v-slot:no-option>
-                  <q-item>
-                    <q-item-section class="text-grey">{{ searchPersonaFiltro.length < 3
-                      ? 'Escribe al menos 3 caracteres' : 'No se encontró' }}</q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select dense outlined v-model="filterUsuario" :options="usuarioOptions" option-label="displayName"
-                option-value="id" use-input input-debounce="300" emit-value map-options label="Usuario que registró"
-                clearable @filter="onFilterUsuario" class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="account_circle" color="green-7" />
-                </template>
-                <template v-slot:no-option>
-                  <q-item>
-                    <q-item-section class="text-grey">{{ searchUsuario.length < 3 ? 'Escribe al menos 3 caracteres'
-                      : 'No se encontró' }}</q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select map-options emit-value option-value="value" dense outlined v-model="filterCategoria"
-                :options="categoriaOptions" label="Categoría de Pago" clearable class="filter-input">
-                <template v-slot:prepend>
-                  <q-icon name="category" color="green-7" />
-                </template>
-              </q-select>
-            </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select map-options emit-value option-value="value" dense outlined v-model="filterCategoria"
+              :options="categoriaOptions" label="Categoría de Pago" clearable class="filter-input">
+              <template v-slot:prepend>
+                <q-icon name="category" color="green-7" />
+              </template>
+            </q-select>
           </div>
         </div>
-      </q-slide-transition>
-    </div>
+      </q-card-section>
+    </q-card>
 
     <!-- Lista de pagos con cards -->
     <div class="payments-list">
@@ -324,7 +307,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -345,7 +328,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                    }}</q-item-label>
+                      }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -394,12 +377,13 @@
               <q-separator class="q-my-sm" />
 
               <div class="subpagos-list">
-                <div v-for="subPago in selectedPago.pagosDerivados" :key="subPago.id" class="subpago-item">
+                <div v-for="subPago in sortedPagosDerivados" :key="subPago.id" class="subpago-item">
                   <div class="subpago-content">
                     <div class="subpago-info">
                       <div class="subpago-row">
                         <q-icon name="event" size="16px" color="grey-7" />
-                        <span class="subpago-label">{{ formatDate(subPago.fecha) }}</span>
+                        <span class="subpago-label">{{ formatDate(subPago.fecha) }}{{ extractTime(subPago.fecha) ? ' ' +
+                          extractTime(subPago.fecha) : '' }}</span>
                       </div>
                       <div class="subpago-row">
                         <q-icon name="credit_card" size="16px" color="green-7" />
@@ -520,8 +504,6 @@ const loading = ref(false)
 const displayedPagos = ref([])
 const totalPagos = ref(0)
 const totalDeudas = ref(0)
-const showFilters = ref(false)
-
 // Paginación
 const page = ref(0)
 const limit = ref(12)
@@ -562,17 +544,14 @@ const estadoOptions = [
   { label: 'Deuda', value: 2 },
 ]
 
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filterDesde.value) count++
-  if (filterHasta.value) count++
-  if (filterPersona.value) count++
-  if (filterEstado.value !== null && filterEstado.value !== undefined) count++
-  if (filterRol.value) count++
-  if (filterUsuario.value) count++
-  if (filterCategoria.value) count++
-  return count
-})
+function clearFilters() {
+  filterDesde.value = null
+  filterHasta.value = null
+  filterPersona.value = null
+  filterEstado.value = null
+  filterUsuario.value = null
+  filterCategoria.value = null
+}
 
 // Utilidades
 function estadoColor(estado) {
@@ -815,6 +794,11 @@ function onPagoAnulado() {
   hasMoreData.value = true
   loadPagos()
 }
+
+const sortedPagosDerivados = computed(() => {
+  if (!selectedPago.value?.pagosDerivados) return []
+  return [...selectedPago.value.pagosDerivados].sort((a, b) => a.id - b.id)
+})
 </script>
 
 <style scoped lang="scss">
@@ -823,14 +807,6 @@ function onPagoAnulado() {
 .payments-page {
   padding: 24px;
   min-height: 100vh;
-
-  &.bg-grey-4 {
-    background: linear-gradient(135deg, #f0f9ff 0%, rgba($primary, 0.15) 100%);
-  }
-
-  &:not(.bg-grey-4) {
-    background: linear-gradient(135deg, $dark 0%, rgba($primary, 0.25) 100%);
-  }
 }
 
 .page-header {
