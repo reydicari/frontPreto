@@ -10,14 +10,15 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Gestiona los usuarios y accesos del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Usuario" class="btn-header-nuevo" @click="showUserDialog(null)">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Usuario" class="btn-header-nuevo"
+          @click="showUserDialog(null)">
           <q-tooltip>Registrar nuevo usuario</q-tooltip>
         </q-btn>
       </q-card-section>
     </q-card>
 
-      <!-- Tarjetas de estadísticas -->
-      <!-- <div class="stats-container row q-gutter-md q-mt-md">
+    <!-- Tarjetas de estadísticas -->
+    <!-- <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
             <q-icon name="groups" size="36px" />
@@ -679,7 +680,7 @@ const saveUser = async () => {
     const persona = personaOptions.value.find(p => String(p.id) === String(currentUser.value.id_persona)) || null
     const newUser = { id: Date.now(), usuario: currentUser.value.usuario, estado: true, id_persona: persona.id, rols: currentUser.value.roles || [], ultimo_ingreso: null, clave: currentUser.value.clave }
     await registrarUsuario(newUser)
-    $q.notify({ type: 'positive', message: 'Usuario creado correctamente' })
+    $q.notify({ type: 'positive', message: 'Usuario registrado correctamente' })
     userDialog.value = false
 
   }

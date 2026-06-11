@@ -10,7 +10,8 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra el registro y seguimiento de estudiantes</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Estudiante" class="btn-header-nuevo" @click="showPersonaDialog">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Estudiante" class="btn-header-nuevo"
+          @click="showPersonaDialog">
           <q-tooltip>Registrar nuevo estudiante</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -18,37 +19,37 @@
 
     <!-- Tarjetas de estadísticas -->
     <div class="stats-container row q-gutter-md q-mb-lg">
-        <div class="stat-card stat-card-total">
-          <div class="stat-icon">
-            <q-icon name="groups" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.total }}</div>
-            <div class="stat-label">Total Estudiantes</div>
-          </div>
+      <div class="stat-card stat-card-total">
+        <div class="stat-icon">
+          <q-icon name="groups" size="36px" />
         </div>
-
-        <div class="stat-card stat-card-active">
-          <div class="stat-icon">
-            <q-icon name="person_check" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.activos }}</div>
-            <div class="stat-label">Activos</div>
-          </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.total }}</div>
+          <div class="stat-label">Total Estudiantes</div>
         </div>
+      </div>
 
-        <div class="stat-card stat-card-inactive">
-          <div class="stat-icon">
-            <q-icon name="person_off" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.inactivos }}</div>
-            <div class="stat-label">Inactivos</div>
-          </div>
+      <div class="stat-card stat-card-active">
+        <div class="stat-icon">
+          <q-icon name="person_check" size="36px" />
         </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.activos }}</div>
+          <div class="stat-label">Activos</div>
+        </div>
+      </div>
 
-        <!-- <div class="stat-card stat-card-age">
+      <div class="stat-card stat-card-inactive">
+        <div class="stat-icon">
+          <q-icon name="person_off" size="36px" />
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.inactivos }}</div>
+          <div class="stat-label">Inactivos</div>
+        </div>
+      </div>
+
+      <!-- <div class="stat-card stat-card-age">
           <div class="stat-icon">
             <q-icon name="cake" size="36px" />
           </div>
@@ -58,16 +59,16 @@
           </div>
         </div> -->
 
-        <div class="stat-card stat-card-birthday">
-          <div class="stat-icon">
-            <q-icon name="celebration" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
-            <div class="stat-label">Cumpleaños este Mes</div>
-          </div>
+      <div class="stat-card stat-card-birthday">
+        <div class="stat-icon">
+          <q-icon name="celebration" size="36px" />
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
+          <div class="stat-label">Cumpleaños este Mes</div>
         </div>
       </div>
+    </div>
 
     <!-- Filtros -->
     <q-card class="q-mb-md filters-card">
@@ -114,22 +115,24 @@
             </q-select>
           </div>
           <div class="col-12 col-sm-6 col-md-3 col-lg-2">
-            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
-              emit-value map-options>
+            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable emit-value
+              map-options>
               <template v-slot:prepend>
                 <q-icon name="wc" />
               </template>
             </q-select>
           </div>
           <div class="col-6 col-sm-4 col-md-2">
-            <q-input v-model="filterEdadMin" type="number" label="Edad Mínima" outlined dense clearable :min="0" :max="99">
+            <q-input v-model="filterEdadMin" type="number" label="Edad Mínima" outlined dense clearable :min="0"
+              :max="99">
               <template v-slot:prepend>
                 <q-icon name="child_care" />
               </template>
             </q-input>
           </div>
           <div class="col-6 col-sm-4 col-md-2">
-            <q-input v-model="filterEdadMax" type="number" label="Edad Máxima" outlined dense clearable :min="0" :max="99">
+            <q-input v-model="filterEdadMax" type="number" label="Edad Máxima" outlined dense clearable :min="0"
+              :max="99">
               <template v-slot:prepend>
                 <q-icon name="elderly" />
               </template>
@@ -468,7 +471,7 @@ const savePersona = async (personaData) => {
     closeDialogAdd()
     $q.notify({
       type: 'positive',
-      message: 'Persona actualizada correctamente'
+      message: 'Estudiante actualizado correctamente'
     })
   } else {
     // Crear nueva persona
@@ -476,7 +479,7 @@ const savePersona = async (personaData) => {
     createEmptyPersona()
     $q.notify({
       type: 'positive',
-      message: 'Persona creada correctamente'
+      message: 'Estudiante registrado correctamente'
     })
   }
   currentPage.value = 1
@@ -498,7 +501,7 @@ function confirmDeletePersona(persona) {
     await cambiarEstado(persona)
     $q.notify({
       type: `${persona.estado ? 'positive' : 'negative'}`,
-      message: `Persona ${!persona.estado ? 'eliminada' : 'restaurada'} correctamente`
+      message: persona.estado ? 'Estudiante activado correctamente' : 'Estudiante desactivado correctamente'
     })
   })
 }

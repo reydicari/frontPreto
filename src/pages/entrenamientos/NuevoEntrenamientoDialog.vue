@@ -6,7 +6,7 @@
           <div class="header-left">
             <q-icon name="fitness_center" size="32px" class="header-icon" />
             <div>
-              <div class="header-title">{{ isEdit ? 'Editar Entrenamiento' : 'Nuevo Entrenamiento' }}</div>
+              <div class="header-title">{{ isEdit ? 'Modificar Entrenamiento' : 'Nuevo Entrenamiento' }}</div>
               <div class="header-subtitle">{{ currentStep === 1 ? 'Información básica' : 'Selección de entrenadores' }}
               </div>
             </div>
@@ -208,7 +208,7 @@
         <q-btn flat label="Cancelar" color="brown-7" icon="close" @click="onCancel" class="btn-cancel" />
 
         <!-- Botón de guardar directo (sin paso 2) -->
-        <q-btn unelevated label="Guardar Entrenamiento" color="primary" class="btn-save" icon="save"
+        <q-btn unelevated :label="isEdit ? 'Actualizar' : 'Guardar'" color="primary" class="btn-save" icon="save"
           @click="onSaveDirecto" />
 
         <!-- TEMPORALMENTE COMENTADO: Navegación entre steps

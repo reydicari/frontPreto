@@ -4,7 +4,8 @@
       <q-card-section class="payment-header">
         <div class="header-title-payment">
           <q-icon name="add_card" size="32px" class="q-mr-sm" />
-          <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (isEdit ? 'Editar Pago' : 'Nuevo Pago')
+          <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (isEdit ? 'Modificar Pago' : 'Nuevo
+            Pago')
             }}</div>
         </div>
       </q-card-section>
@@ -431,7 +432,7 @@ const handlePaymentMethod = async (metodo) => {
     resetLocal()
     $q.notify({
       type: 'positive',
-      message: `Pago registrado con ${metodo.nombre}`
+      message: 'Pago registrado correctamente'
     })
   } catch (e) {
     console.error('Error guardando pago', e)

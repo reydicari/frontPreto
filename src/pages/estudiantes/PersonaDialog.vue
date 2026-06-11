@@ -5,7 +5,7 @@
         <div class="header-content-dialog">
           <q-icon name="school" size="32px" class="q-mr-sm" />
           <div class="text-h5 text-weight-bold">
-            {{ editMode ? 'Editar Estudiante' : 'Nuevo Estudiante' }}
+            {{ editMode ? 'Modificar Estudiante' : 'Nuevo Estudiante' }}
           </div>
         </div>
       </q-card-section>
@@ -101,7 +101,8 @@
               </div>
             </q-form>
             <q-stepper-navigation>
-              <q-btn v-if="props.inscripcion" @click="prepareAndSave" color="positive" label="Guardar Estudiante" />
+              <q-btn v-if="props.inscripcion" @click="prepareAndSave" color="positive"
+                :label="editMode ? 'Actualizar' : 'Guardar'" />
               <q-btn v-else @click="validateFirstStep" color="primary" label="Continuar" />
               <q-btn flat @click="closeDialog" color="negative" label="Cancelar" class="q-ml-sm" />
             </q-stepper-navigation>
@@ -223,7 +224,7 @@
             </div>
 
             <q-stepper-navigation>
-              <q-btn @click="prepareAndSave" color="positive" label="Guardar Estudiante" />
+              <q-btn @click="prepareAndSave" color="positive" :label="editMode ? 'Actualizar' : 'Guardar'" />
               <q-btn @click="step = 'second'" flat color="primary" label="Atrás" class="q-ml-sm" />
               <q-btn flat @click="closeDialog" color="negative" label="Cancelar" class="q-ml-sm" />
             </q-stepper-navigation>

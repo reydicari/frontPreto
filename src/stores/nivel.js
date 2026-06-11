@@ -20,7 +20,7 @@ export const agregarNivel = async (nivel) => {
     const response = await api.post(URL_PART + "/agregar", nivel);
     Notify.create({
       type: "info",
-      message: "Nivel creado con éxito",
+      message: "Nivel registrado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -39,7 +39,7 @@ export const modificarNivel = async (nivel) => {
     const response = await api.put(URL_PART + "/modificar/" + nivel.id, nivel);
     Notify.create({
       type: "info",
-      message: "Nivel modificado con éxito",
+      message: "Nivel actualizado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -61,7 +61,9 @@ export const cambiarEstado = async (nivel) => {
     );
     Notify.create({
       type: "info",
-      message: "Estado del nivel cambiado con éxito",
+      message: nivel.estado
+        ? "Nivel activado correctamente"
+        : "Nivel desactivado correctamente",
       position: "bottom",
     });
     return response.data;

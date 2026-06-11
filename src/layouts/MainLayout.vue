@@ -86,7 +86,7 @@
                       <q-icon name="badge" size="18px" class="info-icon" />
                       <span class="info-label">CI:</span>
                       <span class="info-value">{{ userData?.persona?.ci }} {{ userData?.persona?.complemento || ''
-                        }}</span>
+                      }}</span>
                     </div>
 
                     <div class="info-row">
@@ -815,7 +815,7 @@ const onGastoSaved = () => {
   dialogGasto.value = false
   $q.notify({
     type: 'positive',
-    message: 'Gasto registrado exitosamente',
+    message: 'Gasto registrado correctamente',
     position: 'top'
   })
 }
@@ -828,7 +828,7 @@ const onPagoSaved = () => {
   dialogPago.value = false
   $q.notify({
     type: 'positive',
-    message: 'Pago registrado exitosamente',
+    message: 'Pago registrado correctamente',
     position: 'top'
   })
 }

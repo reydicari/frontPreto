@@ -16,7 +16,7 @@ export const agregarEvaluaciones = async (dataform) => {
     const response = await api.post(URL_PART + "/agregar", dataform);
     Notify.create({
       type: "info",
-      message: "Evaluación creada con éxito",
+      message: "Evaluación registrada correctamente",
       position: "bottom",
     });
     return response.data;

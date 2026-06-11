@@ -22,7 +22,7 @@ export const agregarUbicacion = async (ubicacionData) => {
     const response = await api.post(URL_PART + "/agregar", ubicacionData);
     Notify.create({
       type: "info",
-      message: "ubicacion creada con éxito",
+      message: "Ubicación registrada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -44,7 +44,7 @@ export const modificarUbicacion = async (ubicacionData) => {
     );
     Notify.create({
       type: "info",
-      message: "ubicacion modificada con éxito",
+      message: "Ubicación actualizada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -66,7 +66,9 @@ export const cambiarEstadoUbicacion = async (ubicacionData) => {
     );
     Notify.create({
       type: "info",
-      message: "Cambio de estado exitoso",
+      message: ubicacionData.nuevoEstado
+        ? "Ubicación activada correctamente"
+        : "Ubicación desactivada correctamente",
       position: "bottom",
     });
     return response.data;

@@ -24,7 +24,7 @@ export const agregarGasto = async (formData) => {
     });
     Notify.create({
       type: "positive",
-      message: "Gasto registrado con éxito",
+      message: "Gasto registrado correctamente",
       position: "bottom",
     });
     return response;

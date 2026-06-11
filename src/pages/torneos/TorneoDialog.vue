@@ -4,7 +4,7 @@
       <div class="row items-center q-gutter-sm">
         <q-icon :name="isEdit ? 'edit' : 'add_circle'" size="32px" color="white" />
         <div class="text-h5 text-white text-weight-medium">{{ props.isRescheduling ? 'Reprogramar Torneo' : (isEdit ?
-          'Editar Torneo' : 'Nuevo Torneo') }}</div>
+          'Modificar Torneo' : 'Nuevo Torneo') }}</div>
       </div>
     </q-card-section>
 
@@ -78,8 +78,8 @@
           <q-btn flat label="Cancelar" icon="close" color="grey-7" @click="$emit('cancel')" class="text-body2" />
           <q-btn outline label="Asignar Encargados" icon="people" color="deep-orange-6" @click="showAssignDialog = true"
             class="text-body2" />
-          <q-btn unelevated label="Guardar" icon="save" color="green-7" :disable="!canSave" @click="submit"
-            class="text-body2" />
+          <q-btn unelevated :label="isEdit ? 'Actualizar' : 'Guardar'" icon="save" color="green-7" :disable="!canSave"
+            @click="submit" class="text-body2" />
         </div>
       </q-form>
     </q-card-section>

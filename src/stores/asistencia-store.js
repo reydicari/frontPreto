@@ -43,7 +43,7 @@ export const asistenciaEstudiante = async (asistencia) => {
     );
     Notify.create({
       type: "positive",
-      message: "Asistencia registrada con éxito",
+      message: "Asistencia registrada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -86,7 +86,7 @@ export const guardarAsistencias = async (asistencias = []) => {
     const response = await api.post(URL_PART + "/agregar", { asistencias });
     Notify.create({
       type: "info",
-      message: "Asistencias guardadas con éxito",
+      message: "Asistencias registradas correctamente",
       position: "bottom",
     });
     return response.data;

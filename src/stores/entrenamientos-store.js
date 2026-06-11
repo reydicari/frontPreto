@@ -20,7 +20,7 @@ export const crearEntrenamiento = async (data) => {
     const response = await api.post(URL_PART + "/agregar", data);
     Notify.create({
       type: "info",
-      message: "Entrenamiento creado con éxito",
+      message: "Entrenamiento registrado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -39,7 +39,7 @@ export const modificarEntrenamiento = async (data) => {
     const response = await api.put(URL_PART + "/modificar", data);
     Notify.create({
       type: "info",
-      message: "Entrenamiento modificado con éxito",
+      message: "Entrenamiento actualizado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -58,7 +58,8 @@ export const suspenderEntrenamiento = async (id) => {
     const response = await api.put(URL_PART + "/suspender/" + id);
     Notify.create({
       type: "info",
-      message: response.data.mensaje || "Entrenamiento suspendido con éxito",
+      message:
+        response.data.mensaje || "Entrenamiento suspendido correctamente",
       position: "bottom",
     });
     return response.data;

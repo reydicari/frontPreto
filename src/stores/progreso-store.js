@@ -16,7 +16,7 @@ export const agregarProgresos = async (dataform) => {
     const response = await api.post(URL_PART + "/agregar", dataform);
     Notify.create({
       type: "info",
-      message: "progresos agregados con éxito",
+      message: "Progresos registrados correctamente",
       position: "bottom",
     });
     return response.data;

@@ -115,7 +115,7 @@
                               </q-badge>
                               <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                              }} disponibles</span>
+                                }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>
@@ -166,8 +166,8 @@
           <q-stepper-navigation>
             <q-btn v-if="!inscripcionIndefinida" @click="stepPago" class="btn-continuar" label="Continuar a Pago"
               icon-right="arrow_forward" unelevated />
-            <q-btn v-else @click="saveInscripcion" class="btn-guardar" label="Guardar Inscripción" icon-right="save"
-              unelevated />
+            <q-btn v-else @click="saveInscripcion" class="btn-guardar" :label="editMode ? 'Actualizar' : 'Guardar'"
+              icon-right="save" unelevated />
 
             <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
           </q-stepper-navigation>
@@ -202,8 +202,8 @@
           </div>
 
           <q-stepper-navigation>
-            <q-btn @click="saveInscripcion" class="btn-guardar" label="Guardar Inscripción" icon-right="save"
-              unelevated />
+            <q-btn @click="saveInscripcion" class="btn-guardar" :label="editMode ? 'Actualizar' : 'Guardar'"
+              icon-right="save" unelevated />
             <q-btn flat @click="step = 'datos'" class="btn-atras" label="Atrás" icon="arrow_back" />
             <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
           </q-stepper-navigation>

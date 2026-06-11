@@ -4,7 +4,7 @@
             <q-card-section class="dialog-header">
                 <div class="text-h6">
                     <q-icon name="schedule" class="q-mr-sm" />
-                    {{ isEditing ? 'Editar Horario' : 'Agregar Horario' }}
+                    {{ isEditing ? 'Modificar Horario' : 'Nuevo Horario' }}
                 </div>
             </q-card-section>
 
@@ -37,7 +37,8 @@
                 <q-btn v-if="isEditing && canRemove" flat label="Eliminar" color="negative" icon="delete"
                     @click="remove" />
                 <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-                <q-btn unelevated label="Guardar" color="green-7" icon="save" @click="save" />
+                <q-btn unelevated :label="isEditing ? 'Actualizar' : 'Guardar'" color="green-7" icon="save"
+                    @click="save" />
             </q-card-actions>
         </q-card>
     </q-dialog>

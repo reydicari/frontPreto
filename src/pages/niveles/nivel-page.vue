@@ -10,7 +10,8 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra los niveles de clasificación del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Nivel" class="btn-header-nuevo" @click="abrirNuevo">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Nivel" class="btn-header-nuevo"
+          @click="abrirNuevo">
           <q-tooltip>Registrar nuevo nivel</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -99,7 +100,7 @@
       <q-card style="min-width: 380px; max-width: 500px; width: 100%">
         <q-card-section class="form-header">
           <q-icon :name="esEdicion ? 'edit' : 'add_circle'" size="24px" class="q-mr-sm" />
-          <span class="text-h6">{{ esEdicion ? 'Editar Nivel' : 'Nuevo Nivel' }}</span>
+          <span class="text-h6">{{ esEdicion ? 'Modificar Nivel' : 'Nuevo Nivel' }}</span>
           <q-space />
           <q-btn flat round dense icon="close" @click="cerrarFormulario" />
         </q-card-section>

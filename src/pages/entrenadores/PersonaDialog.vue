@@ -5,7 +5,7 @@
         <div class="header-content-dialog">
           <q-icon name="sports" size="32px" class="q-mr-sm" />
           <div class="text-h5 text-weight-bold">
-            {{ editMode ? 'Editar Entrenador' : 'Nuevo Entrenador' }}
+            {{ editMode ? 'Modificar Entrenador' : 'Nuevo Entrenador' }}
           </div>
         </div>
       </q-card-section>
@@ -233,7 +233,7 @@
             </div>
 
             <q-stepper-navigation>
-              <q-btn @click="prepareAndSave" color="positive" label="Guardar Persona" />
+              <q-btn @click="prepareAndSave" color="positive" :label="editMode ? 'Actualizar' : 'Guardar'" />
               <q-btn @click="step = 'second'" flat color="primary" label="Atrás" class="q-ml-sm" />
               <q-btn flat @click="closeDialog" color="negative" label="Cancelar" class="q-ml-sm" />
             </q-stepper-navigation>

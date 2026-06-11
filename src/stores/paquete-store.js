@@ -19,7 +19,7 @@ export const crearPaquete = async (paquete) => {
     const response = await api.post(URL_PART + "/agregar", paquete);
     Notify.create({
       type: "info",
-      message: "Paquete creado con éxito",
+      message: "Paquete registrado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -38,7 +38,7 @@ export const actualizarPaquete = async (paquete) => {
     console.log("ACTUALIZANDO ESTE PAQUETE", paquete);
 
     const response = await api.put(URL_PART + "/actualizar", paquete);
-    Notify.create({ type: "info", message: response.data, position: "bottom" });
+    // Notify.create({ type: "info", message: "Paquete actualizado correctamente", position: "bottom" });
     return response.data;
   } catch (error) {
     console.log("error en el store", error);

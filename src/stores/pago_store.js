@@ -31,7 +31,7 @@ export const agregarPago = async (formData) => {
     });
     Notify.create({
       type: "info",
-      message: response.data.mensaje || "Pago creado con éxito",
+      message: response.data.mensaje || "Pago registrado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -52,7 +52,7 @@ export const anularPago = async (pagoId) => {
     const response = await api.put(URL_PART + `/anular/${pagoId}`);
     Notify.create({
       type: "positive",
-      message: "Pago anulado",
+      message: "Pago anulado correctamente",
       position: "bottom",
     });
     return response.data;

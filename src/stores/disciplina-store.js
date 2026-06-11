@@ -16,7 +16,7 @@ export const agregarDisciplina = async (dataform) => {
     const response = await api.post(URL_PART + "/agregar", dataform);
     Notify.create({
       type: "info",
-      message: "Disciplina creada con éxito",
+      message: "Disciplina registrada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -39,7 +39,7 @@ export const modificarDisciplina = async (dataform) => {
     );
     Notify.create({
       type: "info",
-      message: "Modificacion exitosa",
+      message: "Disciplina actualizada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -59,7 +59,9 @@ export const cambiarEstado = async (nd) => {
     const response = await api.put(URL_PART + `/cambiarEstado/${nd.id}`, nd);
     Notify.create({
       type: "info",
-      message: "Actualizacion de estado exitosa",
+      message: nd.estado
+        ? "Disciplina activada correctamente"
+        : "Disciplina desactivada correctamente",
       position: "bottom",
     });
     return response;

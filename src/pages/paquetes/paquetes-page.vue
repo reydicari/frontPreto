@@ -8,9 +8,11 @@
             <q-icon name="inventory_2" size="38px" class="q-mr-sm" />
             Paquetes
           </h2>
-          <p class="header-subtitle q-mt-xs q-mb-none">Crea y gestiona paquetes educativos con horarios personalizados</p>
+          <p class="header-subtitle q-mt-xs q-mb-none">Crea y gestiona paquetes educativos con horarios personalizados
+          </p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Paquete" class="btn-header-nuevo" @click="openAddDialog">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Paquete" class="btn-header-nuevo"
+          @click="openAddDialog">
           <q-tooltip>Registrar nuevo paquete</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -46,7 +48,8 @@
             <q-select v-model="orderOption" :options="[
               { label: 'Por precio', value: 'precio' },
               { label: 'Por horarios', value: 'horarios' }
-            ]" option-label="label" option-value="value" emit-value map-options dense outlined clearable label="Ordenar">
+            ]" option-label="label" option-value="value" emit-value map-options dense outlined clearable
+              label="Ordenar">
               <template v-slot:prepend>
                 <q-icon name="sort" />
               </template>
@@ -142,10 +145,8 @@
               <q-tooltip v-if="!canEditPackage(pkg)">No se puede editar: horarios con errores</q-tooltip>
               <q-tooltip v-else>Editar paquete</q-tooltip>
             </q-btn>
-            <q-btn v-if="pkg.estado" class="btn-delete-card" round icon="delete_forever"
-              @click.stop.prevent="openDeleteDialog(pkg)">
-              <q-tooltip>Desactivar paquete</q-tooltip>
-            </q-btn>
+            <q-toggle :model-value="pkg.estado" :color="pkg.estado ? 'positive' : 'grey-5'"
+              :label="pkg.estado ? 'Activo' : 'Inactivo'" @click.stop.prevent="openDeleteDialog(pkg)" dense />
           </div>
         </q-card-section>
 
@@ -179,25 +180,29 @@
     <HorarioDialog v-model="horarioDialogOpen" :horario="editingHorario" :dias-options="diasOptions"
       @save="onSaveHorario" @remove="onRemoveHorario" />
 
-    <!-- Delete dialog -->
+    <!-- Toggle estado dialog -->
     <q-dialog v-model="deleteDialogOpen" persistent>
       <q-card style="min-width: 320px; max-width: 560px;">
         <q-card-section class="row items-center">
-          <q-avatar size="56px" class="bg-negative text-white">
-            <q-icon name="delete_forever" />
+          <q-avatar size="56px"
+            :class="paqueteToDelete && paqueteToDelete.estado ? 'bg-negative text-white' : 'bg-positive text-white'">
+            <q-icon :name="paqueteToDelete && paqueteToDelete.estado ? 'toggle_off' : 'toggle_on'" />
           </q-avatar>
           <div class="col q-pl-sm">
-            <div class="text-h6">Confirmar desactivación</div>
+            <div class="text-h6">{{ paqueteToDelete && paqueteToDelete.estado ? 'Confirmar desactivación' : 'Confirmar
+              activación' }}</div>
             <div class="text-subtitle2 q-pt-xs">
-              ¿Deseas desactivar el paquete <strong>{{ paqueteToDelete ? paqueteToDelete.nombre : '' }}</strong>?
-              <br><small class="text-grey-7">Para reactivarlo, deberás editarlo y cambiar su estado.</small>
+              ¿Deseas <strong>{{ paqueteToDelete && paqueteToDelete.estado ? 'desactivar' : 'activar' }}</strong> el
+              paquete
+              <strong>{{ paqueteToDelete ? paqueteToDelete.nombre : '' }}</strong>?
             </div>
           </div>
         </q-card-section>
         <q-separator />
         <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" @click="cancelDelete" />
-          <q-btn flat label="Desactivar" color="negative" @click="doConfirmDelete" />
+          <q-btn flat label="Cancelar" color="grey-7" @click="cancelDelete" />
+          <q-btn flat :label="paqueteToDelete && paqueteToDelete.estado ? 'Desactivar' : 'Activar'"
+            :color="paqueteToDelete && paqueteToDelete.estado ? 'negative' : 'positive'" @click="doConfirmDelete" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -303,7 +308,7 @@ const onPaqueteDialogSave = async (packageData) => {
       await crearPaquete(packageData)
     }
     await listar()
-    $q.notify({ type: 'positive', message: 'Paquete guardado exitosamente', position: 'top' })
+    $q.notify({ type: 'positive', message: editingPaquete.value ? 'Paquete actualizado correctamente' : 'Paquete registrado correctamente', position: 'top' })
   } catch (err) {
     console.error('Error al guardar paquete:', err)
     $q.notify({ type: 'negative', message: 'Error al guardar el paquete', position: 'top' })
@@ -413,8 +418,13 @@ const cancelDelete = () => {
 const doConfirmDelete = async () => {
   if (!paqueteToDelete.value) return
 
-  // Solo desactivar (eliminar lógicamente)
-  await eliminarPaquete(paqueteToDelete.value.id)
+  const nuevoEstado = !paqueteToDelete.value.estado
+  await actualizarPaquete({ ...paqueteToDelete.value, estado: nuevoEstado })
+  $q.notify({
+    type: nuevoEstado ? 'positive' : 'negative',
+    message: nuevoEstado ? 'Paquete activado correctamente' : 'Paquete desactivado correctamente',
+    position: 'top'
+  })
 
   await listar()
   deleteDialogOpen.value = false

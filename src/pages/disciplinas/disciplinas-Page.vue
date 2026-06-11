@@ -10,7 +10,8 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra y monitorea todas las disciplinas deportivas</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nueva Disciplina" class="btn-header-nuevo" @click="openDialog()">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nueva Disciplina" class="btn-header-nuevo"
+          @click="openDialog()">
           <q-tooltip>Registrar nueva disciplina</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -84,7 +85,7 @@
         <q-card-section class="form-header">
           <div class="form-title">
             <q-icon :name="editing ? 'edit' : 'add_circle'" size="28px" class="q-mr-sm" />
-            <div class="text-h6">{{ editing ? 'Editar Disciplina' : 'Nueva Disciplina' }}</div>
+            <div class="text-h6">{{ editing ? 'Modificar Disciplina' : 'Nueva Disciplina' }}</div>
           </div>
         </q-card-section>
 
@@ -253,7 +254,7 @@ const onSubmit = async () => {
       await agregarDisciplina(form.value);
       $q.notify({
         type: 'positive',
-        message: 'Disciplina creada correctamente',
+        message: 'Disciplina registrada correctamente',
         icon: 'check_circle'
       });
     }

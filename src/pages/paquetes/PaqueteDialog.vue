@@ -6,7 +6,7 @@
         <div class="header-content">
           <q-icon :name="editMode ? 'edit' : 'add_circle'" size="32px" class="q-mr-sm" />
           <div>
-            <div class="dialog-title">{{ editMode ? 'Editar Paquete' : 'Nuevo Paquete' }}</div>
+            <div class="dialog-title">{{ editMode ? 'Modificar Paquete' : 'Nuevo Paquete' }}</div>
 
           </div>
         </div>

@@ -41,7 +41,7 @@ export const modificarUsuario = async (usu, dataform) => {
     //notidficacion de exito
     Notify.create({
       type: "info",
-      message: "Usuario modificado con éxito",
+      message: "Usuario actualizado correctamente",
       position: "bottom",
     });
     return response.body;
@@ -61,7 +61,9 @@ export const cambiarEstadoUsuario = async (usu) => {
     //notidficacion de exito
     Notify.create({
       type: "info",
-      message: "Cambio de estado con éxito",
+      message: usu.estado
+        ? "Usuario activado correctamente"
+        : "Usuario desactivado correctamente",
       position: "bottom",
     });
     return response.body;

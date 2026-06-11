@@ -22,7 +22,7 @@ export const agregarRol = async (rol) => {
     const response = await api.post(URL_PART + "/agregar", rol);
     Notify.create({
       type: "info",
-      message: "Rol creado con éxito",
+      message: "Rol registrado correctamente",
       position: "bottom",
     });
     return response.data;
@@ -41,7 +41,7 @@ export const modificarRol = async (rol) => {
     const response = await api.put(URL_PART + "/modificar/" + rol.id, rol);
     Notify.create({
       type: "info",
-      message: "Rol modificado con éxito",
+      message: "Rol actualizado correctamente",
       position: "bottom",
     });
     return response.data;

@@ -29,7 +29,7 @@ export const agregarIscripcionNuevaPersona = async (dataform) => {
     });
     Notify.create({
       type: "info",
-      message: "Inscripcion creada con éxito",
+      message: "Inscripción registrada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -49,7 +49,7 @@ export const agregarIscripcionPersona = async (dataform) => {
     const response = await api.post(URL_PART + "/agregarNormal", dataform);
     Notify.create({
       type: "info",
-      message: response.data.mensaje || "Inscripción creada con éxito",
+      message: response.data.mensaje || "Inscripción registrada correctamente",
       position: "bottom",
     });
     return response.data;
@@ -70,7 +70,7 @@ export const suspensderInscripcion = async (suspension = {}) => {
     const response = await api.put(URL_PART + "/suspender", suspension);
     Notify.create({
       type: "info",
-      message: "Suspensión exitosa",
+      message: "Inscripción suspendida correctamente",
       position: "bottom",
     });
     return response.data;

@@ -11,7 +11,8 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Gestiona el equipo de entrenadores del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Entrenador" class="btn-header-nuevo" @click="showPersonaDialog">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Entrenador" class="btn-header-nuevo"
+          @click="showPersonaDialog">
           <q-tooltip>Registrar nuevo entrenador</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -19,26 +20,26 @@
 
     <!-- Tarjetas de estadísticas -->
     <div class="stats-container row q-gutter-md q-mb-lg">
-        <div class="stat-card stat-card-total">
-          <div class="stat-icon">
-            <q-icon name="groups" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.totalEntrenadores }}</div>
-            <div class="stat-label">Total Entrenadores</div>
-          </div>
+      <div class="stat-card stat-card-total">
+        <div class="stat-icon">
+          <q-icon name="groups" size="36px" />
         </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.totalEntrenadores }}</div>
+          <div class="stat-label">Total Entrenadores</div>
+        </div>
+      </div>
 
-        <div v-if="esAdministrador" class="stat-card stat-card-total">
-          <div class="stat-icon">
-            <q-icon name="groups" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.totalAdministradores }}</div>
-            <div class="stat-label">Total Administradores</div>
-          </div>
+      <div v-if="esAdministrador" class="stat-card stat-card-total">
+        <div class="stat-icon">
+          <q-icon name="groups" size="36px" />
         </div>
-        <!-- <div class="stat-card stat-card-active">
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.totalAdministradores }}</div>
+          <div class="stat-label">Total Administradores</div>
+        </div>
+      </div>
+      <!-- <div class="stat-card stat-card-active">
           <div class="stat-icon">
             <q-icon name="person_check" size="36px" />
           </div>
@@ -58,7 +59,7 @@
           </div>
         </div> -->
 
-        <!-- <div class="stat-card stat-card-experience">
+      <!-- <div class="stat-card stat-card-experience">
           <div class="stat-icon">
             <q-icon name="workspace_premium" size="36px" />
           </div>
@@ -68,16 +69,16 @@
           </div>
         </div> -->
 
-        <div class="stat-card stat-card-birthday">
-          <div class="stat-icon">
-            <q-icon name="celebration" size="36px" />
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
-            <div class="stat-label">Cumpleaños este Mes</div>
-          </div>
+      <div class="stat-card stat-card-birthday">
+        <div class="stat-icon">
+          <q-icon name="celebration" size="36px" />
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ estadisticasPrincipales.cumpleanosEsteMes }}</div>
+          <div class="stat-label">Cumpleaños este Mes</div>
         </div>
       </div>
+    </div>
 
     <!-- Filtros -->
     <q-card class="q-mb-md filters-card">
@@ -116,8 +117,8 @@
             </q-select>
           </div>
           <div class="col-12 col-sm-6 col-md-3 col-lg-2">
-            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable
-              emit-value map-options>
+            <q-select v-model="filterGenero" :options="generoOptions" label="Género" outlined dense clearable emit-value
+              map-options>
               <template v-slot:prepend>
                 <q-icon name="wc" />
               </template>
@@ -501,7 +502,7 @@ const savePersona = async (personaData) => {
     closeDialogAdd()
     $q.notify({
       type: 'positive',
-      message: 'Persona actualizada correctamente'
+      message: 'Entrenador actualizado correctamente'
     })
   } else {
     // Crear nueva persona
@@ -509,7 +510,7 @@ const savePersona = async (personaData) => {
     createEmptyPersona()
     $q.notify({
       type: 'positive',
-      message: 'Persona creada correctamente'
+      message: 'Entrenador registrado correctamente'
     })
   }
   currentPage.value = 1
@@ -531,7 +532,7 @@ function confirmDeletePersona(persona) {
     await cambiarEstado(persona)
     $q.notify({
       type: `${persona.estado ? 'positive' : 'negative'}`,
-      message: `Persona ${!persona.estado ? 'eliminada' : 'restaurada'} correctamente`
+      message: persona.estado ? 'Entrenador activado correctamente' : 'Entrenador desactivado correctamente'
     })
   })
 }

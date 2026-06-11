@@ -35,7 +35,7 @@ export async function crearTorneo(torneo) {
     const res = await api.post("/api/torneo/agregar", torneo);
     Notify.create({
       type: "positive",
-      message: "Torneo creado con éxito",
+      message: "Torneo registrado correctamente",
       position: "bottom",
     });
     return res.data;
@@ -53,7 +53,7 @@ export async function modificarTorneo(torneo) {
     const res = await api.put(`/api/torneo/modificar/${torneo.id}`, torneo);
     Notify.create({
       type: "positive",
-      message: "Torneo modificado con éxito",
+      message: "Torneo actualizado correctamente",
       position: "bottom",
     });
     return res.data;
