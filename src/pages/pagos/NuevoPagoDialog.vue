@@ -4,8 +4,7 @@
       <q-card-section class="payment-header">
         <div class="header-title-payment">
           <q-icon name="add_card" size="32px" class="q-mr-sm" />
-          <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (isEdit ? 'Modificar Pago' : 'Nuevo
-            Pago')}}</div>
+          <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (!isEdit ? 'NuevoPago' : "") }}</div>
         </div>
       </q-card-section>
 
