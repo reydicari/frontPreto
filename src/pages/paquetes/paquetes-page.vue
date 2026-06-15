@@ -189,8 +189,8 @@
             <q-icon :name="paqueteToDelete && paqueteToDelete.estado ? 'toggle_off' : 'toggle_on'" />
           </q-avatar>
           <div class="col q-pl-sm">
-            <div class="text-h6">{{ paqueteToDelete && paqueteToDelete.estado ? 'Confirmar desactivación' : 'Confirmar
-              activación' }}</div>
+            <div class="text-h6">{{ paqueteToDelete && paqueteToDelete.estado ? 'Confirmar desactivación' :
+              'Confirmaractivación' }}</div>
             <div class="text-subtitle2 q-pt-xs">
               ¿Deseas <strong>{{ paqueteToDelete && paqueteToDelete.estado ? 'desactivar' : 'activar' }}</strong> el
               paquete
@@ -212,7 +212,7 @@
 <script setup>
 import { listarDisciplinas } from 'src/stores/disciplina-store'
 import { listarNiveles } from 'src/stores/nivel'
-import { actualizarPaquete, crearPaquete, eliminarPaquete, listarPaquetes } from 'src/stores/paquete-store'
+import { actualizarPaquete, crearPaquete, listarPaquetes } from 'src/stores/paquete-store'
 import { onMounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import PaqueteDialog from './PaqueteDialog.vue'
