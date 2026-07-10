@@ -10,10 +10,10 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Gestiona los usuarios y accesos del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Usuario" class="btn-header-nuevo"
+        <!-- <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Usuario" class="btn-header-nuevo"
           @click="showUserDialog(null)">
           <q-tooltip>Registrar nuevo usuario</q-tooltip>
-        </q-btn>
+        </q-btn> -->
       </q-card-section>
     </q-card>
 
@@ -317,7 +317,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 // Helper para parsear distintos formatos de fecha/hora que pueden venir del backend
 // Acepta: Date, timestamp (number), ISO con 'T' o con espacio 'YYYY-MM-DD HH:mm:ss', o ISO con Z
@@ -384,7 +384,7 @@ const currentPage = ref(1)
 const itemsPerPage = 12
 const searchInput = ref('')
 const searchTerm = ref('')
-const filtersExpanded = ref(false)
+// const filtersExpanded = ref(false)
 const filterStatus = ref(null)
 const filterTelefono = ref(null)
 const filterOrden = ref(null)
@@ -403,15 +403,15 @@ const statusOptions = [{ label: 'Activo', value: true }, { label: 'Inactivo', va
 let searchTimeout = null
 
 // Computed para contar filtros activos
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filtroRol.value && filtroRol.value.length > 0) count++
-  if (filterStatus.value !== null) count++
-  if (dateRange.value.from || dateRange.value.to) count++
-  if (filterTelefono.value) count++
-  if (filterOrden.value) count++
-  return count
-})
+// const activeFiltersCount = computed(() => {
+//   let count = 0
+//   if (filtroRol.value && filtroRol.value.length > 0) count++
+//   if (filterStatus.value !== null) count++
+//   if (dateRange.value.from || dateRange.value.to) count++
+//   if (filterTelefono.value) count++
+//   if (filterOrden.value) count++
+//   return count
+// })
 
 // Computed para estadísticas
 

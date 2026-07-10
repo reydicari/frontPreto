@@ -163,13 +163,12 @@
             </div>
           </div>
 
-          <q-stepper-navigation>
+          <q-stepper-navigation class="row justify-end">
+            <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
             <q-btn v-if="!inscripcionIndefinida" @click="stepPago" class="btn-continuar" label="Continuar a Pago"
               icon-right="arrow_forward" unelevated />
             <q-btn v-else @click="saveInscripcion" class="btn-guardar" :label="editMode ? 'Actualizar' : 'Guardar'"
               icon-right="save" unelevated />
-
-            <q-btn flat @click="closeDialog" class="btn-cancelar" label="Cancelar" icon="close" />
           </q-stepper-navigation>
         </q-step>
 

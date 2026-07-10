@@ -6,11 +6,12 @@
         <div>
           <h2 class="text-h4 q-ma-none page-title animated-title">
             <q-icon name="admin_panel_settings" size="38px" class="q-mr-sm" />
-            Gestión de Roles y Permisos
+            Roles y Permisos
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra roles y controla el acceso a módulos del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Rol" class="btn-header-nuevo" @click="openDialog(null)">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Rol" class="btn-header-nuevo"
+          @click="openDialog(null)">
           <q-tooltip>Registrar nuevo rol</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -76,7 +77,7 @@
           <div class="dialog-header-content">
             <q-icon :name="editMode ? 'edit' : 'add_circle'" size="1.5em" class="dialog-icon" />
             <div>
-              <div class="dialog-title">{{ editMode ? 'Editar Rol' : 'Crear Nuevo Rol' }}</div>
+              <div class="dialog-title">{{ editMode ? 'Editar Rol' : 'Nuevo Rol' }}</div>
               <div class="dialog-subtitle">
                 {{ editMode ? 'Actualiza la información del rol' : 'Define un nuevo rol conpermisos específicos' }}
               </div>
@@ -141,7 +142,7 @@
 
         <q-card-actions class="dialog-actions">
           <q-btn flat label="Cancelar" color="grey-7" @click="dialogOpen = false" />
-          <q-btn unelevated label="Guardar Rol" icon-right="save" color="green-8" text-color="white" @click="saveRole"
+          <q-btn unelevated label="Guardar" icon-right="save" color="green-8" text-color="white" @click="saveRole"
             class="save-btn" />
         </q-card-actions>
       </q-card>

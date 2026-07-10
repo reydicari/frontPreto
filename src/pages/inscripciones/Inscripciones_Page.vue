@@ -6,7 +6,7 @@
         <div>
           <h2 class="text-h4 q-ma-none page-title animated-title">
             <q-icon name="school" size="38px" class="q-mr-sm" />
-            Gestión de Inscripciones
+            Inscripciones
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra y monitorea todas las inscripciones de estudiantes</p>
         </div>

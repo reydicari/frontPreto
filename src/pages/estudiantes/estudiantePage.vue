@@ -10,7 +10,7 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra el registro y seguimiento de estudiantes</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Estudiante" class="btn-header-nuevo"
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Estudiante" class="btn-header-nuevo"
           @click="showPersonaDialog">
           <q-tooltip>Registrar nuevo estudiante</q-tooltip>
         </q-btn>

@@ -100,7 +100,7 @@
                 </div>
               </div>
             </q-form>
-            <q-stepper-navigation>
+            <q-stepper-navigation class="row justify-end">
               <q-btn v-if="props.inscripcion" @click="prepareAndSave" color="positive"
                 :label="editMode ? 'Actualizar' : 'Guardar'" />
               <q-btn v-else @click="validateFirstStep" color="primary" label="Continuar" />
