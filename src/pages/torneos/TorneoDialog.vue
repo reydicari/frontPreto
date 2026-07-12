@@ -4,7 +4,7 @@
       <div class="row items-center q-gutter-sm">
         <q-icon :name="isEdit ? 'edit' : 'add_circle'" size="32px" color="white" />
         <div class="text-h5 text-white text-weight-medium">{{ props.isRescheduling ? 'Reprogramar Torneo' : (isEdit ?
-          'Modificar Torneo' : 'Nuevo Torneo') }}</div>
+          'Editar Torneo' : 'Nuevo Torneo') }}</div>
       </div>
     </q-card-section>
 

@@ -4,7 +4,7 @@
       <q-card-section class="expense-header">
         <div class="header-title-expense">
           <q-icon name="receipt" size="32px" class="q-mr-sm" />
-          <div class="text-h5 text-weight-bold">Registrar Gasto</div>
+          <div class="text-h5 text-weight-bold">Nuevo Gasto</div>
         </div>
       </q-card-section>
 

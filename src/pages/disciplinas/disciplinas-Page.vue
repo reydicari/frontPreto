@@ -85,7 +85,7 @@
         <q-card-section class="form-header">
           <div class="form-title">
             <q-icon :name="editing ? 'edit' : 'add_circle'" size="28px" class="q-mr-sm" />
-            <div class="text-h6">{{ editing ? 'Modificar Disciplina' : 'Nueva Disciplina' }}</div>
+            <div class="text-h6">{{ editing ? 'Editar Disciplina' : 'Nueva Disciplina' }}</div>
           </div>
         </q-card-section>
 
@@ -134,7 +134,7 @@
 
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <q-btn flat label="Cancelar" color="grey-7" @click="closeDialog" />
-          <q-btn unelevated label="Limpiar" color="negative" icon="clear" @click="resetForm" />
+          <!-- <q-btn unelevated label="Limpiar" color="negative" icon="clear" @click="resetForm" /> -->
           <q-btn unelevated :label="editing ? 'Actualizar' : 'Guardar'" :icon="editing ? 'update' : 'save'"
             color="primary" @click="onSubmit" />
         </q-card-actions>

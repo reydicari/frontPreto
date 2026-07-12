@@ -119,7 +119,7 @@
         <q-card-section class="dialog-header">
           <div class="dialog-title">
             <q-icon :name="esEdicion ? 'edit_location' : 'add_location'" size="28px" class="q-mr-sm" />
-            <span class="text-h6">{{ esEdicion ? 'Modificar Ubicación' : 'Nueva Ubicación' }}</span>
+            <span class="text-h6">{{ esEdicion ? 'Editar Ubicación' : 'Nueva Ubicación' }}</span>
           </div>
           <q-btn icon="close" flat round dense v-close-popup color="white" />
         </q-card-section>
@@ -186,8 +186,8 @@
         <q-separator />
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey" @click="confirmToggleOpen = false" />
-          <q-btn flat :label="confirmNewVal ? 'Activar' : 'Desactivar'" :color="confirmNewVal ? 'positive' : 'negative'"
-            @click="applyToggle" />
+          <q-btn flat :label="confirmNewVal ? 'Confirmar' : 'Confirmar'"
+            :color="confirmNewVal ? 'positive' : 'negative'" @click="applyToggle" />
         </q-card-actions>
       </q-card>
     </q-dialog>

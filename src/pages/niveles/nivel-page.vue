@@ -100,7 +100,7 @@
       <q-card style="min-width: 380px; max-width: 500px; width: 100%">
         <q-card-section class="form-header">
           <q-icon :name="esEdicion ? 'edit' : 'add_circle'" size="24px" class="q-mr-sm" />
-          <span class="text-h6">{{ esEdicion ? 'Modificar Nivel' : 'Nuevo Nivel' }}</span>
+          <span class="text-h6">{{ esEdicion ? 'Editar Nivel' : 'Nuevo Nivel' }}</span>
           <q-space />
           <q-btn flat round dense icon="close" @click="cerrarFormulario" />
         </q-card-section>
@@ -118,10 +118,10 @@
           <q-btn flat label="Cancelar" color="brown-7" @click="cerrarFormulario" />
           <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" unelevated no-caps class="btn-save" @click="guardarNivel"
             :loading="guardando">
-            <template #default>
+            <!-- <template #default>
               <q-icon :name="esEdicion ? 'save' : 'add'" class="q-mr-xs" />
               {{ esEdicion ? 'Actualizar' : 'Guardar' }}
-            </template>
+            </template> -->
           </q-btn>
         </q-card-actions>
       </q-card>

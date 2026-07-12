@@ -4,7 +4,7 @@
       <q-card-section class="row items-center justify-between dialog-header">
         <div class="dialog-title">
           <q-icon name="local_activity" size="28px" class="q-mr-sm" />
-          {{ renewMode ? 'Renovar Inscripción' : (editMode ? 'Modificar Inscripción' : 'Nueva Inscripción') }}
+          {{ renewMode ? 'Renovar Inscripción' : (editMode ? 'Editar Inscripción' : 'Nueva Inscripción') }}
         </div>
         <div>
           <q-btn flat dense round class="help-nueva-inscripcion help-btn" aria-label="Ayuda" title="Ayuda"
@@ -115,7 +115,7 @@
                               </q-badge>
                               <span v-else class="text-weight-medium text-teal-8">{{ pkg.disponible == null ? '—' :
                                 pkg.disponible
-                                }} disponibles</span>
+                              }} disponibles</span>
                             </span>
                           </div>
                         </q-card-section>

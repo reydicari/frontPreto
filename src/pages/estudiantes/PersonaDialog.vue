@@ -5,7 +5,7 @@
         <div class="header-content-dialog">
           <q-icon name="school" size="32px" class="q-mr-sm" />
           <div class="text-h5 text-weight-bold">
-            {{ editMode ? 'Modificar Estudiante' : 'Nuevo Estudiante' }}
+            {{ editMode ? 'Editar Estudiante' : 'Nuevo Estudiante' }}
           </div>
         </div>
       </q-card-section>

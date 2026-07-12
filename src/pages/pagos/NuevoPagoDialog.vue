@@ -3,8 +3,9 @@
     <q-card class="payment-dialog responsive-dialog scrollable-dialog">
       <q-card-section class="payment-header">
         <div class="header-title-payment">
-          <q-icon name="add_card" size="32px" class="q-mr-sm" />
-          <div class="text-h5 text-weight-bold">{{ isPagoDeuda ? 'Pagar Deuda' : (!isEdit ? 'NuevoPago' : "") }}</div>
+          <q-icon name="add_card" size="32px" class="q-mr-sm" color="white" />
+          <div class="text-h5 text-weight-bold text-white">{{ isPagoDeuda ? 'Pagar Deuda' : (!isEdit ? 'Nuevo Pago' :
+            "") }}</div>
         </div>
       </q-card-section>
 
@@ -482,7 +483,7 @@ $pastel-emerald: #a7f3d0;
 }
 
 .payment-header {
-  background: linear-gradient(135deg, $pastel-sage 0%, $pastel-mint 50%, $pastel-emerald 100%);
+  background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
   padding: 24px;
   border-bottom: 3px solid $color-mint;
   flex-shrink: 0;
@@ -496,7 +497,7 @@ $pastel-emerald: #a7f3d0;
 
 .separator-gradient {
   height: 3px;
-  background: linear-gradient(90deg, $color-forest 0%, $color-jade 50%, $color-emerald 100%);
+  background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
 }
 
 .payment-form {

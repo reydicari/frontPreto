@@ -10,13 +10,14 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra torneos y competiciones deportivas</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Torneo" class="btn-header-nuevo" @click="onAdd">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Agregar Torneo" class="btn-header-nuevo"
+          @click="onAdd">
           <q-tooltip>Registrar nuevo torneo</q-tooltip>
         </q-btn>
       </q-card-section>
     </q-card>
 
-      <!-- Tarjetas de estadísticas
+    <!-- Tarjetas de estadísticas
       <div class="stats-container row q-gutter-md q-mt-md">
         <div class="stat-card stat-card-total">
           <div class="stat-icon">
@@ -105,8 +106,8 @@
             </q-select>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options
-              clearable outlined dense>
+            <q-select v-model="filters.id_nivel" :options="nivelOptions" label="Nivel" emit-value map-options clearable
+              outlined dense>
               <template v-slot:prepend>
                 <q-icon name="signal_cellular_alt" />
               </template>
@@ -253,7 +254,7 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="secondary" @click="cancelSuspend" />
-          <q-btn label="Confirmar suspensión" color="negative" @click="confirmSuspend" />
+          <q-btn label="Confirmar" color="negative" @click="confirmSuspend" />
         </q-card-actions>
       </q-card>
     </q-dialog>

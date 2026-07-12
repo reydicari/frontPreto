@@ -6,7 +6,7 @@
           <div class="header-left">
             <q-icon name="fitness_center" size="32px" class="header-icon" />
             <div>
-              <div class="header-title">{{ isEdit ? 'Modificar Entrenamiento' : 'Nuevo Entrenamiento' }}</div>
+              <div class="header-title">{{ isEdit ? 'Editar Entrenamiento' : 'Nuevo Entrenamiento' }}</div>
               <div class="header-subtitle">{{ currentStep === 1 ? 'Información básica' : 'Selección de entrenadores' }}
               </div>
             </div>

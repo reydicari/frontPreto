@@ -55,7 +55,7 @@
 
       <q-card-actions align="right" class="q-pa-md">
         <q-btn flat label="Cancelar" color="grey-7" @click="cerrar" class="action-btn" />
-        <q-btn unelevated label="Anular" color="negative" @click="confirmarAnular" :loading="loading"
+        <q-btn unelevated label="Confirmar" color="negative" @click="confirmarAnular" :loading="loading"
           class="action-btn" />
       </q-card-actions>
     </q-card>
