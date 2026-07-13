@@ -221,7 +221,8 @@
     </q-infinite-scroll>
 
     <!-- Reusable confirm dialog -->
-    <ConfirmDialog v-model="confirmDialogOpen" :title="confirmDialogTitle" :message="confirmDialogMessage" :danger="confirmDialogDanger" @confirmed="onConfirmDialogResult" />
+    <ConfirmDialog v-model="confirmDialogOpen" :title="confirmDialogTitle" :message="confirmDialogMessage"
+      :danger="confirmDialogDanger" @confirmed="onConfirmDialogResult" />
 
     <!-- Diálogo para editar/crear usuario (rediseñado similar a Nuevo Rol) -->
     <q-dialog v-model="userDialog" persistent :maximized="$q.screen.lt.md">

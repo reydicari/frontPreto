@@ -10,7 +10,7 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra las ubicaciones deportivas del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Crear Ubicación" class="btn-header-nuevo"
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nueva Ubicación" class="btn-header-nuevo"
           :disable="!ubicacionSeleccionada" @click="mostrarDialogoNuevo">
           <q-tooltip>Selecciona un punto en el mapa para habilitar</q-tooltip>
         </q-btn>
@@ -161,7 +161,7 @@
 
             <div class="row justify-end q-gutter-sm q-mt-lg">
               <q-btn label="Cancelar" flat class="btn-cancel" v-close-popup />
-              <q-btn :label="esEdicion ? 'Actualizar' : 'Crear'" type="submit" :loading="guardando" unelevated no-caps
+              <q-btn :label="esEdicion ? 'Actualizar' : 'Guardar'" type="submit" :loading="guardando" unelevated no-caps
                 class="btn-save-dialog">
                 <q-icon :name="esEdicion ? 'save' : 'add'" class="q-mr-xs" />
               </q-btn>
