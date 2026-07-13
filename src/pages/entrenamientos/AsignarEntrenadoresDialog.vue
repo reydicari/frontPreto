@@ -5,7 +5,7 @@
         <div class="row items-center q-gutter-sm">
           <q-icon name="sports_martial_arts" size="32px" />
           <div class="col">
-            <div class="text-h5 text-weight-medium">Asignar Entrenadores</div>
+            <div class="text-h5 text-weight-medium">Asignar Entrenador</div>
             <div class="text-body2 q-mt-xs" style="opacity: 0.9;">Seleccione uno o varios entrenadores para
               este entrenamiento</div>
           </div>
