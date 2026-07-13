@@ -60,7 +60,7 @@
         <div class="row justify-end q-mt-sm q-gutter-sm">
           <q-btn label="Limpiar filtros" flat color="primary" icon="clear_all" @click="clearFilters" />
           <q-btn label="Aplicar filtros" color="primary" icon="filter_list" @click="applyFilters" />
-          <q-btn label="generar Excel" color="positive" icon="file_download" @click="exportarExcel" />
+          <q-btn label="Excel" color="positive" icon="file_download" @click="exportarExcel" />
           <q-btn label="generar PDF" color="orange" icon="picture_as_pdf" @click="exportarPDF" />
         </div>
       </q-card-section>

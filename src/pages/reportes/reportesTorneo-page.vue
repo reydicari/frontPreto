@@ -83,7 +83,7 @@
             <q-td :props="props">
               <q-btn dense color="orange" icon="picture_as_pdf" label="Generar PDF" class="q-mr-sm"
                 @click.stop="generarTorneoPDF(props.row)" />
-              <q-btn dense color="secondary" icon="file_download" label="Generar Excel"
+              <q-btn dense color="secondary" icon="file_download" label="Excel"
                 @click.stop="generarTorneoExcel(props.row)" />
             </q-td>
           </template>
