@@ -1,10 +1,9 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
 
-    <div class="row items-center justify-between q-mb-md">
+    <div class="page-header row items-center justify-between q-mb-md">
       <div>
-        <h4 class="text-primary q-mb-xs q-mt-none page-title">Reporte de Gastos</h4>
-        <p class="text-grey-7">Generar reportes PDF y Excel de gastos registrados</p>
+        <h4 class="text-primary q-mb-xs q-mt-none page-title text-white">Reporte de Gastos</h4>
       </div>
       <div class="row q-gutter-sm">
         <q-btn color="orange" icon="picture_as_pdf" label="Generar PDF" @click="generarReporteGeneralPDF" />
@@ -13,7 +12,10 @@
     </div>
 
     <!-- Filtros -->
-    <q-card class="q-mb-md">
+    <q-card class="filter-card q-mb-md">
+      <q-card-section class="filter-header"><q-icon name="filter_list" size="24px" /><span>Filtros de
+          búsqueda</span></q-card-section>
+      <q-separator />
       <q-card-section>
         <div class="row q-col-gutter-md">
           <!-- Búsqueda general -->
@@ -48,72 +50,26 @@
             class="col-6 col-md-3" />
 
           <!-- Rango de fechas -->
-          <div class="col-6 col-md-3">
-            <q-input dense outlined v-model="filters.fechaDesde" label="Fecha desde" readonly clearable>
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filters.fechaDesde" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
+          <!-- Filtro de Fechas -->
+          <div class="col-12 col-md-3">
+            <FiltroFechas @update:desde="filterDesde = $event" @update:hasta="filterHasta = $event" />
           </div>
-
-          <div class="col-6 col-md-3">
-            <q-input dense outlined v-model="filters.fechaHasta" label="Fecha hasta" readonly clearable>
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-date v-model="filters.fechaHasta" mask="YYYY-MM-DD">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-          </div>
-
           <!-- Orden -->
           <q-select v-model="filters.ordenar" :options="ordenOptions" label="Ordenar por" outlined dense clearable
             emit-value map-options class="col-6 col-md-3" />
         </div>
 
-        <div class="row justify-end q-mt-sm q-gutter-sm">
-          <q-btn label="Limpiar filtros" flat color="primary" icon="clear_all" @click="clearFilters" />
-          <q-btn label="Aplicar filtros" color="primary" icon="filter_list" @click="applyFilters" />
-        </div>
+
       </q-card-section>
     </q-card>
 
     <!-- Resumen de totales -->
-    <q-card class="q-mb-md bg-gradient-primary">
-      <q-card-section class="row q-col-gutter-md">
-        <div class="col-12 col-sm-4 text-center">
-          <div class="text-h6 text-white">Total de gastos</div>
-          <div class="text-h4 text-weight-bold text-white">{{ filteredGastos.length }}</div>
-        </div>
-        <div class="col-12 col-sm-4 text-center">
-          <div class="text-h6 text-white">Monto total</div>
-          <div class="text-h4 text-weight-bold text-white">Bs {{ montoTotal.toFixed(2) }}</div>
-        </div>
-        <div class="col-12 col-sm-4 text-center">
-          <div class="text-h6 text-white">Promedio</div>
-          <div class="text-h4 text-weight-bold text-white">Bs {{ montoPromedio.toFixed(2) }}</div>
-        </div>
-      </q-card-section>
-    </q-card>
 
     <!-- Tabla -->
-    <q-card>
+    <q-card class="table-card">
       <q-table :rows="filteredGastos" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
-        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]" class="gastos-table">
+        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]"
+        class="gastos-table modern-table">
         <template v-slot:body-cell-nombre="props">
           <q-td :props="props">
             <div class="text-weight-medium">{{ props.row.nombre }}</div>
@@ -213,7 +169,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { reporteGastoPDF, reporteGastoExcel } from 'src/stores/reportes'
 import { Notify } from 'quasar'
-
+import FiltroFechas from 'src/components/FiltroFechas.vue'
 const host = import.meta.env.VITE_BASE_URL || 'http://localhost:3000'
 
 const loading = ref(false)
@@ -538,14 +494,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.page-title {
-  border-left: 6px solid #ff6d00;
-  padding-left: 12px;
-  color: #1976d2;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
+@import 'src/css/reportes.scss';
 
 .gastos-table {
   .q-table__top {

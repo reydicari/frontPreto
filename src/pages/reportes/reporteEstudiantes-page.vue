@@ -1,12 +1,27 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="q-mb-md">
-      <h4 class="text-primary q-mb-xs q-mt-none page-title">Reporte de Estudiantes</h4>
-      <p class="text-grey-7">Listado completo con filtros avanzados y opciones de exportación</p>
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <!-- Header -->
+    <div class="page-header q-mb-lg">
+      <div class="row items-center justify-between">
+        <div class="header-title">
+          <div>
+            <h2 class="page-title">Reporte de Estudiantes</h2>
+          </div>
+        </div>
+        <div class="header-actions row q-gutter-sm">
+          <q-btn label="generar PDF" color="orange" icon="picture_as_pdf" @click="exportarPDF" />
+          <q-btn label="Excel" color="positive" icon="file_download" @click="exportarExcel" />
+        </div>
+      </div>
     </div>
 
+
+
     <!-- Filtros -->
-    <q-card class="q-mb-md">
+    <q-card class="filter-card q-mb-md">
+      <q-card-section class="filter-header"><q-icon name="filter_list" size="24px" /><span>Filtros de
+          búsqueda</span></q-card-section>
+      <q-separator />
       <q-card-section>
         <div class="row q-col-gutter-md">
           <!-- Búsqueda general -->
@@ -59,17 +74,16 @@
 
         <div class="row justify-end q-mt-sm q-gutter-sm">
           <q-btn label="Limpiar filtros" flat color="primary" icon="clear_all" @click="clearFilters" />
-          <q-btn label="Aplicar filtros" color="primary" icon="filter_list" @click="applyFilters" />
-          <q-btn label="Excel" color="positive" icon="file_download" @click="exportarExcel" />
-          <q-btn label="generar PDF" color="orange" icon="picture_as_pdf" @click="exportarPDF" />
+
         </div>
       </q-card-section>
     </q-card>
 
     <!-- Tabla -->
-    <q-card>
+    <q-card class="table-card">
       <q-table :rows="filteredEstudiantes" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
-        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]" class="estudiantes-table">
+        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]"
+        class="estudiantes-table modern-table">
         <template v-slot:body-cell-fotografia="props">
           <q-td :props="props">
             <q-avatar v-if="props.row.fotografia" size="40px">
@@ -466,14 +480,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.page-title {
-  border-left: 6px solid #ff6d00;
-  padding-left: 12px;
-  color: #1976d2;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
+@import 'src/css/reportes.scss';
 
 .estudiantes-table {
   .q-table__top {

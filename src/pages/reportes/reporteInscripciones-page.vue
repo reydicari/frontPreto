@@ -1,9 +1,8 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="row items-center justify-between q-mb-md">
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <div class="page-header row items-center justify-between q-mb-md">
       <div>
-        <h4 class="text-primary q-mb-xs q-mt-none page-title">Reporte de Inscripciones</h4>
-        <p class="text-grey-7">Generar reportes PDF y Excel de inscripciones</p>
+        <h4 class="text-primary q-mb-xs q-mt-none page-title text-white">Reporte de Inscripciones</h4>
       </div>
       <div class="row q-gutter-sm">
         <q-btn color="orange" icon="picture_as_pdf" label="Generar PDF" @click="generarReporteGeneralPDF" />
@@ -12,39 +11,127 @@
     </div>
 
     <!-- Filtros -->
-    <q-card class="q-mb-md">
+    <q-card class="filter-card q-mb-lg">
+      <q-card-section class="filter-header">
+        <q-icon name="filter_list" size="24px" />
+        <span>Filtros de búsqueda</span>
+      </q-card-section>
+      <q-separator />
       <q-card-section>
-        <div class="row q-col-gutter-md">
+        <div class="row q-col-gutter-lg">
           <!-- Filtro rápido -->
-          <q-input v-model="searchTerm" outlined dense placeholder="Buscar..." class="col-md-4">
-            <template v-slot:append>
-              <q-icon name="search" />
-            </template>
-          </q-input>
+          <div class="row q-col-gutter-lg">
+            <!-- Búsqueda de persona -->
+            <div class="col-12 col-md-6 col-lg-4">
+              <q-select v-model="selectedPersona" :options="personasOptions" label="Nombre, ci o telefono" outlined
+                dense clearable use-input input-debounce="0" @filter="filterPersonasFn" option-label="nombres"
+                emit-value map-options>
+                <template v-slot:prepend>
+                  <q-icon name="person_search" color="primary" />
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-avatar color="primary" text-color="white">
+                        <img v-if="scope.opt.fotografia" :src="host + scope.opt.fotografia" />
+                        <span v-else>{{ getInitials(scope.opt) }}</span>
+                      </q-avatar>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.nombres }} {{ scope.opt.apellido_paterno }}</q-item-label>
+                      <q-item-label caption>CI: {{ scope.opt.ci || 'Sin CI' }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected-item="scope">
+                  <div class="row items-center no-wrap" style="width: 100%">
+                    <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
+                      <img v-if="scope.opt.fotografia" :src="host + scope.opt.fotografia" />
+                      <span v-else style="font-size: 10px">{{ getInitials(scope.opt) }}</span>
+                    </q-avatar>
+                    <span>{{ scope.opt.nombres }} {{ scope.opt.apellido_paterno }}</span>
+                  </div>
+                </template>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">
+                      {{ searchPersona ? 'No se encontraron personas' : 'Escribe para buscar' }}
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+            </div>
 
-          <!-- Filtro por estado -->
-          <q-select v-model="filterEstado" :options="estadoOptions" label="Estado" outlined dense clearable
-            class="col-md-3" />
+            <!-- Estado -->
+            <div class="col-6 col-md-3 col-lg-3">
+              <q-select v-model="filterEstado" :options="estadoOptions" label="Estado" outlined dense clearable
+                emit-value map-options>
+                <template v-slot:prepend>
+                  <q-icon name="flag" />
+                </template>
+              </q-select>
+            </div>
 
-          <!-- Filtro por disciplina -->
-          <q-select v-model="filterDisciplina" :options="disciplinasOptions" label="Disciplina" option-label="nombre"
-            option-value="id" emit-value map-options outlined dense clearable class="col-md-3" />
+            <!-- Disciplina -->
+            <div class="col-6 col-md-3 col-lg-3">
+              <q-select v-model="filterDisciplina" :options="disciplinasOptions" label="Disciplina"
+                option-label="nombre" option-value="id" emit-value map-options outlined dense clearable>
+                <template v-slot:prepend>
+                  <q-icon name="sports" />
+                </template>
+              </q-select>
+            </div>
 
-          <!-- Filtro por nivel -->
-          <q-select v-model="filterNivel" :options="nivelOptions" label="Nivel" option-label="nombre_nivel"
-            option-value="id" emit-value map-options outlined dense clearable class="col-md-2" />
+            <!-- Nivel -->
+            <div class="col-6 col-md-3 col-lg-2">
+              <q-select v-model="filterNivel" :options="nivelOptions" label="Nivel" option-label="nombre_nivel"
+                option-value="id" emit-value map-options outlined dense clearable>
+                <template v-slot:prepend>
+                  <q-icon name="military_tech" />
+                </template>
+              </q-select>
+            </div>
 
-          <!-- Filtro por vencimiento -->
-          <q-select v-model="filterVencimiento" :options="vencimientoOptions" label="Vencimiento" option-label="label"
-            option-value="value" emit-value map-options outlined dense clearable class="col-md-2" />
+            <!-- Paquete -->
+            <div class="col-6 col-md-3 col-lg-3">
+              <q-select v-model="filterPaquete" :options="paqueteOptions" label="Paquete" option-label="nombre"
+                option-value="id" emit-value map-options outlined dense clearable use-input input-debounce="300"
+                @filter="filterPaquetesFn">
+                <template v-slot:prepend>
+                  <q-icon name="inventory_2" />
+                </template>
+              </q-select>
+            </div>
+
+            <!-- Vencimiento (Fecha Fin) -->
+            <div class="col-6 col-md-3 col-lg-2">
+              <FiltroFechaRango label="Vencimientos" :allow-indefinida="true"
+                @update:model-value="filterFechaFin = $event" />
+            </div>
+
+            <!-- Fecha Inicio -->
+            <div class="col-6 col-md-3 col-lg-2">
+              <FiltroFechaRango label="Inicios" @update:model-value="filterFechaInicio = $event" />
+            </div>
+
+            <!-- Pagos -->
+            <div class="col-6 col-md-3 col-lg-2">
+              <q-select v-model="filterPagos" :options="pagosOptions" label="Pagos" outlined dense clearable emit-value
+                map-options>
+                <template v-slot:prepend>
+                  <q-icon name="payments" />
+                </template>
+              </q-select>
+            </div>
+          </div>
         </div>
       </q-card-section>
     </q-card>
 
     <!-- Tabla de inscripciones -->
-    <q-card>
+    <q-card class="table-card">
       <q-table :rows="filteredInscripciones" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
-        @request="onRequest">
+        @request="onRequest" :rows-per-page-options="[10, 25, 50, 100]" class="modern-table">
         <!-- Columna número (contador 1,2,3...) -->
         <template v-slot:body-cell-no="props">
           <q-td :props="props" style="width:48px; text-align:center;">
@@ -97,6 +184,7 @@ import { listar } from 'src/stores/inscripcion-store'
 import { listarDisciplinas } from 'src/stores/disciplina-store.js'
 import { reporteInscripcionPDF, reporteInscripcionExcel } from 'src/stores/reportes'
 import { Notify } from 'quasar'
+import FiltroFechaRango from 'src/components/FiltroFechaRango.vue'
 
 // Estado principal
 const loading = ref(false)
@@ -196,12 +284,12 @@ const estadoOptions = [
   { label: 'Sin comenzar', value: 2 }
 ]
 
-const vencimientoOptions = [
-  { label: 'Por vencer (15 días)', value: 'pv15' },
-  { label: 'Por vencer (30 días)', value: 'pv30' },
-  { label: 'Vencidas', value: 'vencidas' },
-  { label: 'Indefinidas', value: 'indefinidas' }
-]
+// const vencimientoOptions = [
+//   { label: 'Por vencer (15 días)', value: 'pv15' },
+//   { label: 'Por vencer (30 días)', value: 'pv30' },
+//   { label: 'Vencidas', value: 'vencidas' },
+//   { label: 'Indefinidas', value: 'indefinidas' }
+// ]
 
 // Cargar datos iniciales
 onMounted(async () => {
@@ -404,16 +492,8 @@ async function generarReporteGeneralExcel() {
 </script>
 
 <style scoped lang="scss">
+@import 'src/css/reportes.scss';
 @import 'src/css/quasar.variables.scss';
-
-.page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
-  font-weight: 800;
-  line-height: 1.2;
-}
 
 .disciplina-badge {
   background-color: transparent;

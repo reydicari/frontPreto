@@ -1,9 +1,8 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="row items-center justify-between q-mb-md">
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <div class="page-header row items-center justify-between q-mb-md">
       <div>
-        <h4 class="text-primary q-mb-xs q-mt-none page-title">Reporte de Paquetes</h4>
-        <p class="text-grey-7">Generar reportes PDF y Excel de paquetes de entrenamiento</p>
+        <h4 class="text-primary q-mb-xs q-mt-none page-title text-white">Reporte de Paquetes</h4>
       </div>
       <div class="row q-gutter-sm">
         <q-btn color="orange" icon="picture_as_pdf" label="Generar PDF" @click="generarReporteGeneralPDF" />
@@ -12,7 +11,10 @@
     </div>
 
     <!-- Filtros -->
-    <q-card class="q-mb-md">
+    <q-card class="filter-card q-mb-md">
+      <q-card-section class="filter-header"><q-icon name="filter_list" size="24px" /><span>Filtros de
+          búsqueda</span></q-card-section>
+      <q-separator />
       <q-card-section>
         <div class="row q-col-gutter-md">
           <!-- Búsqueda general -->
@@ -84,15 +86,15 @@
 
         <div class="row justify-end q-mt-sm q-gutter-sm">
           <q-btn label="Limpiar filtros" flat color="primary" icon="clear_all" @click="clearFilters" />
-          <q-btn label="Aplicar filtros" color="primary" icon="filter_list" @click="applyFilters" />
         </div>
       </q-card-section>
     </q-card>
 
     <!-- Tabla -->
-    <q-card>
+    <q-card class="table-card">
       <q-table :rows="filteredPaquetes" :columns="columns" row-key="id" :loading="loading" :pagination="pagination"
-        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]" class="paquetes-table">
+        @request="onRequest" binary-state-sort :rows-per-page-options="[10, 25, 50, 100]"
+        class="paquetes-table modern-table">
         <template v-slot:body-cell-nombre="props">
           <q-td :props="props">
             <div class="text-weight-medium">{{ props.row.nombre }}</div>
@@ -474,14 +476,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.page-title {
-  border-left: 6px solid #ff6d00;
-  padding-left: 12px;
-  color: #1976d2;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
+@import 'src/css/reportes.scss';
 
 .paquetes-table {
   .q-table__top {

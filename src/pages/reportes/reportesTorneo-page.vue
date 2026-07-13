@@ -1,11 +1,16 @@
 <template>
-  <q-page padding :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <q-card>
-      <q-card-section class="row items-center q-gutter-sm">
-        <div class="text-h6 page-title">Reportes — Torneos</div>
-        <q-space />
+  <q-page padding class="page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <div class="page-header q-mb-md">
+    <q-card-section class="row items-center q-gutter-sm q-pa-none">
+      <div class="text-h6 page-title">Reporte Torneos</div>
+      <q-space />
+    </q-card-section>
+    </div>
+    <q-card class="filter-card">
+      <q-card-section class="filter-header">
+        <q-icon name="filter_list" size="24px" />
+        <span>Filtros de búsqueda</span>
       </q-card-section>
-
       <q-separator />
 
       <q-card-section>
@@ -44,10 +49,12 @@
       </q-card-section>
 
       <q-separator />
+    </q-card>
 
+    <q-card class="table-card q-pa-none">
       <q-card-section>
         <q-table :rows="rowsWithNro" :columns="columns" row-key="id" v-model:pagination="pagination" flat dense
-          wrap-cells>
+          wrap-cells :rows-per-page-options="[10, 25, 50, 100]" class="modern-table">
 
           <template v-slot:body-cell-nombre="props">
             <q-td :props="props">
@@ -262,16 +269,8 @@ async function generarTorneoExcel(row) {
 </script>
 
 <style scoped lang="scss">
+@import 'src/css/reportes.scss';
 @import 'src/css/quasar.variables.scss';
-
-.page-title {
-  border-left: 6px solid $orange-8;
-  padding-left: 12px;
-  color: $secondary;
-  font-size: 2.2em;
-  font-weight: 800;
-  line-height: 1.2
-}
 
 /* Alineamiento y ancho de badge como en Torneos-Module.vue */
 .col-label {

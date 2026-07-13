@@ -7,7 +7,6 @@
           <q-icon name="assessment" size="42px" class="q-mr-sm" />
           <div>
             <h2 class="page-title">Reporte de Pagos</h2>
-            <p class="page-subtitle">Generación y consulta de reportes financieros</p>
           </div>
         </div>
         <div class="header-actions row q-gutter-sm">

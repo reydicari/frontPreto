@@ -1,11 +1,16 @@
 <template>
-  <q-page class="q-pa-md" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
-    <div class="q-mb-md">
+  <q-page class="q-pa-md page-container" :class="$q.dark.isActive ? '' : 'bg-grey-4'">
+    <div class="page-header q-mb-md">
       <h2 class="text-h4 q-ma-none page-title">Reporte de Entrenamientos</h2>
     </div>
 
     <!-- Barra de filtros (copiado de Entrenamientos-Page) -->
-    <q-card class="q-mb-md">
+    <q-card class="filter-card q-mb-md">
+      <q-card-section class="filter-header">
+        <q-icon name="filter_list" size="24px" />
+        <span>Filtros de búsqueda</span>
+      </q-card-section>
+      <q-separator />
       <q-card-section>
         <div class="row items-center justify-between">
           <q-input v-model="searchTerm" outlined dense placeholder="Buscar entrenamientos..." class="col-md-4">
@@ -15,7 +20,7 @@
           </q-input>
         </div>
 
-        <q-expansion-item v-model="filtersExpanded" label="Filtros avanzados" class="q-mt-sm">
+        <div class="q-mt-sm">
           <div class="row q-col-gutter-md q-pt-md">
             <q-select v-model="filterDiscipline" emit-value map-options :options="disciplineOptions" option-value="id"
               option-label="nombre" label="Disciplina" outlined dense clearable class="col-md-3 col-sm-6 col-xs-12" />
@@ -37,13 +42,14 @@
           <div class="row justify-end q-mt-sm">
             <q-btn label="Limpiar filtros" flat color="primary" @click="clearFilters" />
           </div>
-        </q-expansion-item>
+        </div>
       </q-card-section>
     </q-card>
 
     <!-- Tabla de entrenamientos (solo lista y filtros) -->
-    <q-card>
-      <q-table :rows="filteredTrainings" :columns="columns" row-key="id" :loading="loading" @row-click="onRowClick">
+    <q-card class="table-card">
+      <q-table :rows="filteredTrainings" :columns="columns" row-key="id" :loading="loading" @row-click="onRowClick"
+        :rows-per-page-options="[10, 25, 50, 100]" class="modern-table">
 
         <template v-slot:body-cell-index="props">
           <q-td :props="props">{{ props.rowIndex + 1 }}</q-td>
@@ -107,7 +113,6 @@ const loading = ref(false)
 
 // filtros
 const searchTerm = ref('')
-const filtersExpanded = ref(false)
 const filterDiscipline = ref(null)
 const filterStatus = ref(null)
 const filterDateFrom = ref(null)
@@ -245,3 +250,7 @@ async function generarReporteExcelFor(training) {
   await reporteAsistenciasEntrenamientoExcel(params)
 }
 </script>
+<style scoped lang="scss">
+@import 'src/css/reportes.scss';
+
+</style>

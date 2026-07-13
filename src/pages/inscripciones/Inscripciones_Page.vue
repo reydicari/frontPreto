@@ -115,7 +115,7 @@
           </div>
 
           <!-- Estado -->
-          <div class="col-6 col-md-3 col-lg-2">
+          <div class="col-6 col-md-3 col-lg-3">
             <q-select v-model="filterEstado" :options="estadoOptions" label="Estado" outlined dense clearable emit-value
               map-options>
               <template v-slot:prepend>
@@ -125,7 +125,7 @@
           </div>
 
           <!-- Disciplina -->
-          <div class="col-6 col-md-3 col-lg-2">
+          <div class="col-6 col-md-3 col-lg-3">
             <q-select v-model="filterDisciplina" :options="disciplinasOptions" label="Disciplina" option-label="nombre"
               option-value="id" emit-value map-options outlined dense clearable>
               <template v-slot:prepend>
