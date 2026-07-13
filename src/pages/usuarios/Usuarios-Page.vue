@@ -220,16 +220,26 @@
       </template>
     </q-infinite-scroll>
 
-    <!-- Diálogo para editar/crear usuario -->
-    <q-dialog v-model="userDialog" persistent>
-      <q-card style=" max-width: 600px ;">
-        <q-card-section>
-          <div class="text-h6">
-            {{ editMode ? 'Editar Usuario' : 'Crear Usuario' }}
+    <!-- Reusable confirm dialog -->
+    <ConfirmDialog v-model="confirmDialogOpen" :title="confirmDialogTitle" :message="confirmDialogMessage" :danger="confirmDialogDanger" @confirmed="onConfirmDialogResult" />
+
+    <!-- Diálogo para editar/crear usuario (rediseñado similar a Nuevo Rol) -->
+    <q-dialog v-model="userDialog" persistent :maximized="$q.screen.lt.md">
+      <q-card class="role-dialog" style="max-width: 700px; width: 100%;">
+        <q-card-section class="dialog-header">
+          <div class="dialog-header-content">
+            <q-icon :name="editMode ? 'edit' : 'person_add'" size="1.5em" class="dialog-icon" />
+            <div>
+              <div class="dialog-title">{{ editMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</div>
+
+            </div>
           </div>
+          <q-btn flat round dense icon="close" color="grey-7" @click="userDialog = false" />
         </q-card-section>
 
-        <q-card-section>
+        <q-separator />
+
+        <q-card-section class="dialog-body">
           <q-form ref="userForm" @submit.prevent="saveUser">
             <div class="row q-col-gutter-md">
               <q-input v-model="currentUser.usuario" label="Usuario" dense hint="Nombre de usuario (una palabra)"
@@ -238,31 +248,28 @@
                   rules.maxLength(15),
                   rules.minLength(5),
                   rules.letrasNumeros,
-                  // rules.existUsername(usuarioTemporal, currentUser.usuario),
                   val => !val.includes(' ') || 'Debe ser una sola palabra',
-                  /* proteger caso donde users pueda contener elementos undefined */
                   val => !users.some(user => user && user.usuario == val && val != usuarioTemporal) || 'Este nombre de usuario ya existe'
-                ]" />
+                ]" color="green-8" />
 
               <q-input v-model="currentUser.clave" :label="editMode ? 'Nueva contraseña (opcional)' : 'Contraseña'"
-                type="password" outlined dense class="col-12"
+                type="password" outlined dense class="col-12" color="green-8"
                 :rules="[val => editMode || (val && val.length >= 6) || 'Mínimo 6 caracteres']" />
 
               <q-input v-model="currentUser.clave_confirmation"
                 :label="editMode ? 'Confirmar nueva contraseña (opcional)' : 'Confirmar contraseña'" type="password"
-                outlined dense class="col-12" :rules="[
+                outlined dense class="col-12" color="green-8" :rules="[
                   val => editMode || val === currentUser.clave || 'Las contraseñas no coinciden'
                 ]" />
 
               <div v-if="editMode" class="col-12">
-                <q-banner dense class="bg-grey-2 text-red">Si deja los campos de contraseña vacíos, la contraseña
-                  actual
-                  se mantiene.</q-banner>
+                <q-banner dense class="bg-grey-2 text-red">Si deja los campos de contraseña vacíos, la contraseña actual
+                  se
+                  mantiene.</q-banner>
               </div>
 
-              <!-- Selección múltiple de roles -->
               <q-select v-model="currentUser.roles" :options="roles" option-label="nombre" label="Roles" map-options
-                multiple outlined dense class="col-12" clearable
+                multiple outlined dense class="col-12" clearable color="green-8"
                 :rules="[val => val && val.length > 0 || 'Se requiere al menos un rol']">
                 <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
                   <q-item v-bind="itemProps">
@@ -275,41 +282,23 @@
                   </q-item>
                 </template>
                 <template v-slot:selected-item="{ opt, index, removeAtIndex }">
-                  <q-chip removable @remove="removeAtIndex(index)" color="primary" text-color="white" class="q-ma-xs">
+                  <q-chip removable @remove="removeAtIndex(index)" color="green-8" text-color="white" class="q-ma-xs">
                     {{ opt.nombre }}
                   </q-chip>
                 </template>
               </q-select>
 
-              <!-- Selección de persona (única) -->
-              <!-- <q-select readonly v-model="currentUser.id_persona" :options="personaOptions" option-label="displayName"
-                  emit-value option-value="id" label="Persona" map-options outlined dense use-input input-debounce="300"
-                  class="col-12" @filter="filtrarPersonasSingle"
-                  :rules="[val => !!val || 'Se requiere seleccionar una persona']">
-                  <template v-slot:option="{ itemProps, opt }">
-                    <q-item v-bind="itemProps">
-                      <q-item-section>
-                        <q-item-label>{{ opt.nombres }} {{ opt.apellido_paterno }} {{ opt.apellido_materno
-                        }}</q-item-label>
-                        <q-item-label caption>{{ opt.ci }} {{ opt.complemento }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                  <template v-slot:selected-item="{ opt }">
-                    <div>{{ getPersonaDisplay(opt) }}</div>
-                  </template>
-                </q-select> -->
-
-              <!-- <div class="col-12 q-mt-sm" v-if="editMode"> -->
-              <!-- <q-toggle v-model="currentUser.estado" label="Estado" true-value="true" false-value="false" /> -->
-              <!-- </div> -->
+              <!-- Persona select commented out intentionally (mantener el comportamiento previo) -->
             </div>
           </q-form>
         </q-card-section>
 
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="negative" v-close-popup />
-          <q-btn flat label="Guardar" color="primary" @click="saveUser" />
+        <q-separator />
+
+        <q-card-actions class="dialog-actions">
+          <q-btn flat label="Cancelar" color="grey-7" @click="userDialog = false" />
+          <q-btn unelevated :label="editMode ? 'Actualizar' : 'Guardar'" color="green-8" text-color="white"
+            @click="saveUser" class="save-btn" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -318,6 +307,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import ConfirmDialog from 'src/components/ConfirmDialog.vue'
 
 // Helper para parsear distintos formatos de fecha/hora que pueden venir del backend
 // Acepta: Date, timestamp (number), ISO con 'T' o con espacio 'YYYY-MM-DD HH:mm:ss', o ISO con Z
@@ -394,6 +384,32 @@ const usuarioTemporal = ref('')
 const infiniteScrollRef = ref(null)
 
 const currentUser = ref({ id: null, usuario: '', clave: '', id_persona: null, estado: true, roles: [] })
+
+// Confirm dialog state for generic confirmations
+const confirmDialogOpen = ref(false)
+const confirmDialogTitle = ref('')
+const confirmDialogMessage = ref('')
+const confirmDialogDanger = ref(false)
+const confirmDialogPayload = ref(null)
+
+const onConfirmDialogResult = async (result) => {
+  // result: 'confirm' | 'cancel'
+  if (result === 'confirm' && confirmDialogPayload.value) {
+    // handle payload action - currently used for cambiarEstadoUsuario
+    const { user, nextVal } = confirmDialogPayload.value
+    const idx = users.value.findIndex(u => u.usuario === user.usuario)
+    try {
+      await cambiarEstadoUsuario({ usuario: user.usuario, estado: nextVal })
+      if (idx !== -1) { users.value[idx].estado = !!nextVal }
+      $q.notify({ type: 'positive', message: 'Cambio de estado aplicado' })
+    } catch (err) {
+      console.error(err)
+      $q.notify({ type: 'negative', message: 'Error aplicando cambio de estado' })
+    }
+  }
+  // reset payload
+  confirmDialogPayload.value = null
+}
 
 // Opciones para filtros
 const filtroRol = ref([])
@@ -691,18 +707,13 @@ const saveUser = async () => {
   await loadUsers(1, false)
 }
 
-// Confirm change of estado with a small dialog
+// Confirm change of estado using ConfirmDialog component
 const confirmChangeEstado = (user, nextVal) => {
-  $q.dialog({ title: 'Confirmar cambio de estado', message: `El usuario ${user.persona?.nombres || user.usuario} ${nextVal ? 'podra acceder al sistema' : 'no tendra acceso al sistema'}`, cancel: true, persistent: true }).onOk(async () => {
-    const idx = users.value.findIndex(u => u.usuario === user.usuario)
-    try {
-      await cambiarEstadoUsuario({ usuario: user.usuario, estado: nextVal })
-      if (idx !== -1) { users.value[idx].estado = !!nextVal; }
-    } catch (error) {
-      console.log(error);
-
-    }
-  })
+  confirmDialogTitle.value = 'Confirmar cambio de estado'
+  confirmDialogMessage.value = `El usuario ${user.persona?.nombres || user.usuario} ${nextVal ? 'podra acceder al sistema' : 'no tendra acceso al sistema'}`
+  confirmDialogDanger.value = !nextVal // if disabling, mark danger
+  confirmDialogPayload.value = { user, nextVal }
+  confirmDialogOpen.value = true
 }
 
 </script>
@@ -1226,6 +1237,59 @@ $pastel-clay: #d7ccc8; // Arcilla pastel
     width: 100%;
     margin-top: 12px;
   }
+}
+
+/* Dialog styles similar to Roles-Page */
+.role-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: linear-gradient(135deg, $color-forest 0%, $color-moss 100%);
+  color: white;
+}
+
+.dialog-header-content {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.dialog-icon {
+  color: white;
+}
+
+.dialog-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.dialog-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.dialog-body {
+  padding: 18px;
+  background: white;
+}
+
+.dialog-actions {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: $pastel-sand;
+}
+
+.save-btn {
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.28);
 }
 
 @media (max-width: 599px) {

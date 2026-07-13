@@ -10,7 +10,8 @@
           </h2>
           <p class="header-subtitle q-mt-xs q-mb-none">Administra y registra los pagos del sistema</p>
         </div>
-        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Pago" class="btn-header-nuevo" @click="openDialog">
+        <q-btn unelevated no-caps color="green-9" icon="add" label="Nuevo Pago" class="btn-header-nuevo"
+          @click="openDialog">
           <q-tooltip>Registrar nuevo pago</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -91,8 +92,8 @@
               </template>
               <template v-slot:no-option>
                 <q-item>
-                  <q-item-section class="text-grey">{{ searchPersonaFiltro.length < 3
-                    ? 'Escribe al menos 3 caracteres' : 'No se encontró' }}</q-item-section>
+                  <q-item-section class="text-grey">{{ searchPersonaFiltro.length < 3 ? 'Escribe al menos 3 caracteres'
+                    : 'No se encontró' }}</q-item-section>
                 </q-item>
               </template>
             </q-select>
@@ -214,6 +215,10 @@
                     <div class="amount-label">Monto</div>
                     <div class="amount-value">Bs {{ pago.monto }}</div>
                   </div>
+                  <div v-if="pago.estado === 2 && pago.saldo > 0" class="payment-saldo">
+                    <div class="saldo-label">Pagado</div>
+                    <div class="saldo-value">Bs {{ pago.monto - pago.saldo }}</div>
+                  </div>
                 </template>
               </div>
 
@@ -307,7 +312,7 @@
                   <q-item-section>
                     <q-item-label caption>Monto</q-item-label>
                     <q-item-label class="text-weight-bold text-green-7">Bs {{ selectedPago?.monto ?? '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -328,7 +333,7 @@
                   <q-item-section>
                     <q-item-label caption>Categoría</q-item-label>
                     <q-item-label>{{ selectedPago?.categorium?.nombre || selectedPago?.categorium || '-'
-                      }}</q-item-label>
+                    }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
