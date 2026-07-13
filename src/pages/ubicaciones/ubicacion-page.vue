@@ -179,7 +179,7 @@
             <q-icon :name="confirmNewVal ? 'toggle_on' : 'toggle_off'" />
           </q-avatar>
           <div class="col q-pl-sm">
-            <div class="text-h6">{{ confirmNewVal ? 'Activar ubicación' : 'Desactivar ubicación' }}</div>
+            <div class="text-h6">{{ confirmNewVal ? 'Confirmar cambio de estado' : 'Confirmar cambio de estado' }}</div>
             <div class="text-subtitle2 q-pt-xs">{{ confirmTarget ? confirmTarget.nombre : '' }}</div>
           </div>
         </q-card-section>
